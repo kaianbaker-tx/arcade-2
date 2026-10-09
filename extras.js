@@ -90,7 +90,7 @@ const arcade = {
 
   function fill() {
     if (!stats) return;
-    visits.textContent = '👀 ' + stats.visits.toLocaleString() + ' visits';
+    visits.textContent = '👀 ' + stats.visits.toLocaleString() + (stats.visits === 1 ? ' visit' : ' visits');
     for (const [slug, b] of Object.entries(bars)) {
       const n = stats.plays[slug] || 0, c = stats.comments[slug] || 0;
       b.plays.textContent = '▶ ' + n.toLocaleString() + (n === 1 ? ' play' : ' plays');
