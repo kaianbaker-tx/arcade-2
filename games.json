@@ -5,98 +5,126 @@
       "slug": "zip-flash",
       "artifact": "https://claude.ai/artifact/B5G72wuCyQ7tLQc7HJ6A5S",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Flash-slash through robot drones and keep the combo going!",
+      "thumb": "games/zip-flash/thumb.jpg"
     },
     {
       "name": "Rubber Ray's Rumble",
       "slug": "rubber-ray-s-rumble",
       "artifact": "https://claude.ai/artifact/TZuKT1tk6wTcbfan8VbEeR",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Throw stretchy punches to knock goons off the screen, and watch out for anvils!",
+      "thumb": "games/rubber-ray-s-rumble/thumb.jpg"
     },
     {
       "name": "Bitbot Blaster",
       "slug": "bitbot-blaster",
       "artifact": "https://claude.ai/artifact/5NMBaym9agRD9twC1BRWhg",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Blast the pixel invaders before they reach the ground.",
+      "thumb": "games/bitbot-blaster/thumb.jpg"
     },
     {
       "name": "Gloop Jump",
       "slug": "gloop-jump",
       "artifact": "https://claude.ai/artifact/SexGJ982R4tJrEH3QbJoFt",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Bounce Gloop the slime as high as you can and dash through the spikes.",
+      "thumb": "games/gloop-jump/thumb.jpg"
     },
     {
       "name": "Cubert's Block Drop",
       "slug": "cubert-s-block-drop",
       "artifact": "https://claude.ai/artifact/VaKfo6bEkBgFYqqKWTB4o9",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Punch falling blocks before the stacks hit the red line. TNT goes BOOM!",
+      "thumb": "games/cubert-s-block-drop/thumb.jpg"
     },
     {
       "name": "Scribble Run",
       "slug": "scribble-run",
       "artifact": "https://claude.ai/artifact/AQY7p6K3QTNYfthCFLKNbZ",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Run across the notebook and scribble the doodle monsters away.",
+      "thumb": "games/scribble-run/thumb.jpg"
     },
     {
       "name": "Muffin Multiverse",
       "slug": "muffin-multiverse",
       "artifact": "https://claude.ai/artifact/NLdL2XBQre81JhBCTwvv7i",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Run a muffin through 6 worlds and warp through portals to the next universe.",
+      "thumb": "games/muffin-multiverse/thumb.jpg"
     },
     {
       "name": "Random Smash",
       "slug": "random-smash",
       "artifact": "https://claude.ai/artifact/UC6wL8eEtNMEgVxua9kYya",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "Pick a fighter and smash it out on a random stage full of surprises.",
+      "thumb": "games/random-smash/thumb.jpg"
     },
     {
       "name": "Smash Unite",
       "slug": "smash-unite",
       "artifact": "https://claude.ai/artifact/HyRZt98jADLT6G1R3hTnqE",
       "added": "2026-10-08",
-      "updated": "2026-10-08"
+      "updated": "2026-10-08",
+      "blurb": "A big brawl starring fighters from all of Kaian's games.",
+      "thumb": "games/smash-unite/thumb.jpg"
     },
     {
       "name": "Cereal Brawl",
       "slug": "cereal-brawl",
       "artifact": "https://claude.ai/artifact/6ciYyuHLTuoTLtH61ZnGpB",
       "added": "2026-10-07",
-      "updated": "2026-10-07"
+      "updated": "2026-10-07",
+      "blurb": "Cereal mascots go head to head. Play the computer or a friend!",
+      "thumb": "games/cereal-brawl/thumb.jpg"
     },
     {
       "name": "Volt Brawl",
       "slug": "volt-brawl",
       "artifact": "https://claude.ai/artifact/RLVL3ap3E4ZWGMQk8wiK53",
       "added": "2026-10-06",
-      "updated": "2026-10-06"
+      "updated": "2026-10-06",
+      "blurb": "Robot boxing! Land 5 punches to unlock your Power Punch.",
+      "thumb": "games/volt-brawl/thumb.jpg"
     },
     {
       "name": "Chiquita's Sword Squad",
       "slug": "chiquita-s-sword-squad",
       "artifact": "https://claude.ai/artifact/HLKo2RYLc7ZvuXfgF6jjRW",
       "added": "2026-10-06",
-      "updated": "2026-10-06"
+      "updated": "2026-10-06",
+      "blurb": "Chiquita's spiky sword fights off waves of black mice.",
+      "thumb": "games/chiquita-s-sword-squad/thumb.jpg"
     },
     {
       "name": "Cinema Roll Bake Dode",
       "slug": "cinema-roll-bake-dode",
       "artifact": "https://claude.ai/artifact/LXQzbH1m34mveWtCjSuJRa",
       "added": "2026-10-06",
-      "updated": "2026-10-06"
+      "updated": "2026-10-06",
+      "blurb": "Fly Mochi the bunny through the sky and dodge a storm of desserts.",
+      "thumb": "games/cinema-roll-bake-dode/thumb.jpg"
     },
     {
       "name": "Cave Cash",
       "slug": "cave-cash",
       "artifact": "https://claude.ai/artifact/NHRbageAY3oefM16p77tbH",
       "added": "2026-10-04",
-      "updated": "2026-10-04"
+      "updated": "2026-10-04",
+      "blurb": "A huge 3D island: mine money ore, build a house, survive the night.",
+      "thumb": "games/cave-cash/thumb.jpg"
     },
     {
       "name": "Fizz Rush",
@@ -104,14 +132,18 @@
       "artifact": "https://claude.ai/artifact/WCHuYcqZ9PUKxVx7u2coyh",
       "added": "2026-10-04",
       "updated": "2026-10-04",
-      "creator": "Chipflake"
+      "creator": "Chipflake",
+      "blurb": "Drink the soda cans, then burp the Evil Cans away!",
+      "thumb": "games/fizz-rush/thumb.jpg"
     },
     {
       "name": "Flop Fish Fisherman",
       "slug": "flop-fish-fisherman",
       "artifact": "https://claude.ai/artifact/45zoqJ23TDLoJ2zPRak5eQ",
       "added": "2026-10-04",
-      "updated": "2026-10-04"
+      "updated": "2026-10-04",
+      "blurb": "Stab the fish and watch them flop all over the dock.",
+      "thumb": "games/flop-fish-fisherman/thumb.jpg"
     },
     {
       "name": "Circle Tunes vs the Giant Bull",
@@ -119,21 +151,27 @@
       "artifact": "https://claude.ai/artifact/UYNYWy1HctCymWKFjLv4QN",
       "added": "2026-10-04",
       "updated": "2026-10-04",
-      "creator": "Circle Tunes HD"
+      "creator": "Circle Tunes HD",
+      "blurb": "Slash minions, buy better weapons, and beat the giant bull.",
+      "thumb": "games/circle-tunes-vs-the-giant-bull/thumb.jpg"
     },
     {
       "name": "Plush Park",
       "slug": "plush-park",
       "artifact": "https://claude.ai/artifact/73QhyXRNhN1QYgvsKs3mTe",
       "added": "2026-10-04",
-      "updated": "2026-10-04"
+      "updated": "2026-10-04",
+      "blurb": "Adopt a plush pet, name it, and take care of it.",
+      "thumb": "games/plush-park/thumb.jpg"
     },
     {
       "name": "Spin the Wheel",
       "slug": "spin-the-wheel",
       "artifact": "https://claude.ai/artifact/ErPpycRmuccoq6WAzwpizE",
       "added": "2026-10-04",
-      "updated": "2026-10-04"
+      "updated": "2026-10-04",
+      "blurb": "Type in your choices, spin, and let the wheel decide!",
+      "thumb": "games/spin-the-wheel/thumb.jpg"
     },
     {
       "name": "Carrot Patch Pull",
@@ -141,7 +179,9 @@
       "artifact": "https://claude.ai/artifact/5A1VuttBpmkRqkTV2s9psZ",
       "added": "2026-10-04",
       "updated": "2026-10-04",
-      "creator": "Garrett the Carrot"
+      "creator": "Garrett the Carrot",
+      "blurb": "Pull the carrots before they wilt, but don't bonk the gopher!",
+      "thumb": "games/carrot-patch-pull/thumb.jpg"
     },
     {
       "name": "Sandwich Brothers",
@@ -149,7 +189,9 @@
       "artifact": "https://claude.ai/artifact/H6zRstjFwyfDC4kmwMPRat",
       "added": "2026-10-04",
       "updated": "2026-10-04",
-      "creator": "Noob Stamp"
+      "creator": "Noob Stamp",
+      "blurb": "Eat the ice cream sandwiches before their angry brothers get you.",
+      "thumb": "games/sandwich-brothers/thumb.jpg"
     },
     {
       "name": "Ari and Tofu",
@@ -157,7 +199,9 @@
       "artifact": "https://claude.ai/artifact/Fx6PTWUNHCZR6MbFqfSGBU",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Jaden Animations"
+      "creator": "Jaden Animations",
+      "blurb": "Fly Ari the bird through gaps in the storm clouds.",
+      "thumb": "games/ari-and-tofu/thumb.jpg"
     },
     {
       "name": "Break the Pencil",
@@ -165,7 +209,9 @@
       "artifact": "https://claude.ai/artifact/4fDyCkHbLRtHqGN2Lk4Y7X",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Pencilmation"
+      "creator": "Pencilmation",
+      "blurb": "Get through your day while a mean pencil draws chaos into it.",
+      "thumb": "games/break-the-pencil/thumb.jpg"
     },
     {
       "name": "Boulder Chase",
@@ -173,7 +219,9 @@
       "artifact": "https://claude.ai/artifact/VDch7tHCdev41NnFgTz3eg",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "terminal montage"
+      "creator": "terminal montage",
+      "blurb": "A giant boulder is rolling after you. RUN!",
+      "thumb": "games/boulder-chase/thumb.jpg"
     },
     {
       "name": "Sky Armor Rescue",
@@ -181,7 +229,9 @@
       "artifact": "https://claude.ai/artifact/ACz23oKiXmY3qsTXWit5Jq",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Blobby Clips"
+      "creator": "Blobby Clips",
+      "blurb": "Build a workshop, find the armor parts, and fly up to rescue Pip.",
+      "thumb": "games/sky-armor-rescue/thumb.jpg"
     },
     {
       "name": "Elevator Laugh Riot",
@@ -189,7 +239,9 @@
       "artifact": "https://claude.ai/artifact/614mj6SyhFswescKbExKNN",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "kovenant animations"
+      "creator": "kovenant animations",
+      "blurb": "Keep everyone in the elevator laughing all the way to floor 20.",
+      "thumb": "games/elevator-laugh-riot/thumb.jpg"
     },
     {
       "name": "Super Mile Blows: Spikes Only",
@@ -197,7 +249,9 @@
       "artifact": "https://claude.ai/artifact/388KFRryB5SqCxdDzquAxu",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Level Up Animations"
+      "creator": "Level Up Animations",
+      "blurb": "Everything is backwards: only the spikes are safe!",
+      "thumb": "games/super-mile-blows-spikes-only/thumb.jpg"
     },
     {
       "name": "Toaster Showdown",
@@ -205,7 +259,9 @@
       "artifact": "https://claude.ai/artifact/9EqRruy75nE4ZNSK9x254r",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "brodyanimates"
+      "creator": "brodyanimates",
+      "blurb": "Unplug and defeat 4 electric Toaster Bots.",
+      "thumb": "games/toaster-showdown/thumb.jpg"
     },
     {
       "name": "Ham Squasher",
@@ -213,7 +269,9 @@
       "artifact": "https://claude.ai/artifact/3mat1K55CXyJUqsH2Swwdx",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Haminations"
+      "creator": "Haminations",
+      "blurb": "Squish Ham for coins and buy bigger and sillier gloves.",
+      "thumb": "games/ham-squasher/thumb.jpg"
     },
     {
       "name": "Frog Tag",
@@ -221,7 +279,9 @@
       "artifact": "https://claude.ai/artifact/WUg8euCumvGjpgaxmQPwFm",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Unspeakable"
+      "creator": "Unspeakable",
+      "blurb": "Pond tag with frogs. Don't be IT when time runs out!",
+      "thumb": "games/frog-tag/thumb.jpg"
     },
     {
       "name": "Wave Rider",
@@ -229,7 +289,9 @@
       "artifact": "https://claude.ai/artifact/EZoWhou5uikowQUHoaTeUW",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Infamous Swoosh"
+      "creator": "Infamous Swoosh",
+      "blurb": "Surf the waves, dodge sharks, and pull off flips.",
+      "thumb": "games/wave-rider/thumb.jpg"
     },
     {
       "name": "A Blaster",
@@ -237,21 +299,27 @@
       "artifact": "https://claude.ai/artifact/Ur6veUuvMUCsAsxqkefLUm",
       "added": "2026-10-03",
       "updated": "2026-10-03",
-      "creator": "Alley A."
+      "creator": "Alley A.",
+      "blurb": "Blast invading blue A's with a minigun and buy bigger guns.",
+      "thumb": "games/a-blaster/thumb.jpg"
     },
     {
       "name": "HamMan",
       "slug": "hamman",
       "artifact": "https://claude.ai/artifact/TeuCTZvSUokkMA2rYsRDmp",
       "added": "2026-10-02",
-      "updated": "2026-10-02"
+      "updated": "2026-10-02",
+      "blurb": "Gobble every coin in the maze, then grab a gem to scare your chasers!",
+      "thumb": "games/hamman/thumb.jpg"
     },
     {
       "name": "Cash Cave",
       "slug": "cash-cave",
       "artifact": "https://claude.ai/artifact/V1qSCF2jvmHQtdHmhgb6Jv",
       "added": "2026-10-02",
-      "updated": "2026-10-02"
+      "updated": "2026-10-02",
+      "blurb": "Explore a giant block island and dig for money blocks.",
+      "thumb": "games/cash-cave/thumb.jpg"
     },
     {
       "name": "Ninjaflip",
@@ -259,7 +327,9 @@
       "artifact": "https://claude.ai/artifact/6e84PqHSHWma9RuHQiLXn5",
       "added": "2026-10-02",
       "updated": "2026-10-02",
-      "creator": "Ninja Kidz TV"
+      "creator": "Ninja Kidz TV",
+      "blurb": "Sprint, launch off ramps, and stick your backflip landings.",
+      "thumb": "games/ninjaflip/thumb.jpg"
     },
     {
       "name": "Memeow Catch",
@@ -267,7 +337,9 @@
       "artifact": "https://claude.ai/artifact/C9wf17BLMpVcTTjQXUtRR7",
       "added": "2026-10-02",
       "updated": "2026-10-02",
-      "creator": "Aphmau"
+      "creator": "Aphmau",
+      "blurb": "Catch the plushie kitties falling from the clouds.",
+      "thumb": "games/memeow-catch/thumb.jpg"
     },
     {
       "name": "Soobway",
@@ -275,49 +347,63 @@
       "artifact": "https://claude.ai/artifact/FRqRq6dBZX9Sn6YBPfxbu4",
       "added": "2026-10-02",
       "updated": "2026-10-02",
-      "creator": "odd 1s out"
+      "creator": "odd 1s out",
+      "blurb": "Make sandwiches for the weirdest customers in town, fast!",
+      "thumb": "games/soobway/thumb.jpg"
     },
     {
       "name": "Star Fighter",
       "slug": "star-fighter",
       "artifact": "https://claude.ai/artifact/1UHKEgr4sS3WDr8VfQYo3T",
       "added": "2026-10-02",
-      "updated": "2026-10-02"
+      "updated": "2026-10-02",
+      "blurb": "Blast enemy ships as every wave flies in faster.",
+      "thumb": "games/star-fighter/thumb.jpg"
     },
     {
       "name": "Chest Rush",
       "slug": "chest-rush",
       "artifact": "https://claude.ai/artifact/9D4scnxmb4ahjkDKgDk7oX",
       "added": "2026-10-01",
-      "updated": "2026-10-01"
+      "updated": "2026-10-01",
+      "blurb": "Answer questions to win treasure chests. Most gold wins!",
+      "thumb": "games/chest-rush/thumb.jpg"
     },
     {
       "name": "Notebook Stick Run",
       "slug": "notebook-stick-run",
       "artifact": "https://claude.ai/artifact/45pwJZCthQa9BVQRapWwcT",
       "added": "2026-10-01",
-      "updated": "2026-10-01"
+      "updated": "2026-10-01",
+      "blurb": "Run the stick guy across notebook pages to reach the flag.",
+      "thumb": "games/notebook-stick-run/thumb.jpg"
     },
     {
       "name": "Cash Cave",
       "slug": "cash-cave-2",
       "artifact": "https://claude.ai/artifact/JTAL9hW3xyziHAA9XvNf7H",
       "added": "2026-09-24",
-      "updated": "2026-09-24"
+      "updated": "2026-09-24",
+      "blurb": "Dig into the ground and hunt for hidden money blocks.",
+      "thumb": "games/cash-cave-2/thumb.jpg"
     },
     {
       "name": "Maga and Dot",
       "slug": "maga-and-dot",
       "artifact": "https://claude.ai/artifact/MkbMU63djNWFzwvbsv9uJn",
       "added": "2026-09-24",
-      "updated": "2026-09-24"
+      "updated": "2026-09-24",
+      "blurb": "A robot and his dog shut down the rogue rust-drones.",
+      "thumb": "games/maga-and-dot/thumb.jpg"
     },
     {
       "name": "Shroud: Guardian of Halcyon",
       "slug": "shroud-guardian-of-halcyon",
       "artifact": "https://claude.ai/artifact/C21wAHpmnk7Sker3TTavYs",
       "added": "2026-09-23",
-      "updated": "2026-09-23"
+      "updated": "2026-09-23",
+      "blurb": "Be the hero who cleans up the streets of Halcyon City.",
+      "thumb": "games/shroud-guardian-of-halcyon/thumb.jpg"
     }
   ],
   "skip": [

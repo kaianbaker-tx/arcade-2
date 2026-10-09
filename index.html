@@ -6,14 +6,17 @@
 <title>Kaian's Arcade 2</title>
 <style>
   body { margin:0; background:#14111f; color:#f3f0ff; font:16px/1.5 system-ui,-apple-system,sans-serif; }
-  main { max-width:960px; margin:0 auto; padding:32px 16px 64px; }
+  main { max-width:1200px; margin:0 auto; padding:32px 16px 64px; }
   h1 { text-align:center; font-size:40px; margin:0; letter-spacing:1px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
-  .grid a { display:block; padding:28px 16px; border-radius:16px; background:#221d33; border:1px solid #3a3354; color:inherit; text-decoration:none; text-align:center; font-weight:700; font-size:18px; }
-  .grid a:hover { border-color:#7c5cff; }
-  .grid a { position:relative; }
-  .by { display:block; font-size:13px; font-weight:600; color:#b3abcf; margin-top:4px; }
-  .new { position:absolute; top:-8px; right:-8px; background:#ffd166; color:#3a2a00; font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:22px; }
+  .grid a { position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden; background:#221d33; border:2px solid #3a3354; color:inherit; text-decoration:none; transition:transform .12s, border-color .12s; }
+  .grid a:hover { border-color:#7c5cff; transform:translateY(-3px); }
+  .thumb { display:block; width:100%; aspect-ratio:16/10; object-fit:cover; background:#2e2848; }
+  .info { padding:12px 14px 14px; display:flex; flex-direction:column; gap:3px; }
+  .name { font-weight:800; font-size:19px; line-height:1.2; }
+  .by { font-size:13px; font-weight:600; color:#b3abcf; }
+  .blurb { font-size:14px; line-height:1.4; color:#ddd6f5; margin-top:4px; }
+  .new { position:absolute; top:10px; right:10px; background:#ffd166; color:#3a2a00; font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,.4); }
   .empty { text-align:center; color:#b3abcf; }
   footer { text-align:center; margin-top:40px; }
   footer a { color:#b9a7ff; }
@@ -32,22 +35,23 @@
     const games = (d.games || []).slice().sort((a, b) => (b.added || '').localeCompare(a.added || ''));
     document.getElementById('empty').hidden = games.length > 0;
     const recent = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
     for (const g of games) {
-      const a = document.createElement('a');
+      const a = el('a');
       a.href = 'games/' + g.slug + '/';
-      a.textContent = g.name;
-      if (g.creator) {
-        const by = document.createElement('span');
-        by.className = 'by';
-        by.textContent = 'by ' + g.creator;
-        a.append(by);
+      if (g.thumb) {
+        const img = el('img', 'thumb');
+        img.src = g.thumb; img.alt = ''; img.loading = 'lazy';
+        a.append(img);
+      } else {
+        a.append(el('div', 'thumb'));
       }
-      if ((g.added || '') >= recent) {
-        const n = document.createElement('span');
-        n.className = 'new';
-        n.textContent = 'NEW';
-        a.append(n);
-      }
+      const info = el('div', 'info');
+      info.append(el('span', 'name', g.name));
+      if (g.creator) info.append(el('span', 'by', 'by ' + g.creator));
+      if (g.blurb) info.append(el('span', 'blurb', g.blurb));
+      a.append(info);
+      if ((g.added || '') >= recent) a.append(el('span', 'new', 'NEW'));
       document.getElementById('games').append(a);
     }
     window.dispatchEvent(new Event('arcade:cards'));

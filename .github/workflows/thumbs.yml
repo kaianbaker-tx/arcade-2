@@ -1,0 +1,33 @@
+name: Game pictures
+
+# After the nightly sweep adds games, take a picture of any game that doesn't have one.
+on:
+  push:
+    branches: [main]
+    paths: ['games/**', 'games.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: thumbs
+  cancel-in-progress: false
+
+jobs:
+  thumbs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save puppeteer-core@23.11.1
+      - run: node .github/thumbs.js
+      - name: Save the pictures
+        run: |
+          git add games.json games/*/thumb.jpg
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git -c user.name="Arcade bot" -c user.email="actions@github.com" commit -m "Add game pictures"
+          git pull --rebase origin main
+          git push origin main
