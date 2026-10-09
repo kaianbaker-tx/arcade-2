@@ -1,0 +1,365 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Volt Brawl</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600&display=swap">
+<style>
+/* Layout: one arcade cabinet column — marquee, canvas screen, control deck */
+:root {
+  --bg: #0c0b1d;
+  --panel: #17153a;
+  --ink: #e9e7ff;
+  --muted: #9893c9;
+  --mint: #3fe0c5;
+  --violet: #b77bff;
+  --spark: #ffe56b;
+  --display: "Bungee", "Impact", system-ui, sans-serif;
+  --body: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body);
+  padding-inline: 16px; padding-block: 16px 24px; box-sizing: border-box;
+}
+.cab { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { font-family: var(--display); font-weight: 400; margin: 0; font-size: clamp(28px, 6vw, 44px); letter-spacing: 0.02em;
+  background: linear-gradient(90deg, var(--mint), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.modes { display: flex; gap: 6px; }
+button {
+  font-family: var(--body); font-weight: 600; font-size: 15px; color: var(--ink);
+  background: var(--panel); border: 2px solid #2c2860; border-radius: 10px; padding: 8px 14px; cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible { outline: 3px solid var(--spark); outline-offset: 2px; }
+button[aria-pressed="true"] { border-color: var(--mint); color: var(--mint); }
+canvas { width: 100%; max-width: 100%; aspect-ratio: 16 / 10; display: block; border-radius: 14px; background: #08071a; touch-action: manipulation; }
+.deck { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.deck button { min-width: 96px; padding: 14px 16px; font-size: 16px; user-select: none; -webkit-user-select: none; }
+.deck .jab { border-color: var(--mint); }
+.deck .pow { border-color: var(--violet); }
+.keys { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: center; }
+kbd { font-family: var(--body); background: var(--panel); border: 1px solid #2c2860; border-radius: 5px; padding: 1px 6px; color: var(--ink); }
+</style>
+
+<div class="cab">
+  <header>
+    <h1>Volt Brawl</h1>
+    <div class="modes" role="group" aria-label="Players">
+      <button id="m1" aria-pressed="true">1 Player</button>
+      <button id="m2" aria-pressed="false">2 Players</button>
+    </div>
+  </header>
+  <canvas id="c" width="800" height="500" aria-label="Robot boxing arena"></canvas>
+  <div class="keys">
+    <span>Nova Knuckle: tap <kbd>Space</kbd> to punch · hold <kbd>Space</kbd> for Power Punch · <kbd>↓</kbd> shield</span>
+    <span id="p2keys" hidden>Bolt Breaker: tap <kbd>J</kbd> to punch · hold <kbd>J</kbd> for Power Punch · <kbd>K</kbd> shield</span>
+    <span>Land 5 punches to unlock your Power Punch. <kbd>Enter</kbd> or tap the screen for a rematch.</span>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = 800, H = 500, GROUND = 420;
+let mode = 1, state = 'intro', countdown = 0, particles = [], flash = 0, winner = null, t0 = performance.now();
+
+function makeBot(name, x, dir, body, dark, glow) {
+  return { name, x, homeX: x, dir, body, dark, glow, hp: 100, shield: false, shake: 0, tilt: 0,
+    arms: { jab: { t: 0, on: false, hit: false }, pow: { t: 0, on: false, hit: false } }, cool: 0, ai: 600, down: 0, charge: 0, holdT: -1, charging: false };
+}
+let bots;
+function reset() {
+  bots = [makeBot('NOVA KNUCKLE', 320, 1, '#3fe0c5', '#1c7f73', '#c9fff4'),
+          makeBot('BOLT BREAKER', 480, -1, '#b77bff', '#6237a8', '#f0e2ff')];
+  particles = []; winner = null; state = 'count'; countdown = 3;
+}
+reset();
+
+const MOVES = { jab: { dur: 260, dmg: 6, cool: 320 }, pow: { dur: 480, dmg: 22, cool: 720 } };
+const NEED = 5, HOLD_MS = 350;
+const ready = b => b.charge >= NEED;
+function punch(b, kind) {
+  if (state !== 'fight' || b.shield) return;
+  if (kind === 'pow') { if (!ready(b)) return; b.charge = 0; b.cool = 0; }
+  else if (b.cool > 0) return;
+  const a = b.arms[kind]; a.on = true; a.t = 0; a.hit = false; b.cool = MOVES[kind].cool;
+  beep(kind === 'jab' ? 330 : 200, 0.05, 'square', 0.04);
+}
+function setShield(b, on) { if (state === 'fight' || !on) b.shield = on; }
+
+// --- sound (starts after first interaction) ---
+let ac = null;
+function beep(f, d, type = 'square', vol = 0.06) {
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = f; g.gain.value = vol;
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + d);
+  o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d);
+}
+function wake() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
+
+// --- input ---
+// tap = jab right away; keep holding (once unlocked) to charge, let go to fire the Power Punch
+function pressPunch(b) { if (b.holdT >= 0) return; b.holdT = 0; punch(b, 'jab'); }
+function releasePunch(b) {
+  if (b.holdT < 0) return;
+  if (b.charging) punch(b, 'pow');
+  b.holdT = -1; b.charging = false;
+}
+const punchKeys = { ' ': 0, j: 1 };
+addEventListener('keydown', e => {
+  wake();
+  const k = e.key.toLowerCase();
+  if (k === ' ' || k === 'arrowdown') e.preventDefault();
+  if (k === 'enter' && (state === 'ko' || state === 'intro')) { reset(); return; }
+  if (k in punchKeys && !e.repeat) { const i = punchKeys[k]; if (i === 0 || mode === 2) pressPunch(bots[i]); }
+  if (k === 'arrowdown') setShield(bots[0], true);
+  if (k === 'k' && mode === 2) setShield(bots[1], true);
+});
+addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if (k in punchKeys) { const i = punchKeys[k]; if (i === 0 || mode === 2) releasePunch(bots[i]); }
+  if (k === 'arrowdown') setShield(bots[0], false);
+  if (k === 'k' && mode === 2) setShield(bots[1], false);
+});
+function hold(el, down, up) {
+  el.addEventListener('pointerdown', e => { e.preventDefault(); wake(); down(); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, () => up && up()));
+}
+cv.addEventListener('pointerdown', () => { wake(); if (state === 'ko' || state === 'intro') reset(); });
+function setMode(m) {
+  mode = m;
+  document.getElementById('m1').setAttribute('aria-pressed', m === 1);
+  document.getElementById('m2').setAttribute('aria-pressed', m === 2);
+  document.getElementById('p2keys').hidden = m !== 2;
+  reset();
+}
+document.getElementById('m1').onclick = () => setMode(1);
+document.getElementById('m2').onclick = () => setMode(2);
+
+// --- game logic ---
+function update(dt) {
+  if (state === 'count') {
+    countdown -= dt / 1000;
+    if (countdown <= 0) { state = 'fight'; beep(660, 0.25, 'triangle', 0.08); }
+  }
+  bots.forEach((b, i) => {
+    const foe = bots[1 - i];
+    b.cool = Math.max(0, b.cool - dt);
+    b.shake *= 0.85;
+    if (b.holdT >= 0) {
+      b.holdT += dt;
+      if (!b.charging && b.holdT > HOLD_MS && ready(b) && state === 'fight') { b.charging = true; beep(520, 0.15, 'triangle', 0.05); }
+      if (b.charging && Math.random() < 0.4) particles.push({ x: b.x - b.dir * 10, y: GROUND - 140 + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 3, vy: -Math.random() * 3, life: 250, c: b.glow });
+    }
+    for (const kind of ['jab', 'pow']) {
+      const a = b.arms[kind];
+      if (!a.on) continue;
+      a.t += dt / MOVES[kind].dur;
+      if (!a.hit && a.t >= 0.5) { a.hit = true; land(b, foe, kind); }
+      if (a.t >= 1) { a.on = false; a.t = 0; }
+    }
+    if (state === 'ko' && b === winner) b.x += (b.homeX - b.x) * 0.1;
+    if (b.down) { b.down = Math.min(1, b.down + dt / 900); b.tilt = -0.5 * ease(b.down); }
+  });
+  if (mode === 1 && state === 'fight') cpu(bots[1], bots[0], dt);
+  particles = particles.filter(p => (p.life -= dt) > 0);
+  particles.forEach(p => { p.x += p.vx * dt / 16; p.y += p.vy * dt / 16; p.vy += 0.25; });
+  flash = Math.max(0, flash - dt / 200);
+}
+const ease = x => 1 - Math.pow(1 - x, 3);
+
+function land(b, foe, kind) {
+  if (state !== 'fight') return;
+  const hx = foe.x - foe.dir * 20, hy = GROUND - 175;
+  if (foe.shield) {
+    foe.hp = Math.max(0, foe.hp - 1); foe.shake = 3;
+    burst(hx, hy, '#9893c9', 6); beep(900, 0.04, 'sine', 0.05);
+  } else {
+    foe.hp = Math.max(0, foe.hp - MOVES[kind].dmg); foe.shake = kind === 'pow' ? 16 : 6;
+    if (kind === 'jab' && b.charge < NEED) { b.charge++; if (ready(b)) beep(880, 0.2, 'triangle', 0.07); }
+    burst(hx, hy, '#ffe56b', kind === 'pow' ? 22 : 12); flash = kind === 'pow' ? 1 : 0.5;
+    beep(kind === 'pow' ? 110 : 160, 0.12, 'sawtooth', 0.07);
+  }
+  if (foe.hp <= 0) {
+    state = 'ko'; winner = b; foe.down = 0.001; foe.shield = false;
+    burst(foe.x, GROUND - 225, '#ffe56b', 40);
+    [440, 330, 220, 110].forEach((f, i) => setTimeout(() => beep(f, 0.25, 'triangle', 0.08), i * 160));
+  }
+}
+function burst(x, y, c, n) {
+  for (let i = 0; i < n; i++) particles.push({ x, y, vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 7, life: 400 + Math.random() * 300, c });
+}
+function cpu(me, foe, dt) {
+  me.ai -= dt;
+  const threatened = foe.arms.pow.on && foe.arms.pow.t < 0.45;
+  if (threatened && Math.random() < 0.04) { me.shield = true; me.ai = 450; return; }
+  if (me.ai > 0) return;
+  me.shield = false;
+  const r = Math.random();
+  if (ready(me) && r < 0.35) punch(me, 'pow');
+  else if (r < 0.65) punch(me, 'jab');
+  else if (r < 0.88) { me.shield = true; }
+  me.ai = 350 + Math.random() * 600;
+}
+
+// --- drawing ---
+function drawArena(time) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0d0b26'); g.addColorStop(1, '#1b1446');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // crowd lights
+  for (let i = 0; i < 40; i++) {
+    const x = (i * 97) % W, y = 40 + ((i * 53) % 140), a = 0.25 + 0.25 * Math.sin(time / 600 + i);
+    ctx.fillStyle = `rgba(183,123,255,${a})`; ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill();
+  }
+  // floor: hexagonal pad
+  ctx.save(); ctx.translate(W / 2, GROUND + 10); ctx.scale(1, 0.22);
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; ctx.lineTo(Math.cos(a) * 340, Math.sin(a) * 340); }
+  ctx.closePath(); ctx.fillStyle = '#211a55'; ctx.fill();
+  ctx.lineWidth = 8; ctx.strokeStyle = `rgba(63,224,197,${0.55 + 0.25 * Math.sin(time / 400)})`; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 120, 0, 7); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(183,123,255,0.5)'; ctx.stroke();
+  ctx.restore();
+  // laser fence posts
+  [[110, '#3fe0c5'], [690, '#b77bff']].forEach(([x, c]) => {
+    ctx.fillStyle = '#2c2860'; ctx.fillRect(x - 6, GROUND - 150, 12, 160);
+    ctx.fillStyle = c; ctx.fillRect(x - 6, GROUND - 158, 12, 10);
+  });
+  ctx.strokeStyle = 'rgba(255,229,107,0.35)'; ctx.lineWidth = 2;
+  [70, 110].forEach(dy => { ctx.beginPath(); ctx.moveTo(110, GROUND - dy); ctx.lineTo(690, GROUND - dy); ctx.stroke(); });
+}
+
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+
+function drawArm(b, kind, front) {
+  const a = b.arms[kind];
+  const e = a.on ? Math.sin(Math.PI * a.t) : 0;
+  const sx = front ? 14 : -4, sy = front ? -130 : -138;
+  let gx = 30 + e * (kind === 'pow' ? 100 : 92), gy = (front ? -122 : -132) - e * 18;
+  if (b.charging && !front) { gx = -30; gy = -140; }
+  if (b.shield) { gx = 34; gy = front ? -168 : -180; }
+  if (b.down) { gx = 18 - b.down * 10; gy = -80; }
+  ctx.strokeStyle = front ? '#cfcbe8' : '#8b86b3'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo((sx + gx) / 2, sy + 14, gx, gy); ctx.stroke();
+  // glove: chunky capsule
+  ctx.fillStyle = front ? b.body : b.dark;
+  const big = kind === 'pow' && (b.charging || a.on);
+  if (big) { ctx.shadowColor = '#ffe56b'; ctx.shadowBlur = 20; ctx.fillStyle = '#ffe56b'; }
+  rr(gx - 13, gy - 15, 30, 30, 9); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'; rr(gx - 9, gy - 11, 10, 8, 3); ctx.fill();
+  if (b.shield && front) {
+    ctx.strokeStyle = `rgba(201,255,244,0.6)`; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(30, -170, 46, -1.1, 1.1); ctx.stroke();
+  }
+}
+
+function drawBot(b, time) {
+  ctx.save();
+  const sh = b.shake ? (Math.random() - 0.5) * b.shake : 0;
+  const bob = b.down ? 0 : Math.sin(time / 260 + b.dir) * 3;
+  ctx.translate(b.x + sh, GROUND + bob); ctx.scale(b.dir, 1);
+  ctx.translate(-20, 0); ctx.rotate(b.tilt); ctx.translate(20, 0);
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(0, 4, 46, 9, 0, 0, 7); ctx.fill();
+  drawArm(b, 'pow', false);
+  // treads instead of legs
+  ctx.fillStyle = '#2b2752'; rr(-34, -26, 68, 26, 13); ctx.fill();
+  ctx.fillStyle = '#4a4580'; for (let i = -24; i <= 24; i += 12) { ctx.beginPath(); ctx.arc(i, -13, 5, 0, 7); ctx.fill(); }
+  ctx.fillStyle = '#5c578f'; ctx.fillRect(-8, -48, 16, 24);
+  // barrel torso
+  ctx.fillStyle = b.dark; rr(-32, -150, 64, 104, 22); ctx.fill();
+  ctx.fillStyle = b.body; rr(-28, -146, 56, 96, 20); ctx.fill();
+  // chest battery gauge
+  ctx.fillStyle = '#0c0b1d'; rr(-16, -128, 32, 52, 6); ctx.fill();
+  const cells = Math.ceil(b.hp / 20);
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = i < cells ? (b.hp > 30 ? '#7dffb0' : '#ff8a5c') : '#221f45';
+    ctx.fillRect(-11, -86 - i * 9, 22, 6);
+  }
+  // dome head
+  ctx.fillStyle = b.dark; ctx.beginPath(); ctx.arc(0, -168, 30, Math.PI, 0); ctx.lineTo(30, -152); ctx.lineTo(-30, -152); ctx.fill();
+  ctx.fillStyle = b.body; ctx.beginPath(); ctx.arc(0, -168, 26, Math.PI, 0); ctx.lineTo(26, -155); ctx.lineTo(-26, -155); ctx.fill();
+  // single wide eye slit
+  const lit = !b.down;
+  ctx.fillStyle = '#0c0b1d'; rr(-4, -180, 28, 13, 6); ctx.fill();
+  if (lit) {
+    const blink = Math.sin(time / 900 + b.dir * 2) > 0.97;
+    ctx.fillStyle = b.glow; ctx.shadowColor = b.glow; ctx.shadowBlur = 12;
+    rr(6, blink ? -175 : -178, 14, blink ? 3 : 9, 4); ctx.fill(); ctx.shadowBlur = 0;
+  } else {
+    ctx.strokeStyle = '#5c578f'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(8, -176); ctx.lineTo(18, -170); ctx.moveTo(18, -176); ctx.lineTo(8, -170); ctx.stroke();
+  }
+  // twin ear bolts
+  ctx.fillStyle = '#cfcbe8'; ctx.beginPath(); ctx.arc(-28, -160, 5, 0, 7); ctx.fill();
+  // coil antenna
+  ctx.strokeStyle = '#cfcbe8'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = 0; i <= 12; i++) ctx.lineTo(-8 + Math.sin(i * 1.6) * 4, -194 - i * 2.2);
+  ctx.stroke();
+  const tipOn = lit || Math.random() < 0.15;
+  ctx.fillStyle = tipOn ? '#ffe56b' : '#3a3666';
+  if (tipOn) { ctx.shadowColor = '#ffe56b'; ctx.shadowBlur = 14; }
+  ctx.beginPath(); ctx.arc(-8, -222, 5, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+  drawArm(b, 'jab', true);
+  ctx.restore();
+}
+
+function drawHUD() {
+  ctx.textBaseline = 'top';
+  bots.forEach((b, i) => {
+    const x = i ? W - 30 - 300 : 30, y = 24;
+    ctx.fillStyle = '#0c0b1d'; rr(x, y + 22, 300, 20, 6); ctx.fill();
+    const w = 296 * b.hp / 100;
+    ctx.fillStyle = b.hp > 30 ? b.body : '#ff8a5c';
+    if (i) rr(x + 2 + 296 - w, y + 24, w, 16, 5); else rr(x + 2, y + 24, w, 16, 5);
+    ctx.fill();
+    ctx.font = '18px Bungee, Impact, sans-serif'; ctx.fillStyle = b.glow;
+    ctx.textAlign = i ? 'right' : 'left'; ctx.fillText(b.name, i ? x + 300 : x, y);
+    ctx.font = '600 13px "Chakra Petch", sans-serif'; ctx.fillStyle = '#9893c9';
+    ctx.textAlign = i ? 'left' : 'right';
+    ctx.fillText(`${Math.round(b.hp)}%`, i ? x : x + 300, y + 3);
+    ctx.textAlign = i ? 'right' : 'left';
+    // power bar: same width as the battery bar, one segment per punch landed
+    const segW = (300 - 4 * 4) / NEED;
+    for (let p = 0; p < NEED; p++) {
+      const px = i ? x + 300 - segW - p * (segW + 4) : x + p * (segW + 4);
+      ctx.fillStyle = p < b.charge ? (ready(b) ? '#ffe56b' : b.glow) : '#221f45';
+      rr(px, y + 48, segW, 10, 3); ctx.fill();
+    }
+    const label = ready(b) ? (b.charging ? 'CHARGING!' : 'POWER READY! HOLD TO CHARGE') : `PUNCHES ${b.charge}/${NEED}`;
+    ctx.font = ready(b) ? '13px Bungee, Impact, sans-serif' : '600 13px "Chakra Petch", sans-serif';
+    ctx.fillStyle = ready(b) ? `rgba(255,229,107,${0.6 + 0.4 * Math.sin(performance.now() / 150)})` : '#9893c9';
+    ctx.fillText(label, i ? x + 300 : x, y + 63);
+  });
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (state === 'count') {
+    const n = Math.ceil(countdown);
+    ctx.font = '86px Bungee, Impact, sans-serif'; ctx.fillStyle = '#ffe56b';
+    ctx.fillText(n > 0 ? n : 'BRAWL!', W / 2, 210);
+  }
+  if (state === 'ko') {
+    ctx.fillStyle = 'rgba(12,11,29,0.55)'; ctx.fillRect(0, 150, W, 120);
+    ctx.font = '52px Bungee, Impact, sans-serif'; ctx.fillStyle = '#ffe56b';
+    ctx.fillText('POWERED DOWN!', W / 2, 192);
+    ctx.font = '600 20px "Chakra Petch", sans-serif'; ctx.fillStyle = '#e9e7ff';
+    ctx.fillText(`${winner.name} WINS  ·  press Enter or tap for a rematch`, W / 2, 240);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(50, now - last); last = now;
+  update(dt);
+  drawArena(now);
+  bots.forEach(b => drawBot(b, now));
+  particles.forEach(p => { ctx.globalAlpha = Math.min(1, p.life / 300); ctx.fillStyle = p.c; ctx.fillRect(p.x - 3, p.y - 3, 6, 6); });
+  ctx.globalAlpha = 1;
+  if (flash) { ctx.fillStyle = `rgba(255,229,107,${flash * 0.18})`; ctx.fillRect(0, 0, W, H); }
+  drawHUD();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+
+</body></html>

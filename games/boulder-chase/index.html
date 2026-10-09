@@ -1,0 +1,438 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Boulder Chase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Layout: one full-screen canvas stage, HUD on top, touch buttons below on phones. Single dusk-street look. */
+:root {
+  --sky: #2b2d5c;
+  --ink: #12121c;
+  --paper: #fff6e8;
+  --glass: #5fd1c4;
+  --warn: #ff6b5b;
+  --gold: #ffcb47;
+  --display: "Bungee", "Impact", system-ui, sans-serif;
+  --body: "Nunito", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--ink); color: var(--paper);
+  font-family: var(--body);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-inline: 16px; box-sizing: border-box; overflow: hidden;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation;
+}
+.wrap { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 10px; }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(20px, 4vw, 30px); margin: 0; letter-spacing: .02em; color: var(--glass); }
+.hint { font-size: 13px; opacity: .75; }
+.stage { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 10px; overflow: hidden; background: var(--sky); }
+canvas { display: block; width: 100%; height: 100%; }
+.pad { display: none; gap: 10px; }
+.pad button {
+  flex: 1; font-family: var(--display); font-size: 18px; padding: 16px 0;
+  border: 0; border-radius: 10px; background: #26263a; color: var(--paper);
+}
+.pad button:active { background: var(--glass); color: var(--ink); }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+@media (pointer: coarse) { .pad { display: flex; } .hint { display: none; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Boulder Chase</h1>
+    <span class="hint">Space / ↑ jump · ↓ slide · P pause</span>
+  </div>
+  <div class="stage"><canvas id="c" width="960" height="540"></canvas></div>
+  <div class="pad">
+    <button id="bJump" type="button">JUMP</button>
+    <button id="bSlide" type="button">SLIDE</button>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const W = 960, H = 540, GROUND = 440;
+
+let best = 0;
+try { best = +localStorage.getItem('bottleChaseBest') || 0; } catch (e) {}
+
+const S = {};
+function reset() {
+  Object.assign(S, {
+    state: 'title', t: 0, speed: 6, dist: 0,
+    hits: 0, stumble: 0, inv: 0,
+    p: { x: 330, y: GROUND, vy: 0, slide: 0, onGround: true },
+    bottleX: 40, obs: [], spawn: 60, parts: [], scroll: 0, coins: [], coinCount: 0
+  });
+}
+reset();
+
+/* ---------- input ---------- */
+function jump() {
+  if (S.state !== 'play') { start(); return; }
+  const p = S.p;
+  if (p.onGround) { p.vy = -17; p.onGround = false; p.slide = 0; }
+}
+function slide() {
+  if (S.state !== 'play') return;
+  const p = S.p;
+  if (p.onGround) p.slide = 36; else p.vy = Math.max(p.vy, 14);
+}
+function start() {
+  if (S.state === 'play') return;
+  if (S.state === 'over' || S.state === 'title') reset();
+  S.state = 'play';
+}
+addEventListener('keydown', e => {
+  if (['Space','ArrowUp','KeyW'].includes(e.code)) { e.preventDefault(); jump(); }
+  if (['ArrowDown','KeyS'].includes(e.code)) { e.preventDefault(); slide(); }
+  if (e.code === 'KeyP' && (S.state === 'play' || S.state === 'pause')) S.state = S.state === 'play' ? 'pause' : 'play';
+});
+document.getElementById('bJump').addEventListener('pointerdown', e => { e.preventDefault(); jump(); });
+document.getElementById('bSlide').addEventListener('pointerdown', e => { e.preventDefault(); slide(); });
+let ty = null;
+cv.addEventListener('pointerdown', e => { ty = e.clientY; });
+cv.addEventListener('pointerup', e => {
+  if (ty !== null && e.clientY - ty > 30) slide(); else jump();
+  ty = null;
+});
+
+/* ---------- obstacles ---------- */
+const TYPES = ['cone', 'trash', 'bird', 'puddle', 'bench'];
+function spawnObstacle() {
+  const pool = S.dist < 300 ? ['cone','trash'] : TYPES;
+  const type = pool[Math.floor(Math.random() * pool.length)];
+  const o = { type, x: W + 40 };
+  if (type === 'cone')  { o.w = 34; o.h = 50; o.y = GROUND - 50; }
+  if (type === 'trash') { o.w = 48; o.h = 64; o.y = GROUND - 64; }
+  if (type === 'bench') { o.w = 90; o.h = 44; o.y = GROUND - 44; }
+  if (type === 'puddle'){ o.w = 80; o.h = 10; o.y = GROUND - 8; o.slip = true; }
+  if (type === 'bird')  { o.w = 52; o.h = 30; o.y = GROUND - 112; o.flap = 0; }
+  S.obs.push(o);
+  if (Math.random() < .55) {
+    const cy = type === 'bird' ? GROUND - 40 : GROUND - 150;
+    for (let i = 0; i < 4; i++) S.coins.push({ x: W + 40 + i * 34 + (type === 'bird' ? 0 : -20), y: cy, got: false });
+  }
+}
+
+function playerBox() {
+  const p = S.p;
+  return p.slide > 0
+    ? { x: p.x - 30, y: p.y - 40, w: 66, h: 40 }
+    : { x: p.x - 18, y: p.y - 108, w: 36, h: 106 };
+}
+function hit(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+
+function burst(x, y, col, n = 10) {
+  for (let i = 0; i < n; i++) S.parts.push({ x, y, vx: (Math.random() - .5) * 8, vy: -Math.random() * 7, life: 40, col });
+}
+
+/* ---------- update ---------- */
+function update() {
+  S.t++;
+  if (S.state !== 'play') return;
+  const p = S.p;
+  S.speed = Math.min(15, 6 + S.dist / 260);
+  const sp = S.stumble > 0 ? S.speed * .45 : S.speed;
+  S.dist += sp / 10;
+  S.scroll += sp;
+
+  // physics
+  p.vy += 0.9; p.y += p.vy;
+  if (p.y >= GROUND) { p.y = GROUND; p.vy = 0; p.onGround = true; } else p.onGround = false;
+  if (p.slide > 0) p.slide--;
+  if (S.stumble > 0) S.stumble--;
+  if (S.inv > 0) S.inv--;
+
+  // bottle chase: creeps back slowly when running clean, lunges when stumbling
+  const target = 40 + S.hits * 45;
+  if (S.stumble > 0) S.bottleX += 1.2;
+  else S.bottleX += (target - S.bottleX) * 0.02;
+  if (S.bottleX + 120 >= p.x - 20) { S.state = 'over'; burst(p.x, p.y - 60, '#5fd1c4', 30); saveBest(); }
+
+  // spawning
+  if (--S.spawn <= 0) {
+    spawnObstacle();
+    S.spawn = Math.max(38, 95 - S.dist / 25) + Math.random() * 50;
+  }
+  const pb = playerBox();
+  for (const o of S.obs) {
+    o.x -= sp + (o.type === 'bird' ? 2 : 0);
+    if (o.type === 'bird') o.flap++;
+    if (!o.done && S.inv === 0 && hit(pb, o)) {
+      o.done = true;
+      S.hits++; S.stumble = 50; S.inv = 80;
+      burst(p.x, p.y - 50, '#ff6b5b', 14);
+    }
+  }
+  S.obs = S.obs.filter(o => o.x > -120);
+  for (const c of S.coins) {
+    c.x -= sp;
+    if (!c.got && Math.abs(c.x - p.x) < 28 && Math.abs(c.y - (p.y - 55)) < 55) {
+      c.got = true; S.coinCount++; burst(c.x, c.y, '#ffcb47', 5);
+      // coins buy back ground on the bottle
+      if (S.coinCount % 10 === 0 && S.hits > 0) S.hits--;
+    }
+  }
+  S.coins = S.coins.filter(c => c.x > -40 && !c.got);
+  for (const q of S.parts) { q.x += q.vx; q.y += q.vy; q.vy += .4; q.life--; }
+  S.parts = S.parts.filter(q => q.life > 0);
+}
+function saveBest() {
+  const sc = Math.floor(S.dist);
+  if (sc > best) { best = sc; try { localStorage.setItem('bottleChaseBest', best); } catch (e) {} }
+}
+
+/* ---------- drawing ---------- */
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+
+function drawBg() {
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND);
+  g.addColorStop(0, '#2b2d5c'); g.addColorStop(1, '#e8826a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, GROUND);
+  // sun
+  ctx.fillStyle = '#ffcb47'; ctx.beginPath(); ctx.arc(760, 300, 70, 0, 7); ctx.fill();
+  // far buildings
+  const far = S.scroll * .2;
+  ctx.fillStyle = '#3c3566';
+  for (let i = -1; i < 12; i++) {
+    const x = i * 110 - (far % 110), h = 120 + ((i + Math.floor(far / 110)) * 53 % 90);
+    ctx.fillRect(x, GROUND - h - 40, 90, h + 40);
+  }
+  // near buildings with windows
+  const near = S.scroll * .5;
+  for (let i = -1; i < 9; i++) {
+    const k = i + Math.floor(near / 160);
+    const x = i * 160 - (near % 160), h = 170 + (k * 37 % 110);
+    ctx.fillStyle = '#26243f'; ctx.fillRect(x, GROUND - h, 130, h);
+    ctx.fillStyle = '#ffcb4799';
+    for (let wy = GROUND - h + 18; wy < GROUND - 30; wy += 32)
+      for (let wx = x + 14; wx < x + 120; wx += 28)
+        if ((wx * 7 + wy * 3 + k) % 5 < 2) ctx.fillRect(wx, wy, 14, 16);
+  }
+  // sidewalk + road
+  ctx.fillStyle = '#5a5870'; ctx.fillRect(0, GROUND, W, 16);
+  ctx.fillStyle = '#2e2d3d'; ctx.fillRect(0, GROUND + 16, W, H - GROUND);
+  ctx.fillStyle = '#ffcb47';
+  const off = S.scroll % 80;
+  for (let x = -off; x < W; x += 80) ctx.fillRect(x, GROUND + 56, 44, 6);
+  ctx.fillStyle = '#6e6c84';
+  const so = S.scroll % 60;
+  for (let x = -so; x < W; x += 60) ctx.fillRect(x, GROUND, 2, 16);
+}
+
+function drawObstacle(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  if (o.type === 'cone') {
+    ctx.fillStyle = '#ff7a2e';
+    ctx.beginPath(); ctx.moveTo(17, 0); ctx.lineTo(32, 46); ctx.lineTo(2, 46); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(9, 20, 16, 7);
+    ctx.fillStyle = '#c45a1f'; ctx.fillRect(-2, 44, 38, 6);
+  } else if (o.type === 'trash') {
+    ctx.fillStyle = '#4d7a63'; rr(2, 8, 44, 56, 4); ctx.fill();
+    ctx.fillStyle = '#5f9478'; rr(-2, 0, 52, 12, 4); ctx.fill();
+    ctx.strokeStyle = '#3a5e4c'; ctx.lineWidth = 3;
+    for (let i = 12; i < 44; i += 11) { ctx.beginPath(); ctx.moveTo(i, 18); ctx.lineTo(i, 58); ctx.stroke(); }
+  } else if (o.type === 'bench') {
+    ctx.fillStyle = '#8a5a3b'; ctx.fillRect(0, 10, 90, 10); ctx.fillRect(0, 0, 90, 6);
+    ctx.fillStyle = '#333'; ctx.fillRect(8, 20, 6, 24); ctx.fillRect(76, 20, 6, 24);
+  } else if (o.type === 'puddle') {
+    ctx.fillStyle = '#5fd1c4aa'; ctx.beginPath(); ctx.ellipse(40, 5, 42, 7, 0, 0, 7); ctx.fill();
+  } else if (o.type === 'bird') {
+    const f = Math.sin(o.flap * .35) * 12;
+    ctx.fillStyle = '#7d7f99';
+    ctx.beginPath(); ctx.ellipse(26, 16, 20, 11, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(18, 12); ctx.lineTo(30, -2 + f); ctx.lineTo(36, 12); ctx.fill();
+    ctx.beginPath(); ctx.arc(8, 12, 8, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffcb47'; ctx.beginPath(); ctx.moveTo(1, 12); ctx.lineTo(-8, 14); ctx.lineTo(1, 16); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(6, 10, 2, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// The runner: black hair, black hoodie, black pants, black eyes, normal skin tone
+function drawPlayer() {
+  const p = S.p;
+  if (S.inv > 0 && Math.floor(S.inv / 5) % 2 === 0 && S.state === 'play') return;
+  const SKIN = '#f1c6a0', HOOD = '#1b1b22', HOOD2 = '#2a2a35', PANTS = '#141418', HAIR = '#0b0b0e';
+  ctx.save(); ctx.translate(p.x, p.y);
+  ctx.lineCap = 'round';
+
+  if (p.slide > 0) {
+    // sliding pose: low, legs forward
+    ctx.strokeStyle = PANTS; ctx.lineWidth = 13;
+    ctx.beginPath(); ctx.moveTo(-6, -14); ctx.lineTo(30, -8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-6, -14); ctx.lineTo(24, -16); ctx.stroke();
+    ctx.fillStyle = '#eee'; rr(28, -14, 14, 9, 3); ctx.fill();
+    ctx.fillStyle = HOOD; rr(-34, -36, 40, 28, 12); ctx.fill();
+    ctx.save(); ctx.translate(-30, -46); drawHead(SKIN, HAIR, HOOD); ctx.restore();
+    ctx.restore(); return;
+  }
+
+  const run = p.onGround && S.state === 'play';
+  const ph = S.t * (S.stumble > 0 ? .2 : .35);
+  const legA = run ? Math.sin(ph) * .8 : (p.onGround ? 0 : .5);
+  const legB = run ? -Math.sin(ph) * .8 : (p.onGround ? 0 : -.7);
+  const bob = run ? Math.abs(Math.sin(ph)) * -4 : 0;
+  ctx.translate(0, bob);
+
+  // legs
+  function leg(a, back) {
+    ctx.save(); ctx.translate(0, -50); ctx.rotate(a);
+    ctx.strokeStyle = back ? '#0c0c10' : PANTS; ctx.lineWidth = 13;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 24); ctx.stroke();
+    ctx.translate(0, 24); ctx.rotate(Math.max(0, -a) * 1.1 + .1);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 22); ctx.stroke();
+    ctx.fillStyle = back ? '#cfcfcf' : '#f2f2f2'; rr(-6, 20, 18, 9, 4); ctx.fill();
+    ctx.restore();
+  }
+  leg(legB, true);
+  // back arm
+  arm(-legA, true);
+  // hoodie body
+  ctx.fillStyle = HOOD; rr(-17, -96, 34, 50, 12); ctx.fill();
+  ctx.fillStyle = HOOD2; rr(-11, -68, 22, 12, 5); ctx.fill(); // pocket
+  ctx.strokeStyle = '#d9d9d9'; ctx.lineWidth = 2; // drawstrings
+  ctx.beginPath(); ctx.moveTo(-4, -92); ctx.lineTo(-5, -78); ctx.moveTo(4, -92); ctx.lineTo(5, -80); ctx.stroke();
+  leg(legA, false);
+  arm(legB, false);
+  // head
+  ctx.save(); ctx.translate(2, -104); drawHead(SKIN, HAIR, HOOD); ctx.restore();
+  ctx.restore();
+
+  function arm(a, back) {
+    ctx.save(); ctx.translate(0, -88); ctx.rotate(a * .9);
+    ctx.strokeStyle = back ? '#121218' : HOOD; ctx.lineWidth = 11;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 20); ctx.stroke();
+    ctx.translate(0, 20); ctx.rotate(-1.1);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 16); ctx.stroke();
+    ctx.fillStyle = SKIN; ctx.beginPath(); ctx.arc(0, 19, 5, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+}
+function drawHead(SKIN, HAIR, HOOD) {
+  // hood behind head
+  ctx.fillStyle = HOOD; ctx.beginPath(); ctx.arc(-6, 2, 20, 0, 7); ctx.fill();
+  // face
+  ctx.fillStyle = SKIN; ctx.beginPath(); ctx.ellipse(2, 0, 17, 19, 0, 0, 7); ctx.fill();
+  // ear
+  ctx.beginPath(); ctx.ellipse(-12, 2, 4, 6, 0, 0, 7); ctx.fill();
+  // messy black hair
+  ctx.fillStyle = HAIR;
+  ctx.beginPath();
+  ctx.moveTo(-17, 0);
+  ctx.quadraticCurveTo(-20, -24, 4, -22);
+  ctx.lineTo(10, -28); ctx.lineTo(13, -20); ctx.lineTo(22, -22);
+  ctx.quadraticCurveTo(22, -10, 18, -8);
+  ctx.lineTo(12, -12); ctx.lineTo(8, -6); ctx.lineTo(2, -12); ctx.lineTo(-6, -6);
+  ctx.quadraticCurveTo(-12, -4, -12, 4);
+  ctx.closePath(); ctx.fill();
+  // black eyes
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.ellipse(8, -1, 3.2, 4.2, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(16, -1, 3, 4, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(9, -2.5, 1, 0, 7); ctx.arc(17, -2.5, 1, 0, 7); ctx.fill();
+  // mouth
+  ctx.strokeStyle = '#7a3e30'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (S.stumble > 0 || S.state === 'over') ctx.arc(13, 10, 3, 0, 7);
+  else { ctx.moveTo(9, 9); ctx.quadraticCurveTo(13, 12, 17, 8); }
+  ctx.stroke();
+}
+
+// The chasing giant boulder
+function drawBottle() {
+  const R = 125, cx = S.bottleX, shake = Math.sin(S.t * .9) * 2;
+  const cy = GROUND - R + Math.abs(shake);
+  // shadow
+  ctx.fillStyle = '#0007'; ctx.beginPath(); ctx.ellipse(cx, GROUND + 6, R * .95, 12, 0, 0, 7); ctx.fill();
+  // dust kicked up in front
+  ctx.fillStyle = '#c9a98666';
+  for (let i = 0; i < 7; i++) {
+    const k = (S.t * 3 + i * 17) % 60;
+    ctx.beginPath(); ctx.arc(cx + R * .6 - k * .6, GROUND - 6 - k * .5, 6 + k * .25, 0, 7); ctx.fill();
+  }
+  ctx.save(); ctx.translate(cx, cy);
+  // lumpy rock outline
+  const g = ctx.createRadialGradient(-R * .35, -R * .4, R * .1, 0, 0, R * 1.05);
+  g.addColorStop(0, '#a49a8e'); g.addColorStop(.6, '#77706a'); g.addColorStop(1, '#4b4642');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  for (let i = 0; i <= 24; i++) {
+    const a = i / 24 * Math.PI * 2;
+    const r = R * (0.94 + 0.06 * Math.sin(i * 2.7) * Math.cos(i * 1.3));
+    i ? ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#3a3532'; ctx.lineWidth = 5; ctx.stroke();
+  // rolling cracks and craters (rotate with distance)
+  ctx.save();
+  ctx.beginPath(); ctx.arc(0, 0, R * .9, 0, 7); ctx.clip();
+  ctx.rotate(S.scroll / R);
+  const spots = [[.45, .2, 22], [-.3, .5, 16], [-.55, -.25, 26], [.1, -.6, 14], [.6, -.45, 12], [-.1, .1, 10], [.25, .7, 18]];
+  for (const [sx, sy, sr] of spots) {
+    ctx.fillStyle = '#5a544f'; ctx.beginPath(); ctx.arc(sx * R, sy * R, sr, 0, 7); ctx.fill();
+    ctx.fillStyle = '#8d857c'; ctx.beginPath(); ctx.arc(sx * R - 3, sy * R - 3, sr * .6, 0, 7); ctx.fill();
+  }
+  ctx.strokeStyle = '#3f3a36'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-R * .8, R * .1); ctx.lineTo(-R * .4, R * .05); ctx.lineTo(-R * .2, R * .3); ctx.lineTo(R * .1, R * .35);
+  ctx.moveTo(R * .3, -R * .8); ctx.lineTo(R * .2, -R * .4); ctx.lineTo(R * .45, -R * .2);
+  ctx.stroke();
+  // moss patch
+  ctx.fillStyle = '#5f7f4a'; ctx.beginPath(); ctx.ellipse(-R * .2, -R * .75, 30, 12, .4, 0, 7); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawHUD() {
+  ctx.textAlign = 'left'; ctx.fillStyle = '#fff6e8';
+  ctx.font = '26px Bungee, Impact, sans-serif';
+  ctx.fillText(Math.floor(S.dist) + ' m', 24, 42);
+  ctx.font = '800 16px Nunito, sans-serif';
+  ctx.fillText('BEST ' + best + ' m', 24, 66);
+  ctx.fillStyle = '#ffcb47'; ctx.beginPath(); ctx.arc(32, 88, 8, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff6e8'; ctx.fillText('× ' + S.coinCount, 46, 94);
+  // danger meter: how close the bottle is
+  const gap = Math.max(0, S.p.x - 20 - (S.bottleX + 120));
+  const danger = 1 - Math.min(1, gap / 170);
+  ctx.textAlign = 'right'; ctx.fillText('BOULDER', W - 24, 36);
+  ctx.fillStyle = '#ffffff22'; rr(W - 224, 46, 200, 14, 7); ctx.fill();
+  ctx.fillStyle = danger > .66 ? '#ff6b5b' : danger > .33 ? '#ffcb47' : '#5fd1c4';
+  rr(W - 224, 46, Math.max(14, 200 * danger), 14, 7); ctx.fill();
+}
+
+function banner(title, lines) {
+  ctx.fillStyle = '#12121ccc'; rr(W / 2 - 250, 120, 500, 210, 16); ctx.fill();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#5fd1c4';
+  ctx.font = '40px Bungee, Impact, sans-serif'; ctx.fillText(title, W / 2, 180);
+  ctx.fillStyle = '#fff6e8'; ctx.font = '700 19px Nunito, sans-serif';
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, 222 + i * 28));
+}
+
+function draw() {
+  drawBg();
+  for (const c of S.coins) {
+    ctx.fillStyle = '#ffcb47'; ctx.beginPath(); ctx.ellipse(c.x, c.y, 9 * Math.abs(Math.cos(S.t * .08 + c.x * .01)) + 2, 10, 0, 0, 7); ctx.fill();
+  }
+  S.obs.forEach(drawObstacle);
+  if (S.state !== 'over') drawPlayer();
+  drawBottle();
+  for (const q of S.parts) { ctx.globalAlpha = q.life / 40; ctx.fillStyle = q.col; ctx.fillRect(q.x, q.y, 5, 5); }
+  ctx.globalAlpha = 1;
+  drawHUD();
+  if (S.state === 'title') banner('BOULDER CHASE', ['A giant boulder is rolling after you!', 'Jump cones and cans, slide under birds.', '10 coins push the boulder back.', 'Press Space or tap to run']);
+  if (S.state === 'pause') banner('PAUSED', ['Press P to keep running']);
+  if (S.state === 'over') banner('SQUASHED!', ['The boulder flattened you at ' + Math.floor(S.dist) + ' m', 'Best: ' + best + ' m · Coins: ' + S.coinCount, '', 'Press Space or tap to try again']);
+}
+
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+document.fonts?.ready.then(() => {}).catch(() => {});
+loop();
+</script>
+
+</body></html>

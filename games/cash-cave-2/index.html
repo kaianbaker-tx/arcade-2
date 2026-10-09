@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cash Cave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --panel:rgba(20,32,24,.78);--panel-edge:#6fbf73;--text:#f4f7ec;--muted:#b9c9b2;
+  --bill:#2f8f46;--bill-dark:#1d5e2d;--gold:#ffd54a;--sky:#8ecae6;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sky:#5a7fa0;}}
+:root[data-theme="dark"]{--sky:#5a7fa0;}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(--text);
+  font-family:"Silkscreen","Courier New",monospace;user-select:none;-webkit-user-select:none;touch-action:none}
+#game{position:fixed;inset:0}
+canvas{display:block}
+#cross{position:fixed;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none}
+#cross:before,#cross:after{content:"";position:absolute;background:#fff;mix-blend-mode:difference}
+#cross:before{left:8px;top:0;width:2px;height:18px}
+#cross:after{top:8px;left:0;height:2px;width:18px}
+#wallet{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:12px;
+  background:var(--bill);border:3px solid var(--bill-dark);outline:2px dashed #9ad7a3;outline-offset:-8px;
+  padding:10px 18px;min-width:150px;box-shadow:4px 4px 0 rgba(0,0,0,.35)}
+#wallet .amt{font-size:28px;font-weight:700;color:#fff;text-shadow:2px 2px 0 var(--bill-dark)}
+#wallet .left{font-size:11px;color:#dff5d8;margin-top:2px}
+#wallet.bump{animation:bump .25s}
+@keyframes bump{50%{transform:scale(1.08)}}
+#hotbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  display:flex;gap:6px;background:var(--panel);padding:6px;border:2px solid #000}
+.slot{width:46px;height:46px;border:3px solid #555;background-size:cover;image-rendering:pixelated;position:relative;cursor:pointer}
+.slot.on{border-color:#fff}
+.slot span{position:absolute;right:2px;bottom:0;font-size:10px;text-shadow:1px 1px 0 #000}
+.pop{position:fixed;left:50%;top:44%;transform:translateX(-50%);font-size:26px;font-weight:700;color:var(--gold);
+  text-shadow:2px 2px 0 #000;pointer-events:none;animation:rise 1s forwards}
+@keyframes rise{to{top:32%;opacity:0}}
+#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,20,14,.72);padding:16px}
+#start .card{background:var(--panel);border:3px solid var(--panel-edge);padding:22px 24px;max-width:420px;text-align:left}
+#start h1{margin:0 0 6px;font-size:34px;color:var(--gold);text-shadow:3px 3px 0 var(--bill-dark)}
+#start p{margin:8px 0;line-height:1.5;color:var(--muted);font-size:13px}
+#start b{color:var(--text)}
+#play{margin-top:12px;font:inherit;font-size:18px;background:var(--bill);color:#fff;border:3px solid var(--bill-dark);
+  padding:10px 20px;cursor:pointer;box-shadow:3px 3px 0 #000}
+#play:focus-visible,.slot:focus-visible{outline:3px solid var(--gold)}
+#touch{display:none}
+.tb{position:fixed;width:58px;height:58px;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.5);color:#fff;
+  font:inherit;font-size:13px;display:flex;align-items:center;justify-content:center}
+.tb:active{background:rgba(255,255,255,.3)}
+@media (prefers-reduced-motion:reduce){.pop,#wallet.bump{animation:none}}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="cross"></div>
+<div id="wallet"><div class="amt">$0</div><div class="left">Money blocks left: 0</div></div>
+<div id="hotbar"></div>
+<div id="touch">
+  <button class="tb" data-k="KeyW" style="left:84px;bottom:150px">▲</button>
+  <button class="tb" data-k="KeyA" style="left:20px;bottom:88px">◀</button>
+  <button class="tb" data-k="KeyS" style="left:84px;bottom:26px">▼</button>
+  <button class="tb" data-k="KeyD" style="left:148px;bottom:88px">▶</button>
+  <button class="tb" id="tJump" style="right:20px;bottom:26px">Jump</button>
+  <button class="tb" id="tMine" style="right:88px;bottom:96px">Mine</button>
+  <button class="tb" id="tPlace" style="right:20px;bottom:164px">Build</button>
+</div>
+<div id="start"><div class="card">
+  <h1>Cash Cave</h1>
+  <p>Dig into the ground and hunt for <b>money blocks</b>. Every stone block has a <b>10% chance</b> to be money instead!</p>
+  <p id="helpDesk"><b>WASD</b> move · <b>Space</b> jump · <b>Mouse</b> look<br><b>Left click</b> mine · <b>Right click</b> build · <b>1–4</b> pick block</p>
+  <p id="helpTouch" style="display:none">Drag the screen to look. Use the arrows to walk, and the buttons to jump, mine and build.</p>
+  <button id="play">Start digging</button>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const W=32,D=32,H=26;
+const AIR=0,GRASS=1,DIRT=2,STONE=3,MONEY=4,BEDROCK=5,WOOD=6,LEAF=7;
+const world=new Uint8Array(W*H*D);
+const I=(x,y,z)=>x+z*W+y*W*D;
+const inB=(x,y,z)=>x>=0&&z>=0&&y>=0&&x<W&&z<D&&y<H;
+function getSolid(x,y,z){ if(x<0||z<0||x>=W||z>=D||y<0) return BEDROCK; if(y>=H) return AIR; return world[I(x,y,z)]; }
+function getR(x,y,z){ return inB(x,y,z)?world[I(x,y,z)]:AIR; }
+function setB(x,y,z,v){ if(inB(x,y,z)) world[I(x,y,z)]=v; }
+
+// ---- world generation (10% money chance in stone) ----
+let moneyLeft=0;
+const heights=[];
+for(let x=0;x<W;x++)for(let z=0;z<D;z++){
+  const h=Math.floor(11+2*Math.sin(x/5)+2*Math.cos(z/6)+Math.sin((x+z)/7));
+  heights[x+z*W]=h;
+  for(let y=0;y<=h;y++){
+    let t;
+    if(y===0) t=BEDROCK;
+    else if(y===h) t=GRASS;
+    else if(y>=h-2) t=DIRT;
+    else t=Math.random()<0.10?MONEY:STONE;
+    if(t===MONEY) moneyLeft++;
+    setB(x,y,z,t);
+  }
+}
+for(let n=0;n<7;n++){
+  const tx=3+Math.floor(Math.random()*(W-6)),tz=3+Math.floor(Math.random()*(D-6));
+  if(Math.abs(tx-W/2)<3&&Math.abs(tz-D/2)<3) continue;
+  const h=heights[tx+tz*W];
+  for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=3;dy<=4;dy++)
+    if(Math.abs(dx)+Math.abs(dz)<4) setB(tx+dx,h+dy,tz+dz,LEAF);
+  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++) setB(tx+dx,h+5,tz+dz,LEAF);
+  for(let dy=1;dy<=4;dy++) setB(tx,h+dy,tz,WOOD);
+}
+
+// ---- pixel textures ----
+function tex(draw){
+  const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');draw(g);
+  const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;t.userData={url:c.toDataURL()};return t;
+}
+function noise(g,base,vars,px=4){g.fillStyle=base;g.fillRect(0,0,32,32);
+  for(let x=0;x<32;x+=px)for(let y=0;y<32;y+=px){if(Math.random()<.45){g.fillStyle=vars[Math.floor(Math.random()*vars.length)];g.fillRect(x,y,px,px);}}}
+const T={
+  grassTop:tex(g=>noise(g,'#5aa43a',['#4c9230','#67b545','#58a038'])),
+  grassSide:tex(g=>{noise(g,'#8a5a36',['#7a4e2e','#9b6840']);g.fillStyle='#5aa43a';g.fillRect(0,0,32,8);
+    for(let x=0;x<32;x+=4) if(Math.random()<.6){g.fillRect(x,8,4,4);}}),
+  dirt:tex(g=>noise(g,'#8a5a36',['#7a4e2e','#9b6840','#6e4428'])),
+  stone:tex(g=>noise(g,'#8b8b8b',['#7a7a7a','#9a9a9a','#707070'])),
+  money:tex(g=>{noise(g,'#8b8b8b',['#7a7a7a','#9a9a9a']);
+    g.fillStyle='#1d5e2d';g.fillRect(2,7,28,18);g.fillStyle='#3ea85a';g.fillRect(4,9,24,14);
+    g.fillStyle='#9fe0ad';g.font='bold 15px monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('$',16,17);
+    g.fillStyle='#ffd54a';g.fillRect(3,2,4,4);g.fillRect(25,26,4,4);}),
+  bedrock:tex(g=>noise(g,'#333',['#1e1e1e','#4a4a4a','#262626'])),
+  wood:tex(g=>{noise(g,'#6b4a2b',['#5a3d22','#7d5833']);g.fillStyle='#4a321c';for(let x=4;x<32;x+=10)g.fillRect(x,0,2,32);}),
+  leaf:tex(g=>noise(g,'#3d8a2c',['#2f7322','#4ea03a','#2a6420'])),
+};
+const L=m=>new THREE.MeshLambertMaterial({map:m});
+const MAT={
+  [GRASS]:[L(T.grassSide),L(T.grassSide),L(T.grassTop),L(T.dirt),L(T.grassSide),L(T.grassSide)],
+  [DIRT]:L(T.dirt),[STONE]:L(T.stone),[MONEY]:L(T.money),[BEDROCK]:L(T.bedrock),[WOOD]:L(T.wood),[LEAF]:L(T.leaf)
+};
+
+// ---- scene ----
+const renderer=new THREE.WebGLRenderer({antialias:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+document.getElementById('game').appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const skyCol=getComputedStyle(document.documentElement).getPropertyValue('--sky').trim()||'#8ecae6';
+scene.background=new THREE.Color(skyCol);scene.fog=new THREE.Fog(skyCol,20,48);
+const camera=new THREE.PerspectiveCamera(75,1,0.05,200);camera.rotation.order='YXZ';
+scene.add(new THREE.AmbientLight(0xffffff,0.6));
+const sun=new THREE.DirectionalLight(0xffffff,0.6);sun.position.set(0.5,1,0.3);scene.add(sun);
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+
+const box=new THREE.BoxGeometry(1,1,1);
+let meshes=[];
+const tmp=new THREE.Matrix4();
+function exposed(x,y,z){return !getR(x+1,y,z)||!getR(x-1,y,z)||!getR(x,y+1,z)||!getR(x,y-1,z)||!getR(x,y,z+1)||!getR(x,y,z-1)
+  ||getR(x+1,y,z)===LEAF||getR(x-1,y,z)===LEAF||getR(x,y+1,z)===LEAF||getR(x,y,z+1)===LEAF||getR(x,y,z-1)===LEAF;}
+function rebuild(){
+  meshes.forEach(m=>scene.remove(m));meshes=[];
+  const lists={};
+  for(let y=0;y<H;y++)for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const b=world[I(x,y,z)];if(!b||!exposed(x,y,z))continue;(lists[b]=lists[b]||[]).push(x,y,z);
+  }
+  for(const k in lists){const a=lists[k],n=a.length/3;const m=new THREE.InstancedMesh(box,MAT[k],n);
+    for(let i=0;i<n;i++){tmp.makeTranslation(a[i*3]+.5,a[i*3+1]+.5,a[i*3+2]+.5);m.setMatrixAt(i,tmp);}
+    scene.add(m);meshes.push(m);}
+}
+rebuild();
+const hl=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.01,1.01,1.01)),new THREE.LineBasicMaterial({color:0x000000}));
+scene.add(hl);
+
+// ---- player ----
+const pos=new THREE.Vector3(W/2+.5,heights[W/2+(D/2)*W]+1.05,D/2+.5);
+let vy=0,onGround=false,yaw=0,pitch=0;
+const keys={};
+function collides(p){
+  const x0=Math.floor(p.x-.3),x1=Math.floor(p.x+.3),y0=Math.floor(p.y),y1=Math.floor(p.y+1.79),z0=Math.floor(p.z-.3),z1=Math.floor(p.z+.3);
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)for(let z=z0;z<=z1;z++){const b=getSolid(x,y,z);if(b&&b!==AIR)return true;}
+  return false;
+}
+function moveAxis(ax,a){pos[ax]+=a;if(collides(pos)){pos[ax]-=a;if(ax==='y'){if(a<0)onGround=true;vy=0;}}}
+
+// ---- raycast ----
+function raycast(){
+  const o=camera.position,d=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  let x=Math.floor(o.x),y=Math.floor(o.y),z=Math.floor(o.z);
+  const sx=Math.sign(d.x),sy=Math.sign(d.y),sz=Math.sign(d.z);
+  const tdx=sx?Math.abs(1/d.x):Infinity,tdy=sy?Math.abs(1/d.y):Infinity,tdz=sz?Math.abs(1/d.z):Infinity;
+  let tx=sx>0?(x+1-o.x)/d.x:sx<0?(o.x-x)/-d.x:Infinity;
+  let ty=sy>0?(y+1-o.y)/d.y:sy<0?(o.y-y)/-d.y:Infinity;
+  let tz=sz>0?(z+1-o.z)/d.z:sz<0?(o.z-z)/-d.z:Infinity;
+  let px=x,py=y,pz=z,t=0;
+  while(t<=6){
+    const b=getR(x,y,z);if(b)return{x,y,z,px,py,pz,b};
+    px=x;py=y;pz=z;
+    if(tx<ty&&tx<tz){x+=sx;t=tx;tx+=tdx}else if(ty<tz){y+=sy;t=ty;ty+=tdy}else{z+=sz;t=tz;tz+=tdz}
+  }
+  return null;
+}
+
+// ---- money + hotbar ----
+let cash=0;
+const wallet=document.getElementById('wallet');
+function updWallet(){wallet.querySelector('.amt').textContent='$'+cash.toLocaleString();
+  wallet.querySelector('.left').textContent='Money blocks left: '+moneyLeft;}
+updWallet();
+function pop(txt){const p=document.createElement('div');p.className='pop';p.textContent=txt;document.body.appendChild(p);setTimeout(()=>p.remove(),1000);}
+const hotTypes=[{b:GRASS,t:T.grassSide,n:'Grass'},{b:DIRT,t:T.dirt,n:'Dirt'},{b:STONE,t:T.stone,n:'Stone'},{b:WOOD,t:T.wood,n:'Wood'}];
+let sel=0;const hb=document.getElementById('hotbar');
+hotTypes.forEach((h,i)=>{const s=document.createElement('button');s.className='slot';s.setAttribute('aria-label',h.n);
+  s.style.backgroundImage=`url(${h.t.userData.url})`;s.innerHTML=`<span>${i+1}</span>`;s.onclick=()=>pick(i);hb.appendChild(s);});
+function pick(i){sel=i;[...hb.children].forEach((c,j)=>c.classList.toggle('on',j===i));}
+pick(0);
+
+function mine(){const h=raycast();if(!h||h.b===BEDROCK)return;
+  if(h.b===MONEY){const v=[5,10,20,50,100][Math.floor(Math.random()*5)];cash+=v;moneyLeft--;updWallet();pop('+$'+v);
+    wallet.classList.remove('bump');void wallet.offsetWidth;wallet.classList.add('bump');}
+  setB(h.x,h.y,h.z,AIR);rebuild();}
+function place(){const h=raycast();if(!h||!inB(h.px,h.py,h.pz))return;
+  setB(h.px,h.py,h.pz,hotTypes[sel].b);if(collides(pos)){setB(h.px,h.py,h.pz,AIR);return;}rebuild();}
+
+// ---- input ----
+const isTouch='ontouchstart' in window||navigator.maxTouchPoints>0;
+const canvas=renderer.domElement;let playing=false;
+document.getElementById('play').onclick=()=>{document.getElementById('start').style.display='none';playing=true;
+  if(isTouch)document.getElementById('touch').style.display='block';else canvas.requestPointerLock&&canvas.requestPointerLock();};
+if(isTouch){document.getElementById('helpDesk').style.display='none';document.getElementById('helpTouch').style.display='block';}
+canvas.addEventListener('click',()=>{if(playing&&!isTouch&&document.pointerLockElement!==canvas)canvas.requestPointerLock();});
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement!==canvas)return;
+  yaw-=e.movementX*.0025;pitch=Math.max(-1.55,Math.min(1.55,pitch-e.movementY*.0025));});
+document.addEventListener('mousedown',e=>{if(document.pointerLockElement!==canvas)return;if(e.button===0)mine();if(e.button===2)place();});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code>='Digit1'&&e.code<='Digit4')pick(+e.code.slice(5)-1);if(e.code==='Space')e.preventDefault();});
+addEventListener('keyup',e=>keys[e.code]=false);
+addEventListener('wheel',e=>pick((sel+(e.deltaY>0?1:3))%4));
+// touch
+let lookId=null,lx=0,ly=0;
+canvas.addEventListener('touchstart',e=>{const t=e.changedTouches[0];lookId=t.identifier;lx=t.clientX;ly=t.clientY;},{passive:true});
+canvas.addEventListener('touchmove',e=>{for(const t of e.changedTouches)if(t.identifier===lookId){
+  yaw-=(t.clientX-lx)*.006;pitch=Math.max(-1.55,Math.min(1.55,pitch-(t.clientY-ly)*.006));lx=t.clientX;ly=t.clientY;}},{passive:true});
+canvas.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===lookId)lookId=null;});
+document.querySelectorAll('.tb[data-k]').forEach(b=>{const k=b.dataset.k;
+  b.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true;});b.addEventListener('touchend',e=>{e.preventDefault();keys[k]=false;});});
+const tap=(id,fn)=>document.getElementById(id).addEventListener('touchstart',e=>{e.preventDefault();fn();});
+tap('tJump',()=>{keys.Space=true;setTimeout(()=>keys.Space=false,150);});tap('tMine',mine);tap('tPlace',place);
+
+// ---- loop ----
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(playing){
+    let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
+    let r=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
+    const len=Math.hypot(f,r)||1,sp=5*dt/len;
+    const mx=(-Math.sin(yaw)*f+Math.cos(yaw)*r)*sp,mz=(-Math.cos(yaw)*f-Math.sin(yaw)*r)*sp;
+    if(keys.Space&&onGround){vy=8;}
+    vy=Math.max(-15,vy-25*dt);onGround=false;
+    moveAxis('x',mx);moveAxis('z',mz);moveAxis('y',vy*dt);
+  }
+  camera.position.set(pos.x,pos.y+1.6,pos.z);camera.rotation.set(pitch,yaw,0);
+  const h=raycast();hl.visible=!!h;if(h)hl.position.set(h.x+.5,h.y+.5,h.z+.5);
+  renderer.render(scene,camera);requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

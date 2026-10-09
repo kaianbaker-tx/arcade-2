@@ -1,0 +1,280 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ham Squasher</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Fredoka:wght@400;600&display=swap">
+<style>
+/* Layout: one-screen squish arena on top, glove shop below; single dreamy-wave look in both themes */
+:root{
+  --sea:#2b2350; --sea2:#3d3170; --foam:#f6e9d4; --ham:#e3cfa8; --coin:#ffc94a; --ink:#1c1733; --mint:#7fe0c4; --muted:#b9afd8;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif; --body:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--sea);color:var(--foam);font-family:var(--body);margin:0}
+.wrap{max-width:560px;margin:0 auto;padding:12px 16px 28px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:800;font-size:2rem;margin:0;line-height:1;letter-spacing:.01em;color:var(--foam)}
+h1 span{color:var(--mint)}
+.bank{display:flex;align-items:center;gap:8px;background:var(--ink);border-radius:999px;padding:6px 14px 6px 8px;font-family:var(--display);font-weight:700;font-size:1.3rem;font-variant-numeric:tabular-nums}
+.bank i{width:22px;height:22px;border-radius:50%;background:var(--coin);box-shadow:inset 0 -3px 0 #d99a1c;display:inline-block}
+.arena{position:relative;border-radius:22px;overflow:hidden;background:var(--sea2);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+canvas{display:block;width:100%;height:auto;cursor:pointer}
+.stats{position:absolute;left:12px;bottom:10px;font-size:.85rem;color:var(--muted);pointer-events:none}
+.hint{position:absolute;right:12px;top:10px;font-size:.85rem;color:var(--muted);pointer-events:none}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--ink);color:var(--foam);border:2px solid transparent;border-radius:14px;padding:8px 6px;font-family:var(--body);cursor:pointer;min-width:0}
+.slot b{font-family:var(--display);font-size:1rem}
+.slot small{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.slot.on{border-color:var(--coin)}
+.slot.on small{color:var(--coin)}
+.slot:focus-visible{outline:3px solid var(--mint);outline-offset:2px}
+h2{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:4px 0 0}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.glove{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;background:var(--ink);color:var(--foam);border:2px solid transparent;border-radius:16px;padding:10px 12px;font-family:var(--body);font-size:.95rem;cursor:pointer}
+.glove:focus-visible{outline:3px solid var(--mint);outline-offset:2px}
+.glove .g{font-size:1.6rem;line-height:1}
+.glove b{font-family:var(--display);font-size:1.05rem}
+.glove small{color:var(--muted)}
+.glove .price{font-weight:600;color:var(--coin);font-variant-numeric:tabular-nums}
+.glove.on{border-color:var(--mint)}
+.glove.on .price{color:var(--mint)}
+.glove:disabled{opacity:.45;cursor:not-allowed}
+footer{font-size:.8rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+footer button{background:none;border:1px solid var(--muted);color:var(--muted);border-radius:999px;padding:3px 10px;font-family:var(--body);cursor:pointer}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Ham <span>Squasher</span></h1>
+    <div class="bank" aria-live="polite"><i></i><span id="coins">0</span></div>
+  </header>
+
+  <div class="slots" id="slots" role="group" aria-label="Save slots"></div>
+
+  <div class="arena">
+    <canvas id="c" width="560" height="420" aria-label="Ham. Tap or click him to squish him for coins."></canvas>
+    <div class="hint">Squish Ham!</div>
+    <div class="stats" id="stats">Squishes: 0</div>
+  </div>
+
+  <h2>Gloves</h2>
+  <div class="shop" id="shop"></div>
+
+  <footer>
+    <span>Ham loves being squished.</span>
+    <button id="reset" type="button">Clear this slot</button>
+  </footer>
+</div>
+
+<script>
+const GLOVES=[
+  {id:"hand", name:"Bare Hand", icon:"✋", power:1,  cost:0},
+  {id:"sock", name:"Sock Puppet", icon:"🧦", power:2, cost:10},
+  {id:"mitt", name:"Wool Mitten", icon:"🧤", power:3, cost:25},
+  {id:"foam", name:"Foam Finger", icon:"👆", power:5, cost:60},
+  {id:"box",  name:"Boxing Glove", icon:"🥊", power:8, cost:120},
+  {id:"crab", name:"Crab Claw", icon:"🦀", power:13, cost:250},
+  {id:"oven", name:"Oven Mitt", icon:"🔥", power:20, cost:500},
+  {id:"ice",  name:"Ice Glove", icon:"🧊", power:32, cost:1000},
+  {id:"jelly",name:"Jelly Glove", icon:"🫧", power:50, cost:2000},
+  {id:"zap",  name:"Thunder Glove", icon:"⚡", power:80, cost:4000},
+  {id:"wave", name:"Wave Glove", icon:"🌊", power:125, cost:8000},
+  {id:"cactus",name:"Cactus Glove", icon:"🌵", power:200, cost:16000},
+  {id:"gold", name:"Golden Glove", icon:"👑", power:400, cost:40000},
+  {id:"robot",name:"Robo Fist", icon:"🤖", power:800, cost:100000},
+  {id:"dino", name:"Dino Claw", icon:"🦖", power:1600, cost:250000},
+  {id:"rainbow",name:"Rainbow Glove", icon:"🌈", power:3500, cost:600000},
+  {id:"space",name:"Galaxy Glove", icon:"🌌", power:8000, cost:1500000},
+  {id:"ham",  name:"Ham's Own Glove", icon:"🍖", power:25000, cost:5000000}
+];
+let S={coins:0,squishes:0,owned:["hand"],equipped:"hand"};
+
+const fresh=()=>({coins:0,squishes:0,owned:["hand"],equipped:"hand"});
+let SLOTS=[fresh(),fresh(),fresh()], active=0;
+function save(){SLOTS[active]=S;try{localStorage.setItem("hamsquasher",JSON.stringify({active,SLOTS}))}catch(e){}}
+function load(){try{
+  const d=JSON.parse(localStorage.getItem("hamsquasher"));
+  if(d&&Array.isArray(d.SLOTS)){SLOTS=d.SLOTS.map(s=>Object.assign(fresh(),s));active=d.active||0}
+  else{const old=JSON.parse(localStorage.getItem("wavysquash"));if(old&&typeof old.coins==="number")SLOTS[0]=Object.assign(fresh(),old)}
+}catch(e){} S=SLOTS[active]}
+function pickSlot(i){SLOTS[active]=S;active=i;S=SLOTS[i];pops=[];ui();save()}
+
+const cv=document.getElementById("c"),ctx=cv.getContext("2d");
+const W=cv.width,H=cv.height;
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let squash=0, vel=0, t=0, ripple=0, pops=[], bubbles=[];
+for(let i=0;i<14;i++)bubbles.push({x:Math.random()*W,y:Math.random()*H,r:2+Math.random()*5,s:.2+Math.random()*.5});
+
+function glove(){return GLOVES.find(g=>g.id===S.equipped)}
+
+function squish(x,y){
+  const g=glove();
+  const crit=Math.random()<0.08;
+  const earned=g.power*(crit?5:1);
+  S.coins+=earned;S.squishes++;
+  squash=Math.min(1,squash+0.55);vel=0;ripple=1;
+  pops.push({x,y,txt:(crit?"WAVY! +":"+")+earned,life:1,crit,icon:g.icon});
+  for(let i=0;i<(crit?10:4);i++)pops.push({x,y,coin:true,vx:(Math.random()-.5)*7,vy:-3-Math.random()*5,life:1});
+  ui();save();
+}
+
+cv.addEventListener("pointerdown",e=>{
+  const r=cv.getBoundingClientRect();
+  const x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
+  squish(x,y);
+});
+cv.tabIndex=0;
+cv.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();squish(W/2,H*0.45)}});
+
+function hamPath(cx,cy,rx,ry,wav){
+  ctx.beginPath();
+  for(let i=0;i<=80;i++){
+    const a=i/80*Math.PI*2;
+    const w=1+wav*Math.sin(a*6+t*0.25)*0.06+Math.sin(a*3-t*0.05)*0.015;
+    const flat=Math.sin(a)>0?1:1;
+    const px=cx+Math.cos(a)*rx*w, py=cy+Math.sin(a)*ry*w*flat;
+    i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+  }
+  ctx.closePath();
+}
+
+function drawZ(x,y,s){
+  ctx.beginPath();ctx.moveTo(x-s,y-s);ctx.lineTo(x+s,y-s);ctx.lineTo(x-s,y+s);ctx.lineTo(x+s,y+s);ctx.stroke();
+}
+
+function draw(){
+  t+=reduce?0.3:1;
+  // spring
+  vel+=-squash*0.18; vel*=0.82; squash+=vel; ripple*=0.97;
+  ctx.fillStyle="#3d3170";ctx.fillRect(0,0,W,H);
+  // background waves
+  for(let k=0;k<4;k++){
+    ctx.beginPath();
+    const base=H*0.62+k*32;
+    ctx.moveTo(0,H);
+    for(let x=0;x<=W;x+=8)ctx.lineTo(x,base+Math.sin(x/50+t*0.03+k)*8*(1+ripple*2));
+    ctx.lineTo(W,H);ctx.closePath();
+    ctx.fillStyle=["#4a3c84","#55479a","#6152ad","#6d5fbd"][k];ctx.fill();
+  }
+  // bubbles
+  ctx.fillStyle="rgba(246,233,212,.18)";
+  bubbles.forEach(b=>{b.y-=b.s;if(b.y<-10){b.y=H+10;b.x=Math.random()*W}ctx.beginPath();ctx.arc(b.x+Math.sin(t/40+b.r)*6,b.y,b.r,0,7);ctx.fill()});
+
+  // Ham
+  const cx=W/2, groundY=H*0.78;
+  const sq=Math.max(-0.35,Math.min(0.9,squash));
+  const rx=120*(1+sq*0.45), ry=105*(1-sq*0.5);
+  const bob=reduce?0:Math.sin(t*0.04)*4;
+  const cy=groundY-ry+bob;
+  // shadow
+  ctx.fillStyle="rgba(28,23,51,.35)";ctx.beginPath();ctx.ellipse(cx,groundY+8,rx*0.9,14,0,0,7);ctx.fill();
+  // body
+  hamPath(cx,cy,rx,ry,1+ripple*4);
+  ctx.fillStyle="#e3cfa8";ctx.fill();
+  ctx.lineWidth=5;ctx.strokeStyle="#1c1733";ctx.stroke();
+  // belly sheen
+  ctx.fillStyle="rgba(255,248,232,.35)";ctx.beginPath();ctx.ellipse(cx-rx*0.35,cy-ry*0.45,rx*0.22,ry*0.12,-0.5,0,7);ctx.fill();
+  // eyes: happy
+  ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#1c1733";ctx.lineWidth=5;
+  const ey=cy-ry*0.15, ex=rx*0.36;
+  [-1,1].forEach(s=>{
+    if(sq>0.15){
+      // squished: blissful closed ^ ^ eyes
+      ctx.beginPath();ctx.arc(cx+s*ex,ey+6,12,Math.PI*1.1,Math.PI*1.9);ctx.stroke();
+    }else{
+      ctx.fillStyle="#1c1733";
+      ctx.beginPath();ctx.ellipse(cx+s*ex,ey,11,14,0,0,7);ctx.fill();
+      ctx.fillStyle="#fff8e8";
+      ctx.beginPath();ctx.arc(cx+s*ex+4,ey-5,4,0,7);ctx.fill();
+    }
+    // raised happy brows
+    ctx.beginPath();ctx.arc(cx+s*ex,ey-14,14,Math.PI*1.2,Math.PI*1.8);ctx.stroke();
+  });
+  // rosy blush
+  ctx.fillStyle="rgba(240,120,130,.35)";
+  [-1,1].forEach(s=>{ctx.beginPath();ctx.ellipse(cx+s*rx*0.62,cy+ry*0.14,24,13,0,0,7);ctx.fill()});
+  // cheek Zs
+  ctx.strokeStyle="#c0563f";ctx.lineWidth=4;
+  [-1,1].forEach(s=>{
+    const zx=cx+s*rx*0.62, zy=cy+ry*0.12;
+    drawZ(zx-7,zy,7);drawZ(zx+9,zy+4,5);
+  });
+  // cap mouth: little cap with a brim
+  ctx.strokeStyle="#1c1733";ctx.lineWidth=4;
+  const my=cy+ry*0.33;
+  // happy cap mouth: an upside-down cap that makes a big grin, brim on top
+  const mw=18+Math.max(0,sq)*10;
+  ctx.fillStyle="#8b4a5a";
+  ctx.beginPath();ctx.arc(cx,my-6,mw,0,Math.PI);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle="#f08a96";ctx.beginPath();ctx.ellipse(cx,my-6+mw*0.6,mw*0.5,mw*0.25,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.moveTo(cx-mw-14,my-8);ctx.lineTo(cx+mw,my-6);ctx.stroke();
+  ctx.fillStyle="#1c1733";ctx.beginPath();ctx.arc(cx,my-6+mw,3,0,7);ctx.fill();
+  // name tag
+  ctx.font='800 26px "Baloo 2",system-ui';ctx.textAlign="center";
+  ctx.lineWidth=6;ctx.strokeStyle="#1c1733";ctx.fillStyle="#f6e9d4";
+  ctx.strokeText("HAM",cx,groundY+44);ctx.fillText("HAM",cx,groundY+44);
+
+  // glove cursor icon floating
+  ctx.font="40px system-ui";ctx.textAlign="center";
+  ctx.globalAlpha=0.9;ctx.fillText(glove().icon,cx+rx+30,cy-ry*0.6+Math.sin(t*0.06)*6);ctx.globalAlpha=1;
+
+  // pops
+  pops=pops.filter(p=>p.life>0);
+  pops.forEach(p=>{
+    if(p.coin){
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.35;p.life-=0.025;
+      ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle="#ffc94a";ctx.strokeStyle="#d99a1c";ctx.lineWidth=2;
+      ctx.beginPath();ctx.ellipse(p.x,p.y,8*Math.abs(Math.cos(t/6+p.vx)),8,0,0,7);ctx.fill();ctx.stroke();
+    }else{
+      p.y-=1.4;p.life-=0.018;
+      ctx.globalAlpha=Math.max(0,p.life);
+      ctx.font=(p.crit?"800 34px ":"700 26px ")+'"Baloo 2",system-ui';
+      ctx.fillStyle=p.crit?"#7fe0c4":"#ffc94a";ctx.strokeStyle="#1c1733";ctx.lineWidth=5;
+      ctx.strokeText(p.txt,p.x,p.y);ctx.fillText(p.txt,p.x,p.y);
+    }
+    ctx.globalAlpha=1;
+  });
+  requestAnimationFrame(draw);
+}
+
+const fmt=n=>n.toLocaleString();
+function ui(){
+  document.getElementById("coins").textContent=fmt(S.coins);
+  document.getElementById("stats").textContent=`Squishes: ${fmt(S.squishes)} · ${fmt(glove().power)} coins per squish`;
+  const sl=document.getElementById("slots");sl.innerHTML="";
+  SLOTS.forEach((s,i)=>{
+    const d=i===active?S:s;
+    const b=document.createElement("button");
+    b.type="button";b.id="slot-"+i;b.className="slot"+(i===active?" on":"");
+    b.setAttribute("aria-pressed",i===active);
+    b.innerHTML=`<b>Slot ${i+1}</b><small>${d.squishes?fmt(d.coins)+" coins":"Empty"}</small>`;
+    b.onclick=()=>pickSlot(i);
+    sl.appendChild(b);
+  });
+  const shop=document.getElementById("shop");
+  shop.innerHTML="";
+  GLOVES.forEach(g=>{
+    const own=S.owned.includes(g.id), on=S.equipped===g.id;
+    const b=document.createElement("button");
+    b.type="button";b.id="glove-"+g.id;b.className="glove"+(on?" on":"");
+    b.disabled=!own&&S.coins<g.cost;
+    b.innerHTML=`<span class="g">${g.icon}</span><b>${g.name}</b><small>${fmt(g.power)} coins per squish</small><span class="price">${on?"Wearing":own?"Put on":"Buy · "+fmt(g.cost)}</span>`;
+    b.onclick=()=>{
+      if(!own){if(S.coins<g.cost)return;S.coins-=g.cost;S.owned.push(g.id)}
+      S.equipped=g.id;ui();save();
+    };
+    shop.appendChild(b);
+  });
+}
+
+let armed=false;
+document.getElementById("reset").onclick=e=>{
+  if(!armed){armed=true;e.target.textContent=`Tap again to erase Slot ${active+1}`;setTimeout(()=>{armed=false;e.target.textContent="Clear this slot"},3000);return}
+  S=fresh();armed=false;e.target.textContent="Clear this slot";ui();save();
+};
+
+function start(data){if(data&&data.SLOTS){SLOTS=data.SLOTS;active=data.active;S=SLOTS[active]}else load();ui();draw()}
+window.claude?.hot?.snapshot?.(()=>{SLOTS[active]=S;return {SLOTS,active}});
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+
+</body></html>

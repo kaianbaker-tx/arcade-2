@@ -1,0 +1,278 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Super Mile Blows: Spikes Only</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Layout: one arcade cabinet screen, centered, HUD on top, touch pad below */
+:root{
+  --bg:#1a1030; --panel:#2a1b4d; --ink:#f6efff; --dim:#b9a8dd;
+  --spike:#c9f0ff; --grass:#4fc23f; --gold:#ffd23f;
+  --display:'Bungee', Impact, system-ui, sans-serif;
+  --body:'Nunito', system-ui, sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;
+  display:flex;flex-direction:column;align-items:center;padding-inline:16px;padding-block:12px;box-sizing:border-box;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(20px,5vw,34px);margin:4px 0 2px;letter-spacing:.02em;text-align:center;text-wrap:balance}
+h1 span{color:var(--spike)}
+.hud{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;font-weight:800;color:var(--dim);font-size:14px;margin-bottom:8px;font-variant-numeric:tabular-nums}
+.hud b{color:var(--ink)}
+.wrap{width:100%;max-width:864px;position:relative}
+canvas{display:block;width:100%;height:auto;border-radius:10px;background:#120a24;box-shadow:0 0 0 3px var(--panel),0 10px 40px #0008}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:#120a24d9;border-radius:10px}
+.overlay h2{font-family:var(--display);font-weight:400;margin:0;font-size:clamp(22px,6vw,44px);color:var(--gold)}
+.overlay p{margin:0;max-width:44ch;color:var(--ink);font-size:15px;line-height:1.45}
+.overlay small{color:var(--dim)}
+button{font-family:var(--display);font-size:16px;border:0;border-radius:10px;padding:10px 22px;background:var(--gold);color:#2a1b4d;cursor:pointer}
+button:focus-visible{outline:3px solid var(--spike);outline-offset:3px}
+.pad{display:none;width:100%;max-width:864px;justify-content:space-between;margin-top:12px;gap:12px}
+.pad div{display:flex;gap:12px}
+.pad button{width:72px;height:72px;font-size:26px;background:var(--panel);color:var(--ink);border-radius:50%}
+.pad button.jump{width:96px;background:var(--spike);color:#1a1030;border-radius:36px;font-size:16px}
+@media (pointer:coarse){.pad{display:flex}}
+.legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:13px;color:var(--dim)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+</style>
+
+<h1>SUPER MILE BLOWS: <span>SPIKES ONLY</span></h1>
+<div class="hud">
+  <div>LEVEL <b id="lv">1</b>/5</div>
+  <div>DEATHS <b id="dt">0</b></div>
+  <div>TIME <b id="tm">0.0</b>s</div>
+</div>
+<div class="wrap">
+  <canvas id="c" width="576" height="360"></canvas>
+  <div class="overlay" id="ov">
+    <h2>SPIKES ONLY!</h2>
+    <p>Everything is backwards. Climb the block towers by landing on their spikes. Touch the grass, the side of a block, or a red block and you blow up. Reach the flag!</p>
+    <small>Arrows or A/D to move · Space, W or ↑ to jump · Tap jump for a short hop</small>
+    <button id="go">PLAY</button>
+  </div>
+</div>
+<div class="pad">
+  <div><button id="bl" aria-label="Left">◀</button><button id="br" aria-label="Right">▶</button></div>
+  <button class="jump" id="bj">JUMP</button>
+</div>
+<div class="legend">
+  <span><i style="background:var(--spike)"></i>Spike tops: safe</span>
+  <span><i style="background:var(--grass)"></i>Grass &amp; block sides: boom</span>
+  <span><i style="background:#ff4d3d"></i>Red blocks: boom</span>
+  <span><i style="background:var(--gold)"></i>Flag: level up</span>
+</div>
+
+<script>
+const T=24, W=24, H=15;
+// h = tower height per column (0 = gap). haz = red blocks [row, fromCol, toCol]
+const LEVELS=[
+ {h:[2,2,2,0,2,2,0,0,3,3,0,0,4,4,4,0,0,5,5,0,0,6,6,6], haz:[], tip:'Land on the spikes! Don’t touch the grass or the sides of blocks.'},
+ {h:[3,3,0,0,2,2,0,0,4,4,0,0,0,3,3,0,0,5,5,5,0,0,7,7], haz:[[3,9,11]], tip:'Watch out for the red blocks up high.'},
+ {h:[2,0,3,0,4,0,5,0,0,6,0,7,0,0,9,0,0,7,0,0,5,5,0,8], haz:[[2,17,18]], tip:'Skinny towers. Climb carefully!'},
+ {h:[3,3,3,0,3,3,3,0,3,3,3,0,3,3,3,0,3,3,3,0,3,3,3,3], haz:[[7,4,7],[7,12,15],[7,19,21]], tip:'Low ceiling! Tap jump for tiny hops.'},
+ {h:[2,2,0,0,4,0,0,3,0,0,5,0,0,0,5,0,0,7,0,0,9,0,0,10], haz:[[6,12,13],[2,21,22]], tip:'Final climb. You got this!'}
+];
+
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ov=document.getElementById('ov');
+const $=id=>document.getElementById(id);
+let lvl=0, deaths=0, time=0, running=false, map, flag, start, levelUp=0;
+const p={x:0,y:0,vx:0,vy:0,w:16,h:20,ground:false,face:1,dead:0,spin:0};
+let parts=[], confetti=[], clouds=[];
+for(let i=0;i<5;i++)clouds.push({x:Math.random()*576,y:20+Math.random()*120,s:.2+Math.random()*.3,w:50+Math.random()*40});
+const keys={l:false,r:false,j:false}; let jumpBuf=0, coyote=0;
+
+function load(i){
+  const L=LEVELS[i];
+  map=[]; for(let y=0;y<H;y++)map.push(Array(W).fill(y===H-1?'G':'.'));
+  L.h.forEach((h,x)=>{for(let y=H-1-h;y<H-1;y++)map[y][x]='B';});
+  for(const [r,a,b] of L.haz)for(let x=a;x<=b;x++)map[r][x]='#';
+  const top0=H-1-L.h[0]; start={x:4,y:top0*T-p.h-.01};
+  const lx=W-1, topL=H-1-L.h[lx]; flag={x:lx*T,y:(topL-1)*T};
+  respawn();
+  $('lv').textContent=i+1;
+}
+function respawn(){Object.assign(p,{x:start.x,y:start.y,vx:0,vy:0,dead:0,ground:false,spin:0});}
+function tile(tx,ty){if(tx<0||tx>=W)return 'wall';if(ty<0)return '.';if(ty>=H)return 'G';return map[ty][tx];}
+function hits(x,y,w,h,test){
+  for(let ty=Math.floor(y/T);ty<=Math.floor((y+h-.01)/T);ty++)
+    for(let tx=Math.floor(x/T);tx<=Math.floor((x+w-.01)/T);tx++)
+      if(test(tile(tx,ty)))return true;
+  return false;
+}
+function boom(){
+  if(p.dead)return;
+  p.dead=1;deaths++;$('dt').textContent=deaths;
+  for(let i=0;i<30;i++){const a=Math.random()*6.28,s=Math.random()*5+1;
+    parts.push({x:p.x+p.w/2,y:p.y+p.h/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,l:40,c:i%3?'#ff4d3d':'#ffd23f'});}
+}
+const CONF=['#ffd23f','#ff4dc4','#7cf29c','#c9f0ff','#ff7a3b','#9d7cff'];
+function burst(x,y,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=Math.random()*7+2;
+  confetti.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-4,r:Math.random()*6.28,vr:Math.random()*.4-.2,l:90+Math.random()*40,c:CONF[i%CONF.length]});}}
+
+function step(){
+  if(levelUp){
+    levelUp++;
+    p.spin+=0.35; p.y+=Math.sin(levelUp/6)*-1.2;
+    if(levelUp%18===0)burst(80+Math.random()*416,60+Math.random()*120,25);
+    if(levelUp>110){levelUp=0; lvl++; load(lvl);}
+    return;
+  }
+  if(p.dead){p.dead++; if(p.dead>45)respawn(); return;}
+  time+=1/60;
+  const acc=0.6, max=3.3;
+  if(keys.l){p.vx=Math.max(p.vx-acc,-max);p.face=-1}
+  else if(keys.r){p.vx=Math.min(p.vx+acc,max);p.face=1}
+  else p.vx*=0.75;
+  if(jumpBuf>0)jumpBuf--;
+  coyote=p.ground?6:coyote-1;
+  if(jumpBuf>0&&coyote>0){p.vy=-9.6;jumpBuf=0;coyote=0;}
+  if(!keys.j&&p.vy<-4)p.vy=-4; // short hop when you let go
+  p.vy=Math.min(p.vy+0.5,11);
+  // move X: bumping the side of a block = boom, screen edges just stop you
+  p.x+=p.vx;
+  if(hits(p.x,p.y,p.w,p.h,c=>c==='B')){boom();return;}
+  if(p.x<0){p.x=0;p.vx=0} if(p.x+p.w>W*T){p.x=W*T-p.w;p.vx=0}
+  // move Y: landing on top = safe spikes, hitting the bottom = boom
+  p.y+=p.vy; p.ground=false;
+  if(hits(p.x,p.y,p.w,p.h,c=>c==='B')){
+    if(p.vy>0){p.y=Math.floor((p.y+p.h)/T)*T-p.h-.01;p.ground=true;p.vy=0;}
+    else {boom();return;}
+  }
+  if(hits(p.x,p.y,p.w,p.h,c=>c==='#'||c==='G')||p.y>H*T){boom();return;}
+  if(p.x<flag.x+T&&p.x+p.w>flag.x+4&&p.y<flag.y+T&&p.y+p.h>flag.y-12){
+    if(lvl>=LEVELS.length-1){burst(288,150,120);win();}
+    else {levelUp=1; burst(flag.x+10,flag.y,60); burst(288,120,60);}
+  }
+}
+
+function drawGrass(x,y,t){
+  ctx.fillStyle='#6b4423';ctx.fillRect(x,y+8,T,T-8);
+  ctx.fillStyle='#4fc23f';ctx.fillRect(x,y+2,T,9);
+  ctx.fillStyle='#7ee05a';
+  for(let i=0;i<4;i++){const bx=x+i*6+2, sw=Math.sin(t/20+x*.3+i)*1.5;
+    ctx.beginPath();ctx.moveTo(bx,y+4);ctx.lineTo(bx+2+sw,y-3);ctx.lineTo(bx+4,y+4);ctx.fill();}
+}
+function drawBlock(x,y,topSpikes){
+  ctx.fillStyle='#8a6a5a';ctx.fillRect(x,y,T,T);
+  ctx.fillStyle='#a8877a';ctx.fillRect(x+2,y+2,T-4,3);
+  ctx.fillStyle='#5e4438';ctx.fillRect(x,y+T-2,T,2);ctx.fillRect(x+T/2-1,y+T/2,2,T/2);ctx.fillRect(x,y+T/2-1,T,2);
+  if(topSpikes){
+    ctx.fillStyle='#3d5a7a';ctx.fillRect(x,y+6,T,3);
+    for(let i=0;i<3;i++){const bx=x+i*8;
+      ctx.fillStyle='#c9f0ff';ctx.beginPath();ctx.moveTo(bx,y+8);ctx.lineTo(bx+4,y);ctx.lineTo(bx+8,y+8);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(bx+4,y);ctx.lineTo(bx+5.5,y+8);ctx.lineTo(bx+4,y+8);ctx.closePath();ctx.fill();}
+  }
+}
+function drawHazard(x,y,t){
+  const g=Math.sin(t/12+x*.1)*20;
+  ctx.fillStyle=`rgb(${200+g|0},40,40)`;ctx.fillRect(x,y,T,T);
+  ctx.fillStyle='#ff7a5c';ctx.fillRect(x+3,y+3,T-6,4);
+  ctx.fillStyle='#8a1616';ctx.fillRect(x,y+T-3,T,3);
+  ctx.fillStyle='#ffd23f';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('!',x+T/2,y+T-7);
+}
+function drawFlag(t){
+  const {x,y}=flag;
+  ctx.fillStyle='#e8e0ff';ctx.fillRect(x+6,y-12,3,T+12);
+  ctx.fillStyle='#ffd23f';
+  const wv=Math.sin(t/6)*2;
+  ctx.beginPath();ctx.moveTo(x+9,y-12);ctx.lineTo(x+24,y-6+wv);ctx.lineTo(x+9,y);ctx.closePath();ctx.fill();
+}
+function drawMile(){
+  if(p.dead)return;
+  ctx.save();ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.rotate(p.spin);
+  const x=-p.w/2,y=-p.h/2;
+  ctx.fillStyle='#7cf29c';ctx.fillRect(x,y+2,p.w,p.h-2);
+  ctx.fillStyle='#4fc27a';ctx.fillRect(x,y+p.h-5,p.w,5);
+  ctx.fillStyle='#ff4dc4';ctx.fillRect(x-1,y,p.w+2,5);
+  const ex=p.face>0?x+9:x+2;
+  ctx.fillStyle='#fff';ctx.fillRect(ex,y+7,5,5);
+  ctx.fillStyle='#1a1030';ctx.fillRect(ex+(p.face>0?2:1),y+8,2,3);
+  if(levelUp){ctx.fillStyle='#1a1030';ctx.fillRect(x+4,y+14,8,2);}
+  ctx.restore();
+}
+function drawLevelUp(){
+  const f=levelUp, cx=288;
+  ctx.fillStyle=`rgba(18,10,36,${Math.min(f/20,1)*.45})`;ctx.fillRect(0,0,576,360);
+  // rays
+  ctx.save();ctx.translate(cx,150);ctx.rotate(f/40);
+  ctx.fillStyle='rgba(255,210,63,.12)';
+  for(let i=0;i<12;i++){ctx.rotate(Math.PI/6);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-30,-400);ctx.lineTo(30,-400);ctx.fill();}
+  ctx.restore();
+  const pop=f<20?1-Math.pow(1-f/20,3):1, bounce=1+Math.sin(f/5)*.04;
+  ctx.save();ctx.translate(cx,130);ctx.scale(pop*bounce*1.4,pop*bounce*1.4);
+  ctx.textAlign='center';ctx.font='28px Bungee, Impact, sans-serif';
+  ctx.fillStyle='#2a1b4d';ctx.fillText('LEVEL UP!',3,3);
+  ctx.fillStyle='#ffd23f';ctx.fillText('LEVEL UP!',0,0);
+  ctx.restore();
+  if(f>30){
+    const a=Math.min((f-30)/15,1);
+    ctx.globalAlpha=a;ctx.textAlign='center';ctx.font='18px Bungee, Impact, sans-serif';
+    ctx.fillStyle='#c9f0ff';ctx.fillText(`LEVEL ${lvl+1} → ${lvl+2}`,cx,180);
+    // three stars pop in
+    for(let i=0;i<3;i++){const sf=f-40-i*10; if(sf<0)continue;
+      const s=Math.min(sf/8,1)*(1+Math.max(0,.4-sf/20));
+      star(cx-50+i*50,222,14*s);}
+    ctx.globalAlpha=1;
+  }
+}
+function star(x,y,r){ctx.fillStyle='#ffd23f';ctx.beginPath();
+  for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);}
+  ctx.closePath();ctx.fill();ctx.strokeStyle='#2a1b4d';ctx.lineWidth=2;ctx.stroke();}
+
+let frame=0;
+function draw(){
+  frame++;
+  const sky=ctx.createLinearGradient(0,0,0,360);sky.addColorStop(0,'#5aa8ff');sky.addColorStop(1,'#bfe6ff');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,576,360);
+  ctx.fillStyle='rgba(255,255,255,.8)';
+  for(const c of clouds){c.x-=c.s;if(c.x<-100)c.x=620;
+    ctx.beginPath();ctx.ellipse(c.x,c.y,c.w/2,12,0,0,6.28);ctx.ellipse(c.x-10,c.y-10,c.w/4,12,0,0,6.28);ctx.fill();}
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const c=map[y][x];
+    if(c==='B')drawBlock(x*T,y*T,tile(x,y-1)!=='B');
+    else if(c==='#')drawHazard(x*T,y*T,frame);
+    else if(c==='G')drawGrass(x*T,y*T,frame);
+  }
+  drawFlag(frame);
+  drawMile();
+  parts=parts.filter(q=>q.l>0);
+  for(const q of parts){q.x+=q.vx;q.y+=q.vy;q.vy+=.25;q.l--;ctx.fillStyle=q.c;ctx.fillRect(q.x,q.y,4,4);}
+  if(p.dead&&p.dead<40){ctx.fillStyle='#ff4d3d';ctx.font='20px Bungee, Impact, sans-serif';ctx.textAlign='center';ctx.fillText('BOOM!',288,60);}
+  if(!levelUp&&running){ctx.fillStyle='#1a1030';ctx.font='bold 13px Nunito, sans-serif';ctx.textAlign='left';ctx.fillText(LEVELS[lvl].tip,10,20);}
+  if(levelUp)drawLevelUp();
+  confetti=confetti.filter(q=>q.l>0);
+  for(const q of confetti){q.x+=q.vx;q.y+=q.vy;q.vx*=.98;q.vy=q.vy*.98+.18;q.r+=q.vr;q.l--;
+    ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.r);ctx.fillStyle=q.c;ctx.fillRect(-4,-2,8,4);ctx.restore();}
+}
+let last=0,accum=0;
+function loop(ts){
+  if(!last)last=ts; accum+=Math.min(ts-last,100); last=ts;
+  while(accum>=1000/60){ if(running)step(); accum-=1000/60; }
+  draw(); $('tm').textContent=time.toFixed(1);
+  requestAnimationFrame(loop);
+}
+function win(){
+  running=false;
+  ov.innerHTML=`<h2>YOU WIN!</h2><p>You climbed all 5 levels while touching only spikes.</p><p><b>${deaths}</b> deaths · <b>${time.toFixed(1)}</b> seconds</p><button id="again">PLAY AGAIN</button>`;
+  ov.hidden=false;
+  $('again').onclick=begin;
+}
+function begin(){lvl=0;deaths=0;time=0;levelUp=0;$('dt').textContent=0;load(0);ov.hidden=true;running=true;}
+$('go').onclick=begin;
+
+const K={ArrowLeft:'l',a:'l',A:'l',ArrowRight:'r',d:'r',D:'r',ArrowUp:'j',w:'j',W:'j',' ':'j'};
+addEventListener('keydown',e=>{const k=K[e.key];if(!k)return;e.preventDefault();
+  if(!running&&!ov.hidden&&e.key===' '){begin();return;}
+  if(k==='j'&&!keys.j)jumpBuf=8; keys[k]=true;});
+addEventListener('keyup',e=>{const k=K[e.key];if(k)keys[k]=false;});
+function hold(id,k){const b=$(id);
+  const on=e=>{e.preventDefault();if(k==='j'&&!keys.j)jumpBuf=8;keys[k]=true;};
+  const off=e=>{e.preventDefault();keys[k]=false;};
+  b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off);}
+hold('bl','l');hold('br','r');hold('bj','j');
+
+load(0);
+requestAnimationFrame(loop);
+</script>
+
+</body></html>

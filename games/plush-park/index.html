@@ -1,0 +1,529 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Plush Park</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: a toy-box console — coin bar on top, the pet's room as the stage, chunky action buttons below, tabs for Shop and Games */
+:root{
+  --bg:#e8f1ec; --panel:#ffffff; --ink:#22323a; --muted:#5f7480;
+  --leaf:#3f9b6b; --sun:#f7b733; --berry:#e2557a; --sky:#6aa8e8;
+  --room-wall:#fdf3df; --room-floor:#e6c79c; --line:#d3e0d9;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#152027; --panel:#1f2d35; --ink:#eaf2ee; --muted:#9db1bb;
+  --leaf:#5cc48e; --sun:#f9c552; --berry:#f0789a; --sky:#86b9f0;
+  --room-wall:#2c3b45; --room-floor:#4a3d2f; --line:#33464f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#152027; --panel:#1f2d35; --ink:#eaf2ee; --muted:#9db1bb;
+  --leaf:#5cc48e; --sun:#f9c552; --berry:#f0789a; --sky:#86b9f0;
+  --room-wall:#2c3b45; --room-floor:#4a3d2f; --line:#33464f; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:16px 32px;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.1}
+h1{font-size:1.7rem;font-weight:800;color:var(--leaf)}
+h2{font-size:1.35rem}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.coins{display:flex;align-items:center;gap:6px;background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:4px 14px 4px 6px;font-weight:800;font-variant-numeric:tabular-nums}
+.coin{width:22px;height:22px;border-radius:50%;background:var(--sun);display:grid;place-items:center;font-size:12px;color:#5a3d00;font-weight:800;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+button{font-family:var(--body);font-weight:800;font-size:.95rem;cursor:pointer;border:none;border-radius:14px;color:var(--ink)}
+button:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.tab{background:transparent;padding:8px 14px;border:2px solid var(--line)}
+.tab[aria-selected="true"]{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.muted{color:var(--muted)}
+/* adopt */
+.species{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.sp{background:var(--bg);border:3px solid transparent;border-radius:18px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.sp[aria-pressed="true"]{border-color:var(--leaf)}
+.sp svg{width:100px;height:90px}
+.sp small{color:var(--muted);font-weight:600}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:34px;height:34px;border-radius:50%;border:3px solid var(--panel);box-shadow:0 0 0 2px var(--line)}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=text]{font:inherit;font-weight:700;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-width:0;flex:1 1 180px}
+.big{background:var(--leaf);color:#fff;padding:12px 20px;font-size:1.05rem;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.big:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.big:disabled{opacity:.5;cursor:not-allowed}
+/* room */
+.room{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:16/10;max-width:100%;background:linear-gradient(var(--room-wall) 0 64%,var(--room-floor) 64% 100%)}
+.room::before{content:"";position:absolute;left:0;right:0;top:0;height:64%;background:var(--wall,transparent)}
+.room .window{position:absolute;left:8%;top:10%;width:20%;aspect-ratio:1;border-radius:12px;background:linear-gradient(var(--sky),#bfe1ff);border:6px solid var(--panel)}
+.room.night .window{background:linear-gradient(#1b2a4a,#3a4d7a)}
+.room.night::after{content:"";position:absolute;inset:0;background:rgba(10,20,50,.35);pointer-events:none}
+.petbox{position:absolute;left:50%;bottom:8%;width:38%;transform:translateX(-50%);transition:transform .2s}
+.petbox svg{width:100%;height:auto;display:block}
+.petbox.bounce{animation:bounce .5s}
+@keyframes bounce{40%{transform:translate(-50%,-14%)}}
+.decor{position:absolute;font-size:0}
+.decor svg{width:100%;height:auto;display:block}
+.coinpop{position:absolute;left:50%;bottom:52%;transform:translateX(-50%);font:800 1.4rem var(--display);color:#b77a00;text-shadow:0 2px 0 #fff;animation:rise 1.1s ease-out forwards;pointer-events:none}
+@keyframes rise{to{transform:translate(-50%,-60px);opacity:0}}
+.say{position:absolute;left:50%;top:6%;transform:translateX(-50%);background:var(--panel);padding:6px 12px;border-radius:14px;font-weight:800;font-size:.9rem;max-width:80%;text-align:center;box-shadow:0 2px 0 var(--line)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat label{display:flex;justify-content:space-between;font-weight:800;font-size:.85rem;letter-spacing:.02em}
+.bar{height:12px;border-radius:999px;background:var(--bg);overflow:hidden;border:2px solid var(--line)}
+.bar i{display:block;height:100%;border-radius:999px;transition:width .4s}
+.actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.act{background:var(--bg);border:2px solid var(--line);padding:12px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 3px 0 var(--line)}
+.act:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.act span{font-size:.78rem;color:var(--muted);font-weight:700}
+.lvl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lvl .bar{flex:1 1 120px}
+/* shop/inventory */
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.item{background:var(--bg);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
+.item svg{width:64px;height:64px}
+.item b{font-family:var(--display);font-size:1.05rem}
+.item small{color:var(--muted);font-weight:600;min-height:2.4em}
+.buy{background:var(--sun);color:#4a3200;padding:7px 12px;width:100%}
+.buy.owned{background:var(--leaf);color:#fff}
+.buy:disabled{opacity:.45;cursor:not-allowed}
+.cat{font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:800}
+/* game */
+.gamewrap{position:relative;border-radius:18px;overflow:hidden;background:var(--room-wall);aspect-ratio:4/3;max-width:100%;touch-action:none}
+canvas{width:100%;height:100%;display:block}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:color-mix(in srgb,var(--panel) 82%,transparent)}
+.hud{display:flex;justify-content:space-between;font-weight:800;font-variant-numeric:tabular-nums}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.slot{background:var(--bg);border:3px solid transparent;border-radius:18px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.slot.current{border-color:var(--leaf)}
+.slot b{font-family:var(--display);font-size:1.15rem}
+.slot small{color:var(--muted);font-weight:700;line-height:1.4}
+.slotpet{width:120px;height:108px;display:grid;place-items:center}
+.slotpet svg{width:100%;height:100%}
+.newslot{border:3px dashed var(--line);background:transparent}
+.slotpet.empty{border:3px dashed var(--line);border-radius:50%;width:96px;height:96px;font:800 2.2rem var(--display);color:var(--muted)}
+.col{display:flex;flex-direction:column;gap:4px;align-items:center;width:100%;margin-top:auto}
+#slotsBtn[aria-selected="true"]{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:5;max-width:calc(100% - 32px);text-align:center}
+.link{background:none;color:var(--muted);text-decoration:underline;padding:4px;font-size:.85rem}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Plush Park</h1>
+    <div class="row"><button class="tab" id="slotsBtn" aria-pressed="false">My Saves</button><div class="coins" aria-label="Coins"><span class="coin">¢</span><span id="coins">0</span></div></div>
+  </div>
+  <div class="tabs" role="tablist" id="tabs" hidden>
+    <button class="tab" role="tab" data-tab="home" aria-selected="true">Room</button>
+    <button class="tab" role="tab" data-tab="shop" aria-selected="false">Shop</button>
+    <button class="tab" role="tab" data-tab="stuff" aria-selected="false">My Stuff</button>
+    <button class="tab" role="tab" data-tab="game" aria-selected="false">Treat Drop</button>
+  </div>
+  <main id="view"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ---------- data ----------
+const SPECIES = {
+  puffin:{name:"Puffling", blurb:"A round cloud-bird that hums when happy."},
+  bun:{name:"Mossbun", blurb:"A long-eared bun with a leaf sprout on top."},
+  fox:{name:"Glimfox", blurb:"A sleepy fox whose tail tip glows."},
+  cat:{name:"Whiskerpuff", blurb:"A fluffy cat who naps in sunbeams."},
+  frog:{name:"Lilyhop", blurb:"A bouncy frog who loves rainy days."},
+  owl:{name:"Hootling", blurb:"A wise little owl with big round eyes."},
+  pig:{name:"Snoutle", blurb:"A giggly piglet who sniffs out snacks."},
+  dragon:{name:"Emberbean", blurb:"A pocket dragon with warm, tiny wings."},
+  bear:{name:"Honeycub", blurb:"A cuddly bear cub with a sweet tooth."}
+};
+const COLORS = ["#f39bb1","#8fc9f0","#9edc9f","#f7cf6e","#c7a6f2","#f4a979","#ffffff"];
+const COLOR_NAMES = {"#f39bb1":"Pink","#8fc9f0":"Blue","#9edc9f":"Green","#f7cf6e":"Yellow","#c7a6f2":"Purple","#f4a979":"Orange","#ffffff":"White"};
+const ITEMS = [
+  {id:"muffin",cat:"Food",name:"Berry Muffin",price:6,desc:"+25 hunger",food:25,draw:"muffin"},
+  {id:"taco",cat:"Food",name:"Kelp Taco",price:10,desc:"+40 hunger, +5 fun",food:40,fun:5,draw:"taco"},
+  {id:"pie",cat:"Food",name:"Moon Pie Slice",price:18,desc:"Fills hunger all the way",food:100,draw:"pie"},
+  {id:"ball",cat:"Toys",name:"Bouncy Ball",price:14,desc:"Play gives +10 extra fun",toy:10,draw:"ball"},
+  {id:"kite",cat:"Toys",name:"Tiny Kite",price:30,desc:"Play gives +20 extra fun",toy:20,draw:"kite"},
+  {id:"party",cat:"Hats",name:"Party Hat",price:20,desc:"Striped and pointy",hat:true,draw:"party"},
+  {id:"crown",cat:"Hats",name:"Acorn Crown",price:45,desc:"For royalty of the park",hat:true,draw:"crown"},
+  {id:"flower",cat:"Hats",name:"Daisy Clip",price:15,desc:"A cheerful flower",hat:true,draw:"flower"},
+  {id:"rug",cat:"Room",name:"Round Rug",price:25,desc:"Cozy floor rug",room:true,draw:"rug"},
+  {id:"plant",cat:"Room",name:"Potted Fern",price:20,desc:"A leafy corner",room:true,draw:"plant"},
+  {id:"lamp",cat:"Room",name:"Mushroom Lamp",price:35,desc:"Glows at night",room:true,draw:"lamp"},
+  {id:"bed",cat:"Room",name:"Pillow Bed",price:40,desc:"Sleep restores energy faster",room:true,draw:"bed"},
+  {id:"lights",cat:"Room",name:"Star Lights",price:30,desc:"Twinkly lights along the ceiling",room:true,draw:"lights"},
+  {id:"painting",cat:"Room",name:"Sunset Painting",price:40,desc:"Art for your wall",room:true,draw:"painting"},
+  {id:"clock",cat:"Room",name:"Wall Clock",price:25,desc:"Tick, tock",room:true,draw:"clock"},
+  {id:"shelf",cat:"Room",name:"Bookshelf",price:50,desc:"Full of storybooks",room:true,draw:"shelf"},
+  {id:"fishbowl",cat:"Room",name:"Fishbowl",price:45,desc:"A tiny orange fish friend",room:true,draw:"fishbowl"},
+  {id:"beanbag",cat:"Room",name:"Beanbag",price:35,desc:"Squishy seat",room:true,draw:"beanbag"},
+  {id:"chest",cat:"Room",name:"Toy Chest",price:30,desc:"Where toys live",room:true,draw:"chest"},
+  {id:"wp-mint",cat:"Wallpaper",name:"Mint Stripes",price:30,desc:"Fresh green stripes",wall:"repeating-linear-gradient(90deg,#d6f0e0 0 18px,#c3e8d2 18px 36px)",draw:"wp-mint"},
+  {id:"wp-peach",cat:"Wallpaper",name:"Peach Dots",price:30,desc:"Soft polka dots",wall:"radial-gradient(#f6b89a 3px,transparent 4px) 0 0/22px 22px,#fde3d3",draw:"wp-peach"},
+  {id:"wp-night",cat:"Wallpaper",name:"Starry Night",price:60,desc:"Deep blue with stars",wall:"radial-gradient(#fff6b0 1.5px,transparent 2.5px) 0 0/28px 28px,radial-gradient(#ffffff 1px,transparent 2px) 14px 14px/28px 28px,#2a3a6a",draw:"wp-night"}
+];
+const itemById = id => ITEMS.find(i=>i.id===id);
+
+// ---------- state ----------
+const KEY="plushpal-park-v1", SLOTS_KEY="plushpal-park-slots-v1", MAXSAVES=12;
+let DB = loadSlots();
+let S = DB.active>=0 ? DB.slots[DB.active] : fresh();
+function fresh(){return {pet:null,coins:40,inv:{muffin:2},owned:{},hat:null,placed:{},best:0}}
+function loadSlots(){
+  let db=null;
+  try{const r=localStorage.getItem(SLOTS_KEY);if(r)db=JSON.parse(r)}catch(e){}
+  if(!db){db={active:0,slots:[]};
+    try{const old=localStorage.getItem(KEY);if(old)db.slots[0]=JSON.parse(old)}catch(e){}} // bring over a pet from before slots existed
+  const cur=db.slots[db.active];
+  db.slots=db.slots.filter(d=>d&&d.pet); // keep only saves that have a pet
+  db.active=cur&&cur.pet?db.slots.indexOf(cur):-1;
+  return db;
+}
+function save(){if(DB.active>=0&&S.pet)DB.slots[DB.active]=S;try{localStorage.setItem(SLOTS_KEY,JSON.stringify(DB))}catch(e){}}
+function newSave(){save();DB.active=-1;S=fresh();draft={species:"puffin",color:COLORS[0],name:""};confirmDel=null;tab="home";render()}
+function useSlot(i){
+  save(); DB.active=i; S=DB.slots[i]||fresh();
+  if(S.pet&&S.last)decay((Date.now()-S.last)/1000);
+  S.last=Date.now(); confirmReset=false; confirmDel=null; save(); tab="home"; render();
+}
+let tab="home", draft={species:"puffin",color:COLORS[0],name:""}, confirmReset=false, confirmDel=null;
+
+// ---------- drawing ----------
+function itemSVG(kind){
+  const w = s=>`<svg viewBox="0 0 64 64" aria-hidden="true">${s}</svg>`;
+  switch(kind){
+    case"muffin":return w(`<path d="M14 34h36l-5 20H19z" fill="#e8a65d"/><path d="M14 34h36" stroke="#c9813a" stroke-width="2"/><circle cx="32" cy="28" r="17" fill="#b5577a"/><circle cx="25" cy="24" r="3" fill="#6a2a4a"/><circle cx="37" cy="21" r="3" fill="#6a2a4a"/><circle cx="34" cy="31" r="3" fill="#6a2a4a"/>`);
+    case"taco":return w(`<path d="M8 44a24 24 0 0 1 48 0z" fill="#f2c55c"/><path d="M14 42a18 18 0 0 1 36 0" fill="none" stroke="#3f9b6b" stroke-width="6" stroke-linecap="round"/><path d="M20 40a12 12 0 0 1 24 0" fill="none" stroke="#e2557a" stroke-width="4" stroke-linecap="round"/>`);
+    case"pie":return w(`<path d="M10 46L32 12l22 34z" fill="#f6e3a7"/><path d="M10 46h44" stroke="#d39a4a" stroke-width="6" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="#fff8d8"/><circle cx="27" cy="39" r="3" fill="#fff8d8"/>`);
+    case"ball":return w(`<circle cx="32" cy="32" r="20" fill="#6aa8e8"/><path d="M12 32h40" stroke="#fff" stroke-width="5"/><circle cx="25" cy="24" r="4" fill="#fff" opacity=".6"/>`);
+    case"kite":return w(`<path d="M32 6l16 20-16 22-16-22z" fill="#e2557a"/><path d="M32 6v42M16 26h32" stroke="#fff" stroke-width="2"/><path d="M32 48c-4 4 4 6 0 10" stroke="#5f7480" stroke-width="2" fill="none"/>`);
+    case"party":return w(`<path d="M32 6L48 54H16z" fill="#c7a6f2"/><path d="M25 30l16 5M21 42l22 6" stroke="#f7b733" stroke-width="4"/><circle cx="32" cy="7" r="5" fill="#f7b733"/>`);
+    case"crown":return w(`<path d="M10 50V22l11 12 11-18 11 18 11-12v28z" fill="#c98f44"/><path d="M10 44h44" stroke="#8a5a22" stroke-width="4"/><circle cx="32" cy="38" r="4" fill="#9edc9f"/>`);
+    case"flower":return w(`<g fill="#fff">${[0,60,120,180,240,300].map(a=>`<ellipse cx="32" cy="18" rx="7" ry="12" transform="rotate(${a} 32 32)"/>`).join("")}</g><circle cx="32" cy="32" r="8" fill="#f7b733"/>`);
+    case"rug":return w(`<ellipse cx="32" cy="36" rx="28" ry="14" fill="#6aa8e8"/><ellipse cx="32" cy="36" rx="19" ry="9" fill="none" stroke="#fdf3df" stroke-width="3"/>`);
+    case"plant":return w(`<path d="M20 40h24l-3 18H23z" fill="#d97b4f"/><path d="M32 40C30 26 22 18 12 16M32 40c0-14 2-22 4-30M32 40c3-12 12-20 22-20" stroke="#3f9b6b" stroke-width="5" fill="none" stroke-linecap="round"/>`);
+    case"lamp":return w(`<rect x="28" y="30" width="8" height="24" rx="3" fill="#f6e3a7"/><path d="M8 32a24 20 0 0 1 48 0z" fill="#e2557a"/><circle cx="22" cy="22" r="4" fill="#fff"/><circle cx="40" cy="18" r="3" fill="#fff"/><rect x="20" y="54" width="24" height="4" rx="2" fill="#c9813a"/>`);
+    case"bed":return w(`<rect x="6" y="34" width="52" height="18" rx="9" fill="#c7a6f2"/><rect x="10" y="28" width="22" height="12" rx="6" fill="#fff"/>`);
+    case"lights":return w(`<path d="M2 14q30 16 60 0" stroke="#5f7480" stroke-width="2" fill="none"/>${[[10,19,"#f7b733"],[22,23,"#e2557a"],[34,24,"#6aa8e8"],[46,22,"#9edc9f"],[57,17,"#c7a6f2"]].map(([x,y,c])=>`<circle cx="${x}" cy="${y+4}" r="4" fill="${c}"/>`).join("")}`);
+    case"painting":return w(`<rect x="6" y="10" width="52" height="42" rx="3" fill="#c98f44"/><rect x="11" y="15" width="42" height="32" fill="#f4a979"/><rect x="11" y="31" width="42" height="16" fill="#e2557a"/><circle cx="32" cy="31" r="8" fill="#f7cf6e"/><path d="M11 40q10-6 20 0t22 0v7H11z" fill="#3f9b6b"/>`);
+    case"clock":return w(`<circle cx="32" cy="32" r="24" fill="#fff" stroke="#c98f44" stroke-width="5"/><path d="M32 32V18M32 32l9 6" stroke="#22323a" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="3" fill="#e2557a"/>`);
+    case"shelf":return w(`<rect x="10" y="4" width="44" height="58" rx="3" fill="#a8703f"/><rect x="14" y="8" width="36" height="16" fill="#7a4f2a"/><rect x="14" y="28" width="36" height="16" fill="#7a4f2a"/><rect x="14" y="48" width="36" height="10" fill="#7a4f2a"/><rect x="16" y="10" width="5" height="14" fill="#e2557a"/><rect x="22" y="12" width="5" height="12" fill="#6aa8e8"/><rect x="28" y="9" width="5" height="15" fill="#f7cf6e"/><rect x="36" y="30" width="5" height="14" fill="#9edc9f"/><rect x="42" y="32" width="5" height="12" fill="#c7a6f2"/><rect x="17" y="31" width="5" height="13" fill="#f4a979"/>`);
+    case"fishbowl":return w(`<rect x="18" y="56" width="28" height="6" rx="2" fill="#a8703f"/><circle cx="32" cy="34" r="22" fill="#bfe1ff" opacity=".85"/><path d="M12 32h40" stroke="#8fc9f0" stroke-width="2"/><ellipse cx="32" cy="38" rx="7" ry="5" fill="#f4a979"/><path d="M38 38l7-5v10z" fill="#f4a979"/><circle cx="29" cy="37" r="1.5" fill="#22323a"/><path d="M20 52q3-8 0-14M44 52q-3-8 0-12" stroke="#3f9b6b" stroke-width="3" fill="none"/>`);
+    case"beanbag":return w(`<path d="M8 54c0-22 10-36 24-36s24 14 24 36z" fill="#f39bb1"/><ellipse cx="32" cy="54" rx="24" ry="7" fill="#d97b95"/><path d="M22 30q10 6 20 0" stroke="#fff" stroke-width="3" fill="none" opacity=".5"/>`);
+    case"chest":return w(`<rect x="8" y="26" width="48" height="30" rx="4" fill="#c98f44"/><path d="M8 32a24 14 0 0 1 48 0z" fill="#e0a85a"/><rect x="8" y="30" width="48" height="5" fill="#8a5a22"/><rect x="28" y="33" width="8" height="9" rx="2" fill="#f7b733"/><circle cx="18" cy="24" r="6" fill="#6aa8e8"/><path d="M42 26l6-14 4 14z" fill="#e2557a"/>`);
+    case"wp-mint":return w(`<rect x="6" y="6" width="52" height="52" rx="8" fill="#d6f0e0"/>${[12,24,36,48].map(x=>`<rect x="${x}" y="6" width="6" height="52" fill="#b5e0c6"/>`).join("")}`);
+    case"wp-peach":return w(`<rect x="6" y="6" width="52" height="52" rx="8" fill="#fde3d3"/>${[14,28,42].flatMap(x=>[14,28,42].map(y=>`<circle cx="${x+4}" cy="${y+4}" r="3.5" fill="#f6b89a"/>`)).join("")}`);
+    case"wp-night":return w(`<rect x="6" y="6" width="52" height="52" rx="8" fill="#2a3a6a"/>${[[16,16],[40,14],[28,30],[48,40],[14,46],[34,50]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2" fill="#fff6b0"/>`).join("")}<path d="M44 18a8 8 0 1 0 6 12 7 7 0 0 1-6-12z" fill="#fff6b0"/>`);
+  }
+  return w("");
+}
+function shade(hex,amt){const n=parseInt(hex.slice(1),16);let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;const c=v=>Math.max(0,Math.min(255,v));return`rgb(${c(r)},${c(g)},${c(b)})`}
+function petSVG(species,color,{mood="happy",sleeping=false,hat=null}={}){
+  const dark=shade(color,-45), light=shade(color,40);
+  let ears="", extra="", back="";
+  if(species==="cat"){
+    ears=`<path d="M58 72L64 24l36 32z" fill="${color}"/><path d="M66 62l3-26 20 18z" fill="#ff8fa8" opacity=".6"/><path d="M142 72l-6-48-36 32z" fill="${color}"/><path d="M134 62l-3-26-20 18z" fill="#ff8fa8" opacity=".6"/>`;
+    back=`<path d="M146 150c28 6 44-12 38-36-2-8-12-8-12 0 2 14-8 24-28 24z" fill="${dark}"/>`;
+    extra=`<path d="M94 102h12l-6 7z" fill="#ff8fa8"/><path d="M56 104l-26-4M56 112l-26 4M144 104l26-4M144 112l26 4" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>`;
+  }else if(species==="frog"){
+    ears=`<circle cx="72" cy="62" r="24" fill="${color}"/><circle cx="128" cy="62" r="24" fill="${color}"/><circle cx="72" cy="62" r="14" fill="${light}"/><circle cx="128" cy="62" r="14" fill="${light}"/>`;
+    extra=`<circle cx="95" cy="104" r="2.5" fill="${dark}"/><circle cx="105" cy="104" r="2.5" fill="${dark}"/><circle cx="58" cy="140" r="6" fill="${dark}" opacity=".35"/><circle cx="144" cy="132" r="5" fill="${dark}" opacity=".35"/>`;
+  }else if(species==="owl"){
+    ears=`<path d="M52 74l6-46 30 30z" fill="${dark}"/><path d="M148 74l-6-46-30 30z" fill="${dark}"/>`;
+    back=`<ellipse cx="42" cy="122" rx="16" ry="34" fill="${dark}" transform="rotate(14 42 122)"/><ellipse cx="158" cy="122" rx="16" ry="34" fill="${dark}" transform="rotate(-14 158 122)"/>`;
+    extra=`<circle cx="82" cy="90" r="19" fill="#fff"/><circle cx="118" cy="90" r="19" fill="#fff"/><path d="M92 104h16l-8 12z" fill="#f7b733"/><path d="M80 146l6-6 6 6 6-6 6 6 6-6 6 6" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  }else if(species==="pig"){
+    ears=`<path d="M56 70l-4-34 34 22z" fill="${dark}"/><path d="M144 70l4-34-34 22z" fill="${dark}"/>`;
+    back=`<path d="M158 128c14-4 18 8 10 12s-10-8 0-12" stroke="${dark}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    extra=`<ellipse cx="100" cy="104" rx="17" ry="11" fill="${light}" stroke="${dark}" stroke-width="2"/><ellipse cx="94" cy="104" rx="3" ry="4" fill="${dark}"/><ellipse cx="106" cy="104" rx="3" ry="4" fill="${dark}"/>`;
+  }else if(species==="dragon"){
+    ears=`<path d="M74 62l-8-32 20 22z" fill="#f6e3a7"/><path d="M126 62l8-32-20 22z" fill="#f6e3a7"/><path d="M92 56l8-14 8 14z" fill="${dark}"/>`;
+    back=`<path d="M52 100L4 66l12 34-10 20 20-4 10 18z" fill="${dark}"/><path d="M148 100l48-34-12 34 10 20-20-4-10 18z" fill="${dark}"/><path d="M150 152c24 2 34-10 40-22l-8 2 4-10c-8 14-20 20-36 20z" fill="${color}"/>`;
+    extra=`<path d="M78 130h44M80 142h40M86 154h28" stroke="${shade(color,10)}" stroke-width="3" stroke-linecap="round"/><circle cx="95" cy="106" r="2.5" fill="${dark}"/><circle cx="105" cy="106" r="2.5" fill="${dark}"/>`;
+  }else if(species==="bear"){
+    ears=`<circle cx="56" cy="66" r="22" fill="${color}"/><circle cx="56" cy="66" r="11" fill="${light}"/><circle cx="144" cy="66" r="22" fill="${color}"/><circle cx="144" cy="66" r="11" fill="${light}"/>`;
+    extra=`<ellipse cx="100" cy="114" rx="26" ry="18" fill="${light}"/><ellipse cx="100" cy="104" rx="9" ry="6" fill="${dark}"/>`;
+  }else if(species==="puffin"){
+    ears=`<path d="M78 40c-6-18 10-26 20-14" fill="${color}"/><path d="M102 34c8-14 22-8 18 6" fill="${color}"/>`;
+    extra=`<path d="M52 108c-20 0-24 14-14 20 6-8 14-10 22-10z" fill="${dark}"/><path d="M148 108c20 0 24 14 14 20-6-8-14-10-22-10z" fill="${dark}"/><path d="M92 100l8 10 8-10z" fill="#f7b733"/>`;
+  }else if(species==="bun"){
+    ears=`<ellipse cx="78" cy="30" rx="13" ry="36" fill="${color}" transform="rotate(-12 78 30)"/><ellipse cx="78" cy="32" rx="6" ry="24" fill="${light}" transform="rotate(-12 78 32)"/><ellipse cx="122" cy="30" rx="13" ry="36" fill="${color}" transform="rotate(12 122 30)"/><ellipse cx="122" cy="32" rx="6" ry="24" fill="${light}" transform="rotate(12 122 32)"/><path d="M100 46c-2-12 6-18 14-16-2 8-8 12-14 16zM100 46c0-10-8-14-14-12 2 6 8 10 14 12z" fill="#3f9b6b"/>`;
+    extra=`<ellipse cx="100" cy="106" rx="6" ry="4" fill="${dark}"/>`;
+  }else{
+    ears=`<path d="M58 66L62 18l34 30z" fill="${color}"/><path d="M66 56l2-26 18 16z" fill="${light}"/><path d="M142 66l-4-48-34 30z" fill="${color}"/><path d="M134 56l-2-26-18 16z" fill="${light}"/>`;
+    back=`<path d="M150 150c30-4 40-30 30-48-4 16-16 26-34 30z" fill="${color}"/><circle cx="178" cy="104" r="9" fill="#fff6b0"/>`;
+    extra=`<ellipse cx="100" cy="108" rx="7" ry="5" fill="${dark}"/>`;
+  }
+  const frog=species==="frog", ey=frog?62:90, ex1=frog?72:82, ex2=frog?128:118;
+  const white=color.toLowerCase()==="#ffffff";
+  const spotsY=frog?84:70;
+  const spots=white?[88,100,112].map(x=>`<ellipse cx="${x}" cy="${spotsY}" rx="4.5" ry="7" fill="#8a5a2b"/>`).join(""):"";
+  const eyes = sleeping
+    ? `<path d="M${ex1-10} ${ey+2}q10 8 20 0M${ex2-10} ${ey+2}q10 8 20 0" stroke="#22323a" stroke-width="5" fill="none" stroke-linecap="round"/>`
+    : white ? `<ellipse cx="${ex1}" cy="${ey}" rx="8" ry="12" fill="#2f7fd8"/><ellipse cx="${ex2}" cy="${ey}" rx="8" ry="12" fill="#2f7fd8"/><ellipse cx="${ex1+2}" cy="${ey-5}" rx="2.5" ry="3.5" fill="#fff"/><ellipse cx="${ex2+2}" cy="${ey-5}" rx="2.5" ry="3.5" fill="#fff"/>`
+    : `<circle cx="${ex1}" cy="${ey}" r="9" fill="#22323a"/><circle cx="${ex2}" cy="${ey}" r="9" fill="#22323a"/><circle cx="${ex1+3}" cy="${ey-4}" r="3" fill="#fff"/><circle cx="${ex2+3}" cy="${ey-4}" r="3" fill="#fff"/>`;
+  const mouth = sleeping ? `<ellipse cx="100" cy="122" rx="5" ry="4" fill="#22323a"/>`
+    : mood==="sad" ? `<path d="M88 126q12-10 24 0" stroke="#22323a" stroke-width="5" fill="none" stroke-linecap="round"/>`
+    : `<path d="M86 118q14 14 28 0" stroke="#22323a" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  let hatSVG="";
+  if(hat==="party") hatSVG=`<path d="M100 2l20 50H80z" fill="#c7a6f2"/><path d="M92 26l17 5M87 40l26 6" stroke="#f7b733" stroke-width="4"/><circle cx="100" cy="4" r="6" fill="#f7b733"/>`;
+  if(hat==="crown") hatSVG=`<path d="M70 54V24l10 12 10-18 10 18 10-18 10 18 10-12v30z" fill="#c98f44"/><path d="M70 50h60" stroke="#8a5a22" stroke-width="4"/>`;
+  if(hat==="flower") hatSVG=`<g transform="translate(118 48)"><g fill="#fff">${[0,60,120,180,240,300].map(a=>`<ellipse cx="0" cy="-10" rx="5" ry="9" transform="rotate(${a})"/>`).join("")}</g><circle r="6" fill="#f7b733"/></g>`;
+  const zz = sleeping?`<text x="150" y="40" font-family="Baloo 2,sans-serif" font-weight="800" font-size="26" fill="#6aa8e8">z<tspan dy="-12" font-size="20">z</tspan></text>`:"";
+  return `<svg viewBox="0 0 200 180" role="img" aria-label="${SPECIES[species].name}">
+    ${white?`<g stroke="#d5dbe0" stroke-width="2">${back}${ears}</g>`:back+ears}
+    <ellipse cx="100" cy="172" rx="56" ry="7" fill="rgba(0,0,0,.12)"/>
+    <ellipse cx="100" cy="112" rx="62" ry="58" fill="${color}" ${white?'stroke="#d5dbe0" stroke-width="2"':""}/>
+    <ellipse cx="100" cy="136" rx="34" ry="28" fill="${light}"/>
+    ${extra}
+    ${spots}
+    ${eyes}
+    <circle cx="70" cy="110" r="8" fill="#ff8fa8" opacity=".55"/><circle cx="130" cy="110" r="8" fill="#ff8fa8" opacity=".55"/>
+    ${mouth}
+    <ellipse cx="74" cy="166" rx="16" ry="9" fill="${dark}"/><ellipse cx="126" cy="166" rx="16" ry="9" fill="${dark}"/>
+    ${hatSVG}${zz}</svg>`;
+}
+
+// ---------- pet logic ----------
+const clamp=v=>Math.max(0,Math.min(100,v));
+function decay(seconds){
+  const p=S.pet; if(!p) return;
+  const t=Math.min(seconds,60*60*8); // cap offline drain at 8 hours
+  if(p.sleeping){ p.energy=clamp(p.energy+t*(S.placed.bed?0.9:0.6)); p.hunger=clamp(p.hunger-t*0.02); if(p.energy>=100){p.sleeping=false;S.coins+=5; if(tab==="home") toast(`${p.name} woke up refreshed! +5 coins`)} }
+  else { p.hunger=clamp(p.hunger-t*0.05); p.fun=clamp(p.fun-t*0.04); p.energy=clamp(p.energy-t*0.03); }
+}
+function earn(n,key,coolSec){S.cd=S.cd||{};const now=Date.now();if(key&&S.cd[key]&&now-S.cd[key]<coolSec*1000)return 0;if(key)S.cd[key]=now;S.coins+=n;$("#coins").textContent=S.coins;coinPop(n);return n}
+function coinPop(n){const el=document.createElement("div");el.className="coinpop";el.textContent="+"+n+"¢";const box=$("#petbox");if(!box)return;box.parentNode.appendChild(el);setTimeout(()=>el.remove(),1100)}
+function mood(){const p=S.pet;const avg=(p.hunger+p.fun+p.energy)/3;return avg<35?"sad":"happy"}
+function xpNeed(l){return 40+l*20}
+function gainXP(n){const p=S.pet;p.xp+=n;while(p.xp>=xpNeed(p.level)){p.xp-=xpNeed(p.level);p.level++;S.coins+=15;toast(`${p.name} reached level ${p.level}! +15 coins`)}}
+function line(){
+  const p=S.pet;
+  if(p.sleeping) return "Shh… sleeping";
+  if(p.hunger<25) return "My tummy is rumbling!";
+  if(p.energy<25) return "I'm so sleepy…";
+  if(p.fun<25) return "Can we play? Please?";
+  return ["I love it here!","Hi, best friend!","Hum hum hum…","Let's catch treats!"][Math.floor(Date.now()/9000)%4];
+}
+
+// ---------- UI ----------
+const $=s=>document.querySelector(s);
+let toastT;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2200)}
+function render(){
+  $("#coins").textContent=S.coins;
+  $("#tabs").hidden=!S.pet||tab==="slots";
+  $("#slotsBtn").hidden=!S.pet&&!DB.slots.length;
+  $("#slotsBtn").setAttribute("aria-selected",tab==="slots");
+  $("#slotsBtn").textContent=tab==="slots"&&S.pet?"Back to "+S.pet.name:"My Saves";
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
+  if(tab!=="game") stopGame();
+  if(tab==="slots") return renderSlots();
+  if(!S.pet) return renderAdopt();
+  ({home:renderHome,shop:renderShop,stuff:renderStuff,game:renderGame})[tab]();
+}
+function renderAdopt(){
+  $("#view").innerHTML=`<section class="panel">
+    <div><h2>Adopt a Plush Pet</h2><p class="muted" style="margin:.3em 0 0">Pick a friend, choose a color, and give them a name. You'll start with 40 coins and two muffins.</p></div>
+    <div class="species">${Object.entries(SPECIES).map(([k,v])=>`<button class="sp" data-sp="${k}" aria-pressed="${draft.species===k}">${petSVG(k,draft.color)}<b>${v.name}</b><small>${v.blurb}</small></button>`).join("")}</div>
+    <div class="swatches" aria-label="Color">${COLORS.map(c=>`<button class="sw" data-c="${c}" style="background:${c}" aria-label="${COLOR_NAMES[c]||c}" title="${COLOR_NAMES[c]||c}" aria-pressed="${draft.color===c}"></button>`).join("")}</div>
+    ${DB.slots.length?`<button class="link" id="adoptBack" type="button" style="align-self:flex-start">Back to My Saves</button>`:""}
+    <form class="row" id="adoptForm"><input type="text" id="petName" maxlength="14" placeholder="Name your pet (e.g. Biscuit)" value="${draft.name}"><button class="big" type="submit">Adopt!</button></form>
+  </section>`;
+  document.querySelectorAll(".sp").forEach(b=>b.onclick=()=>{draft.species=b.dataset.sp;draft.name=$("#petName").value;renderAdopt()});
+  document.querySelectorAll(".sw").forEach(b=>b.onclick=()=>{draft.color=b.dataset.c;draft.name=$("#petName").value;renderAdopt()});
+  if($("#adoptBack"))$("#adoptBack").onclick=()=>{tab="slots";render()};
+  $("#adoptForm").onsubmit=e=>{e.preventDefault();const n=$("#petName").value.replace(/[<>&"]/g,"").trim()||"Biscuit";
+    S.pet={species:draft.species,color:draft.color,name:n,hunger:70,fun:70,energy:80,level:1,xp:0,sleeping:false,born:Date.now()};
+    S.last=Date.now();if(DB.active<0){DB.slots.push(S);DB.active=DB.slots.length-1}save();tab="home";render();toast(`Welcome home, ${n}!`)};
+}
+const DECOR_POS={lights:"left:-2%;top:-4%;width:104%",painting:"right:8%;top:10%;width:14%",clock:"left:33%;top:9%;width:8%",
+  shelf:"left:15%;bottom:30%;width:13%",fishbowl:"right:22%;bottom:31%;width:9%",plant:"right:5%;bottom:22%;width:14%",lamp:"left:2%;bottom:24%;width:13%",
+  rug:"left:30%;bottom:2%;width:40%",bed:"right:20%;bottom:4%;width:22%",beanbag:"left:16%;bottom:3%;width:15%",chest:"left:2%;bottom:2%;width:14%"};
+const DECOR_ORDER=Object.keys(DECOR_POS);
+function lightsSVG(){const cs=["#f7b733","#e2557a","#6aa8e8","#9edc9f","#c7a6f2"];let b="";for(let i=0;i<13;i++){const x=12+i*24,y=10+Math.sin(i/12*Math.PI)*12;b+=`<circle cx="${x}" cy="${y+6}" r="5" fill="${cs[i%5]}"/>`}return`<svg viewBox="0 0 320 34" aria-hidden="true"><path d="M0 8Q160 40 320 8" stroke="#5f7480" stroke-width="2" fill="none"/>${b}</svg>`}
+function bar(v,c){return`<div class="bar"><i style="width:${v}%;background:${v<25?"var(--berry)":c}"></i></div>`}
+function renderHome(){
+  const p=S.pet, night=p.sleeping;
+  const decor=DECOR_ORDER.filter(k=>S.placed[k]).map(k=>`<div class="decor" style="${DECOR_POS[k]}">${k==="lights"?lightsSVG():itemSVG(k)}</div>`).join("");
+  const wp=S.wall&&itemById(S.wall);
+  const food=ITEMS.filter(i=>i.food&&S.inv[i.id]>0);
+  const toy=ITEMS.filter(i=>i.toy&&S.owned[i.id]).sort((a,b)=>b.toy-a.toy)[0];
+  $("#view").innerHTML=`<section class="panel">
+    <div class="lvl"><h2>${p.name}</h2><span class="muted" style="font-weight:800">Lv ${p.level} ${SPECIES[p.species].name}</span><div class="bar" title="XP"><i style="width:${p.xp/xpNeed(p.level)*100}%;background:var(--sky)"></i></div></div>
+    <div class="room ${night?"night":""}" ${wp?`style="--wall:${wp.wall}"`:""}><div class="window"></div>${decor}
+      <div class="petbox" id="petbox">${petSVG(p.species,p.color,{mood:mood(),sleeping:p.sleeping,hat:S.hat})}</div>
+      <div class="say" id="say">${line()}</div></div>
+    <div class="stats">
+      <div class="stat"><label>Hunger <span id="vh">${Math.round(p.hunger)}</span></label>${bar(p.hunger,"var(--sun)")}</div>
+      <div class="stat"><label>Fun <span>${Math.round(p.fun)}</span></label>${bar(p.fun,"var(--leaf)")}</div>
+      <div class="stat"><label>Energy <span>${Math.round(p.energy)}</span></label>${bar(p.energy,"var(--sky)")}</div>
+    </div>
+    <div class="actions">
+      <button class="act" id="feed" ${p.sleeping?"disabled":""}>Feed · +3¢<span>${food.length?`${food[0].name} (${S.inv[food[0].id]} left)`:"No food. Visit the Shop"}</span></button>
+      <button class="act" id="play" ${p.sleeping?"disabled":""}>Play · +4¢<span>${toy?`with ${toy.name}`:"Tickle time"} · uses energy</span></button>
+      <button class="act" id="sleep">${p.sleeping?"Wake up":"Nap"} · +5¢<span>${p.sleeping?"Wakes up rested with coins":"Coins when fully rested"}</span></button>
+      <button class="act" id="pet" ${p.sleeping?"disabled":""}>Pet · +1¢<span>Every 10 seconds</span></button>
+    </div>
+    <p class="muted" style="margin:0;font-weight:700;font-size:.85rem">Keep hunger, fun and energy all above 70 and ${p.name} gives you a happy bonus of +2¢ every 30 seconds.</p>
+  </section>`;
+  const hop=()=>{const b=$("#petbox");b.classList.remove("bounce");void b.offsetWidth;b.classList.add("bounce")};
+  $("#feed").onclick=()=>{if(!food.length){tab="shop";return render()}const f=food[0];S.inv[f.id]--;const was=p.hunger;p.hunger=clamp(p.hunger+f.food);if(f.fun)p.fun=clamp(p.fun+f.fun);gainXP(6);const c=was<95?3:0;S.coins+=c;save();renderHome();hop();if(c)coinPop(c);$("#say").textContent=c?"Yum! Thank you!":"I'm already full, but thanks!"};
+  $("#play").onclick=()=>{if(p.energy<15){$("#say").textContent="Too tired to play…";return}p.fun=clamp(p.fun+15+(toy?toy.toy:0));p.energy=clamp(p.energy-12);gainXP(8);S.coins+=4;save();renderHome();hop();coinPop(4);$("#say").textContent="Wheee!"};
+  $("#sleep").onclick=()=>{p.sleeping=!p.sleeping;save();renderHome()};
+  $("#pet").onclick=()=>{p.fun=clamp(p.fun+3);gainXP(1);earn(1,"pet",10);save();hop();$("#say").textContent="Hehe, that tickles!"};
+}
+function renderShop(){
+  const cats=[...new Set(ITEMS.map(i=>i.cat))];
+  $("#view").innerHTML=`<section class="panel"><div><h2>Plush Park Shop</h2><p class="muted" style="margin:.3em 0 0">Food stacks up in your pantry. Toys, hats and room items are yours to keep.</p></div>
+    ${cats.map(c=>`<div class="cat">${c}</div><div class="items">${ITEMS.filter(i=>i.cat===c).map(i=>{
+      const once=!i.food, own=once&&S.owned[i.id];
+      return`<div class="item">${itemSVG(i.draw)}<b>${i.name}</b><small>${i.desc}${i.food&&S.inv[i.id]?` · have ${S.inv[i.id]}`:""}</small>
+      <button class="buy ${own?"owned":""}" data-buy="${i.id}" ${own||S.coins<i.price?"disabled":""}>${own?"Owned":`Buy · ${i.price}¢`}</button></div>`}).join("")}</div>`).join("")}
+  </section>`;
+  document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const i=itemById(b.dataset.buy);if(S.coins<i.price)return;
+    S.coins-=i.price;if(i.food)S.inv[i.id]=(S.inv[i.id]||0)+1;else{S.owned[i.id]=true;if(i.room)S.placed[i.id]=true;if(i.wall)S.wall=i.id}
+    save();toast(`Bought ${i.name}!`);render()});
+}
+function renderStuff(){
+  const walls=ITEMS.filter(i=>i.wall&&S.owned[i.id]), hats=ITEMS.filter(i=>i.hat&&S.owned[i.id]), room=ITEMS.filter(i=>i.room&&S.owned[i.id]), pantry=ITEMS.filter(i=>i.food&&S.inv[i.id]>0), toys=ITEMS.filter(i=>i.toy&&S.owned[i.id]);
+  const none=t=>`<p class="muted" style="margin:0">${t}</p>`;
+  $("#view").innerHTML=`<section class="panel"><h2>My Stuff</h2>
+    <div class="cat">Hats</div>${hats.length?`<div class="items">${hats.map(i=>`<div class="item">${itemSVG(i.draw)}<b>${i.name}</b><button class="buy ${S.hat===i.id?"owned":""}" data-hat="${i.id}">${S.hat===i.id?"Take off":"Wear"}</button></div>`).join("")}</div>`:none("No hats yet. The Shop has a few.")}
+    <div class="cat">Room</div>${room.length?`<div class="items">${room.map(i=>`<div class="item">${itemSVG(i.draw)}<b>${i.name}</b><button class="buy ${S.placed[i.id]?"owned":""}" data-room="${i.id}">${S.placed[i.id]?"Put away":"Place in room"}</button></div>`).join("")}</div>`:none("Your room is bare. Decorate it from the Shop.")}
+    <div class="cat">Wallpaper</div>${walls.length?`<div class="items">${walls.map(i=>`<div class="item">${itemSVG(i.draw)}<b>${i.name}</b><button class="buy ${S.wall===i.id?"owned":""}" data-wall="${i.id}">${S.wall===i.id?"Take down":"Put up"}</button></div>`).join("")}</div>`:none("No wallpaper yet. The Shop has some.")}
+    <div class="cat">Pantry</div>${pantry.length?`<div class="items">${pantry.map(i=>`<div class="item">${itemSVG(i.draw)}<b>${i.name}</b><small>× ${S.inv[i.id]}</small></div>`).join("")}</div>`:none("Pantry is empty.")}
+    <div class="cat">Toys</div>${toys.length?`<div class="items">${toys.map(i=>`<div class="item">${itemSVG(i.draw)}<b>${i.name}</b><small>${i.desc}</small></div>`).join("")}</div>`:none("No toys yet.")}
+    <div class="confirm"><button class="link" id="toSaves">Want another Plush Pet? Go to My Saves to start a new save.</button></div>
+  </section>`;
+  document.querySelectorAll("[data-hat]").forEach(b=>b.onclick=()=>{S.hat=S.hat===b.dataset.hat?null:b.dataset.hat;save();renderStuff()});
+  document.querySelectorAll("[data-room]").forEach(b=>b.onclick=()=>{S.placed[b.dataset.room]=!S.placed[b.dataset.room];save();renderStuff()});
+  document.querySelectorAll("[data-wall]").forEach(b=>b.onclick=()=>{S.wall=S.wall===b.dataset.wall?null:b.dataset.wall;save();renderStuff()});
+  $("#toSaves").onclick=()=>{tab="slots";render()};
+}
+
+// ---------- save slots ----------
+function ago(t){if(!t)return"";const m=Math.round((Date.now()-t)/60000);if(m<1)return"just now";if(m<60)return m+" min ago";const h=Math.round(m/60);if(h<24)return h+(h===1?" hour":" hours")+" ago";const d=Math.round(h/24);return d+(d===1?" day":" days")+" ago"}
+function renderSlots(){
+  save();
+  const full=DB.slots.length>=MAXSAVES;
+  $("#view").innerHTML=`<section class="panel"><div><h2>My Saves</h2><p class="muted" style="margin:.3em 0 0">Pick a save to go back to that pet, or start a new save with a brand-new Plush Pet. Each save keeps its own pet, coins and stuff.</p></div>
+    <div class="slots">${DB.slots.map((d,i)=>{
+      const active=i===DB.active;
+      return `<div class="slot ${active?"current":""}">
+        <div class="cat">Save ${i+1}${active?" · playing now":""}</div>
+        <div class="slotpet">${petSVG(d.pet.species,d.pet.color,{hat:d.hat,sleeping:d.pet.sleeping})}</div>
+        <b>${d.pet.name}</b><small>Lv ${d.pet.level} ${SPECIES[d.pet.species].name} · ${d.coins}¢<br>Played ${ago(d.last)}</small>
+        ${confirmDel===i?`<div class="col"><span style="font-weight:800">Delete ${d.pet.name} for good?</span><button class="buy" data-del="${i}" style="background:var(--berry);color:#fff">Yes, delete</button><button class="link" data-cancel>Keep it</button></div>`
+          :`<div class="col"><button class="buy ${active?"owned":""}" data-use="${i}">${active?"Keep playing":"Play"}</button><button class="link" data-ask="${i}">Delete</button></div>`}
+      </div>`}).join("")}
+      <div class="slot newslot">
+        <div class="cat">New save</div>
+        <div class="slotpet empty">+</div>
+        <b>Start a new save</b><small>${full?`You have ${MAXSAVES} saves. Delete one to make room.`:"Adopt another Plush Pet. Your other saves stay safe."}</small>
+        <div class="col"><button class="buy" id="newSave" ${full?"disabled":""}>New save</button></div>
+      </div></div></section>`;
+  document.querySelectorAll("[data-use]").forEach(b=>b.onclick=()=>{const i=+b.dataset.use;if(i===DB.active){tab="home";render()}else useSlot(i)});
+  document.querySelectorAll("[data-ask]").forEach(b=>b.onclick=()=>{confirmDel=+b.dataset.ask;renderSlots()});
+  document.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{confirmDel=null;renderSlots()});
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const i=+b.dataset.del;const name=DB.slots[i].pet.name;
+    DB.slots.splice(i,1);if(i===DB.active){DB.active=-1;S=fresh()}else if(i<DB.active)DB.active--;
+    confirmDel=null;save();toast(`${name} was deleted`);renderSlots()});
+  $("#newSave").onclick=newSave;
+}
+
+// ---------- Treat Drop minigame ----------
+let G=null;
+function renderGame(){
+  $("#view").innerHTML=`<section class="panel"><div><h2>Treat Drop</h2><p class="muted" style="margin:.3em 0 0">Move ${S.pet.name} to catch falling treats. Golden stars are worth 5. Dodge the pebbles! Every 2 points earns 1 coin.</p></div>
+    <div class="hud"><span>Score <span id="gs">0</span></span><span>Time <span id="gt">30</span>s</span><span>Best ${S.best}</span></div>
+    <div class="gamewrap" id="gw"><canvas id="cv" width="640" height="480"></canvas>
+      <div class="overlay" id="ov"><h2>Ready?</h2><p class="muted" style="margin:0">Arrow keys, drag, or tap the sides to move.</p><button class="big" id="go">Start</button></div></div>
+  </section>`;
+  drawIdle();
+  $("#go").onclick=startGame;
+}
+let petImg=null;
+function makePetImg(){const svg=petSVG(S.pet.species,S.pet.color,{hat:S.hat});const img=new Image();img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg.replace("<svg",'<svg xmlns="http://www.w3.org/2000/svg"'));return img}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function drawIdle(){petImg=makePetImg();petImg.onload=()=>{const c=$("#cv");if(!c)return;const x=c.getContext("2d");drawScene(x,{px:320,items:[]})}}
+function drawScene(x,g){
+  x.fillStyle=css("--room-wall");x.fillRect(0,0,640,480);
+  x.fillStyle=css("--room-floor");x.fillRect(0,420,640,60);
+  for(const it of g.items){
+    x.save();x.translate(it.x,it.y);x.rotate(it.r);
+    if(it.t==="rock"){x.fillStyle="#7d8a91";x.beginPath();x.ellipse(0,0,16,13,0,0,7);x.fill();x.fillStyle="#5d6a71";x.beginPath();x.arc(-4,-3,4,0,7);x.fill()}
+    else if(it.t==="star"){x.fillStyle="#f7b733";x.beginPath();for(let i=0;i<10;i++){const r=i%2?8:18,a=i*Math.PI/5-Math.PI/2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.fill()}
+    else{x.fillStyle=it.c;x.beginPath();x.arc(0,0,14,0,7);x.fill();x.fillStyle="rgba(255,255,255,.6)";x.beginPath();x.arc(-4,-5,4,0,7);x.fill()}
+    x.restore();
+  }
+  if(petImg&&petImg.complete)x.drawImage(petImg,g.px-60,330,120,108);
+  if(g.pops)for(const p of g.pops){x.globalAlpha=Math.max(0,p.life);x.fillStyle=css("--ink");x.font="800 24px Baloo 2, sans-serif";x.textAlign="center";x.fillText(p.txt,p.x,p.y);x.globalAlpha=1}
+}
+function startGame(){
+  $("#ov").hidden=true;petImg=makePetImg();
+  G={px:320,vx:0,items:[],pops:[],score:0,time:30,spawn:0,last:performance.now(),keys:{},running:true,target:null};
+  const cv=$("#cv"), gw=$("#gw");
+  const toX=e=>{const r=cv.getBoundingClientRect();return (e.clientX-r.left)/r.width*640};
+  gw.onpointerdown=e=>{G.target=toX(e);gw.setPointerCapture(e.pointerId)};
+  gw.onpointermove=e=>{if(e.buttons||e.pointerType==="mouse")G.target=toX(e)};
+  gw.onpointerup=()=>{};
+  G.kd=e=>{if(["ArrowLeft","ArrowRight","a","d"].includes(e.key)){G.keys[e.key]=true;G.target=null;e.preventDefault()}};
+  G.ku=e=>{G.keys[e.key]=false};
+  addEventListener("keydown",G.kd);addEventListener("keyup",G.ku);
+  requestAnimationFrame(loop);
+}
+function stopGame(){if(G){G.running=false;removeEventListener("keydown",G.kd);removeEventListener("keyup",G.ku);G=null}}
+function loop(now){
+  if(!G||!G.running)return;
+  const dt=Math.min(0.05,(now-G.last)/1000);G.last=now;
+  G.time-=dt;
+  const left=G.keys.ArrowLeft||G.keys.a, right=G.keys.ArrowRight||G.keys.d;
+  if(left)G.px-=420*dt; if(right)G.px+=420*dt;
+  if(G.target!=null&&!left&&!right)G.px+=(G.target-G.px)*Math.min(1,dt*10);
+  G.px=Math.max(50,Math.min(590,G.px));
+  const speedUp=1+(30-G.time)/30;
+  G.spawn-=dt; if(G.spawn<=0){G.spawn=0.55/speedUp;const r=Math.random();
+    G.items.push({x:30+Math.random()*580,y:-20,vy:(140+Math.random()*80)*speedUp,r:0,vr:(Math.random()-.5)*4,
+      t:r<.22?"rock":r<.3?"star":"treat",c:["#e2557a","#f4a979","#9edc9f","#c7a6f2"][Math.floor(Math.random()*4)]})}
+  for(const it of G.items){it.y+=it.vy*dt;it.r+=it.vr*dt;
+    if(!it.done&&it.y>350&&it.y<420&&Math.abs(it.x-G.px)<55){it.done=true;
+      if(it.t==="rock"){G.score=Math.max(0,G.score-3);G.pops.push({x:it.x,y:340,txt:"-3",life:1})}
+      else{const v=it.t==="star"?5:1;G.score+=v;G.pops.push({x:it.x,y:340,txt:"+"+v,life:1})}}}
+  G.items=G.items.filter(i=>!i.done&&i.y<500);
+  for(const p of G.pops){p.y-=40*dt;p.life-=dt*1.5}G.pops=G.pops.filter(p=>p.life>0);
+  const cv=$("#cv");if(!cv){stopGame();return}
+  drawScene(cv.getContext("2d"),G);
+  $("#gs").textContent=G.score;$("#gt").textContent=Math.max(0,Math.ceil(G.time));
+  if(G.time<=0)return endGame();
+  requestAnimationFrame(loop);
+}
+function endGame(){
+  const score=G.score, earned=Math.floor(score/2), newBest=score>S.best;
+  stopGame();
+  S.coins+=earned;if(newBest)S.best=score;S.pet.fun=clamp(S.pet.fun+10);S.pet.energy=clamp(S.pet.energy-8);gainXP(10);save();
+  $("#coins").textContent=S.coins;
+  const ov=$("#ov");ov.hidden=false;
+  ov.innerHTML=`<h2>${newBest?"New best!":"Time's up!"}</h2><p style="margin:0;font-weight:800">Score ${score} · earned ${earned} coins</p><p class="muted" style="margin:0">${S.pet.name} had fun (+10 fun).</p><div class="row" style="justify-content:center"><button class="big" id="go">Play again</button><button class="tab" id="back">Back to room</button></div>`;
+  $("#go").onclick=()=>{renderGame();startGame()};
+  $("#back").onclick=()=>{tab="home";render()};
+}
+
+// ---------- boot ----------
+$("#slotsBtn").onclick=()=>{tab=tab==="slots"&&S.pet?"home":"slots";confirmDel=null;render()};
+$("#tabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(b){tab=b.dataset.tab;render()}};
+function start(){
+  if(DB.slots.length)tab="slots";
+  if(S.pet&&S.last){decay((Date.now()-S.last)/1000)}
+  S.last=Date.now();save();render();
+  setInterval(()=>{if(!S.pet)return;decay(3);S.last=Date.now();const p=S.pet;if(!p.sleeping&&p.hunger>70&&p.fun>70&&p.energy>70&&tab==="home"){if(earn(2,"happy",30))toast(`${p.name} is so happy! +2 coins`)}save();
+    if(tab==="home"&&!document.querySelector(".petbox.bounce:hover"))refreshHome()},3000);
+}
+function refreshHome(){
+  // update bars without rebuilding focus-sensitive buttons too often
+  const active=document.activeElement&&document.activeElement.id;
+  renderHome(); if(active&&document.getElementById(active))document.getElementById(active).focus();
+  $("#coins").textContent=S.coins;
+}
+start();
+</script>
+
+</body></html>

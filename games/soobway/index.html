@@ -1,0 +1,316 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Soobway</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap">
+<style>
+/* Layout: sandwich-shop counter. Customer line on top, ticket + build board in the middle, ingredient bins below. Single deliberate look (shop at night), works on any host theme. */
+:root{
+  --wall:#0f3b2e; --wall2:#0b2c22; --counter:#e8b23a; --counter-dk:#b9831a;
+  --paper:#fff8e6; --ink:#2a1d0e; --mint:#5be3a0; --red:#ff5a4f; --sky:#7fd0ff;
+  --display:"Bungee", "Arial Black", Impact, sans-serif;
+  --body:"Nunito", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--wall);color:var(--paper);font-family:var(--body);font-weight:800;
+  background-image:repeating-linear-gradient(90deg,var(--wall) 0 46px,var(--wall2) 46px 48px),repeating-linear-gradient(0deg,transparent 0 46px,var(--wall2) 46px 48px);}
+.wrap{max-width:960px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+h1{font-family:var(--display);font-weight:400;margin:0;font-size:clamp(22px,5vw,34px);color:var(--counter);text-shadow:3px 3px 0 var(--ink);letter-spacing:.5px}
+h1 span{color:var(--mint)}
+.hud{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--ink);border:2px solid var(--counter);border-radius:10px;padding:4px 10px;font-variant-numeric:tabular-nums;font-size:15px;white-space:nowrap}
+.chip b{color:var(--counter)}
+#hearts{color:var(--red);letter-spacing:2px}
+
+/* line */
+.line{position:relative;background:linear-gradient(var(--wall2),var(--wall));border:3px solid var(--ink);border-radius:14px;min-height:150px;padding:10px;display:flex;gap:10px;align-items:flex-end;overflow:hidden}
+.cust{flex:0 0 auto;width:96px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .3s, opacity .3s;position:relative}
+.cust .face{font-size:52px;line-height:1;filter:drop-shadow(2px 3px 0 rgba(0,0,0,.4))}
+.cust.front .face{font-size:68px;animation:bob 1s ease-in-out infinite}
+.cust .name{font-size:12px;text-align:center;color:var(--paper);opacity:.9}
+.cust .mood{position:absolute;top:-4px;right:4px;font-size:22px}
+.bar{width:90%;height:8px;background:#00000066;border-radius:6px;overflow:hidden;border:1px solid #0006}
+.bar i{display:block;height:100%;background:var(--mint);transition:width .2s linear}
+.cust.warn .bar i{background:var(--counter)}
+.cust.mad .bar i{background:var(--red)}
+.cust.mad .face{animation:shake .25s linear infinite}
+.leaving{transform:translateX(-140px) !important;opacity:0}
+.empty-line{opacity:.6;font-size:14px;align-self:center;margin:auto}
+@keyframes bob{50%{transform:translateY(-4px)}}
+@keyframes shake{25%{transform:translateX(-3px) rotate(-4deg)}75%{transform:translateX(3px) rotate(4deg)}}
+.pop{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:var(--display);font-size:clamp(20px,5vw,30px);pointer-events:none;animation:pop 1.1s ease-out forwards;white-space:nowrap;text-shadow:2px 2px 0 var(--ink)}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(1)}}
+
+/* middle */
+.mid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}
+@media (max-width:640px){.mid{grid-template-columns:minmax(0,1fr)}}
+.ticket{background:var(--paper);color:var(--ink);border-radius:4px;padding:12px 14px;position:relative;box-shadow:4px 4px 0 var(--ink);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 8px),95% 100%,90% calc(100% - 8px),85% 100%,80% calc(100% - 8px),75% 100%,70% calc(100% - 8px),65% 100%,60% calc(100% - 8px),55% 100%,50% calc(100% - 8px),45% 100%,40% calc(100% - 8px),35% 100%,30% calc(100% - 8px),25% 100%,20% calc(100% - 8px),15% 100%,10% calc(100% - 8px),5% 100%,0 calc(100% - 8px))}
+.ticket h2{font-family:var(--display);font-weight:400;font-size:16px;margin:0 0 2px}
+.ticket .who{font-size:13px;opacity:.75;margin-bottom:8px}
+.ticket ul{list-style:none;margin:0;padding:0 0 10px;display:flex;flex-direction:column;gap:3px;font-size:15px}
+.ticket li::before{content:"☐ ";}
+.ticket li.got{opacity:.45;text-decoration:line-through}
+.ticket li.got::before{content:"☑ ";}
+.ticket li.odd{color:#b0306a}
+.board{background:#c98a52;background-image:repeating-linear-gradient(90deg,#00000010 0 2px,transparent 2px 22px);border:3px solid var(--ink);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:190px}
+.stack{flex:1;display:flex;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:0;min-height:120px;padding-top:6px}
+.layer{width:min(260px,88%);border-radius:8px;text-align:center;font-size:12px;color:var(--ink);padding:3px 0;border:2px solid #0004;animation:drop .18s ease-out}
+.layer.bread{border-radius:40px 40px 14px 14px;padding:8px 0;font-size:13px}
+@keyframes drop{from{transform:translateY(-20px);opacity:0}}
+.stack .hint{color:var(--ink);opacity:.6;font-size:14px;margin:auto;text-align:center}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button{font-family:var(--body);font-weight:900;cursor:pointer;border:3px solid var(--ink);border-radius:10px;padding:8px 12px;font-size:15px;color:var(--ink);background:var(--paper);box-shadow:0 4px 0 var(--ink);transition:transform .05s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+button:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+button.serve{background:var(--mint);flex:1;font-family:var(--display);font-weight:400;font-size:18px}
+button.trash{background:var(--red);color:var(--paper)}
+
+/* bins */
+.bins{background:var(--counter);border:3px solid var(--ink);border-radius:14px;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;box-shadow:inset 0 -8px 0 var(--counter-dk)}
+.bin{display:flex;flex-direction:column;gap:6px;min-width:0}
+.bin h3{margin:0;font-family:var(--display);font-weight:400;font-size:12px;color:var(--ink);letter-spacing:1px}
+.bin .row{display:flex;flex-wrap:wrap;gap:6px}
+.ing{padding:6px 8px;font-size:13px;box-shadow:0 3px 0 var(--ink);border-width:2px}
+.bin.odd h3{color:#7a1a48}
+
+/* overlay */
+.overlay{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.card{background:var(--paper);color:var(--ink);border:4px solid var(--ink);border-radius:18px;max-width:440px;width:100%;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:8px 8px 0 var(--counter)}
+.card h2{font-family:var(--display);font-weight:400;margin:0;font-size:28px;color:var(--wall);text-wrap:balance}
+.card p{margin:0;font-weight:600;line-height:1.45}
+.card .big{font-family:var(--display);font-size:22px;color:var(--wall)}
+.card button{font-family:var(--display);font-weight:400;font-size:20px;background:var(--mint)}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Soob<span>way</span></h1>
+    <div class="hud">
+      <div class="chip">Tips <b id="coins">$0</b></div>
+      <div class="chip">Served <b id="served">0</b></div>
+      <div class="chip">Day <b id="day">1</b></div>
+      <div class="chip" id="hearts" aria-label="lives">♥♥♥</div>
+    </div>
+  </header>
+
+  <section class="line" id="line" aria-label="Customer line"></section>
+
+  <section class="mid">
+    <div class="ticket" id="ticket"></div>
+    <div class="board">
+      <div class="stack" id="stack"></div>
+      <div class="actions">
+        <button class="trash" id="trashBtn">Trash it</button>
+        <button id="undoBtn">Undo</button>
+        <button class="serve" id="serveBtn">Serve!</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="bins" id="bins" aria-label="Ingredients"></section>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2>Soobway</h2>
+    <p>The weirdest customers in town want sandwiches. Read the ticket, tap the ingredients, and hit <b>Serve!</b></p>
+    <p>Watch the bar under the customer at the front. If it runs out, they get mad and storm off. Get the order wrong and they get mad too. 3 mad customers and you're fired!</p>
+    <p>Pink items on the ticket are the odd ones. Yes, that ghost really wants gummy worms.</p>
+    <button id="startBtn">Open the shop</button>
+  </div>
+</div>
+
+<script>
+const ING = {
+  Bread:   {items:["Italian","Wheat","Flatbread","Garlic Roll"], colors:["#f1c27d","#a8743a","#f5deb3","#e9b872"]},
+  Cheese:  {items:["American","Swiss","Pepper Jack"], colors:["#ffb627","#fff3b0","#ffd166"]},
+  Meat:    {items:["Turkey","Ham","Meatballs","Chicken","Veggie Patty"], colors:["#f4c7a1","#f49ac1","#8b3a2b","#e8c28e","#6a994e"]},
+  Veggies: {items:["Lettuce","Tomato","Pickles","Onion","Peppers","Olives"], colors:["#80ed99","#ef476f","#a7c957","#e0b1cb","#ffd23f","#3d3b30"]},
+  Sauce:   {items:["Mayo","Mustard","Ranch","Chipotle","Honey Mustard"], colors:["#fffbe6","#ffcd00","#f8f9fa","#e76f51","#e9c46a"]},
+  Odd:     {items:["Gummy Worms","Marshmallows","Hot Chips","Banana","Ice Cream","Cereal"], colors:["#ff70a6","#ffffff","#ff4d00","#ffe66d","#bde0fe","#f4a261"]},
+};
+const COLOR = {}; const CAT = {};
+for (const c in ING) ING[c].items.forEach((n,i)=>{COLOR[n]=ING[c].colors[i]; CAT[n]=c;});
+
+const PEOPLE = [
+  ["👽","Zorp from Space"],["🤖","Beep-Bop 3000"],["👻","Gus the Ghost"],["🧛","Count Crunch"],
+  ["🦖","Rexy"],["🤠","Cowboy Clint"],["🧙","Wizard Wen"],["🐸","Mr. Ribbit"],["🦄","Sparkles"],
+  ["🧟","Zed (very slow)"],["🐙","Ink the Octopus"],["🤡","Bonko"],["🐵","Banana Bob"],["🧜","Marina"],
+  ["👴","Grandpa Gus"],["🐱","Sir Whiskers"],["🦸","Captain Lunch"],["🐻","Big Teddy"]
+];
+
+const $ = id => document.getElementById(id);
+let S;
+
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function pickN(arr,n){const a=[...arr];const out=[];while(out.length<n&&a.length){out.push(a.splice(Math.floor(Math.random()*a.length),1)[0])}return out}
+
+function makeOrder(){
+  const d=S.day;
+  const o=[pick(ING.Bread.items)];
+  if(Math.random()<.85) o.push(pick(ING.Cheese.items));
+  o.push(...pickN(ING.Meat.items, d>=3 && Math.random()<.4 ? 2 : 1));
+  o.push(...pickN(ING.Veggies.items, Math.min(1+Math.floor(Math.random()*(1+d/2)),4)));
+  o.push(pick(ING.Sauce.items));
+  if(Math.random() < Math.min(.35+d*.08,.8)) o.push(...pickN(ING.Odd.items, d>=4&&Math.random()<.3?2:1));
+  return o;
+}
+function newCustomer(){
+  const [face,name]=pick(PEOPLE);
+  const order=makeOrder();
+  const max = Math.max(9, 8 + order.length*2.6 - S.day*1.1) * (face==="🧟"?1.3:1);
+  return {id:Math.random(),face,name,order,patience:max,max};
+}
+
+function start(){
+  S={coins:0,served:0,day:1,lives:3,line:[],build:[],spawnT:0,running:true,last:performance.now()};
+  S.line.push(newCustomer()); S.line.push(newCustomer());
+  $("overlay").hidden=true;
+  renderAll(); requestAnimationFrame(loop);
+}
+
+function loop(t){
+  if(!S.running) return;
+  const dt=Math.min((t-S.last)/1000,.1); S.last=t;
+  // front customer drains fast, waiting ones drain slowly
+  S.line.forEach((c,i)=>{ c.patience -= dt*(i===0?1:.25); });
+  const gone = S.line.filter(c=>c.patience<=0);
+  if(gone.length){
+    gone.forEach(c=>{ storm(c,"Too slow!"); });
+    S.line=S.line.filter(c=>c.patience>0);
+    if(gone.some(c=>c===S.lastFront)) S.build=[];
+    renderAll();
+  }
+  S.spawnT-=dt;
+  const maxLine = Math.min(3+Math.floor(S.day/2),5);
+  if(S.spawnT<=0){
+    if(S.line.length<maxLine){S.line.push(newCustomer()); renderLine();}
+    S.spawnT=Math.max(4, 11-S.day*1.2);
+  }
+  if(!S.line.length){S.line.push(newCustomer()); renderAll();}
+  updateBars();
+  requestAnimationFrame(loop);
+}
+
+function storm(c,msg){
+  if(!S.running) return;
+  S.lives--; popText(msg + " 😡", "var(--red)");
+  if(S.lives<=0) gameOver();
+  renderHud();
+}
+
+function serve(){
+  if(!S.running) return;
+  const c=S.line[0]; if(!c) return;
+  if(!S.build.length){popText("Make something first!","var(--counter)");return;}
+  const want=[...c.order].sort().join("|"), got=[...S.build].sort().join("|");
+  S.line.shift();
+  if(want===got){
+    const tip = 3 + Math.round(c.order.length*.8 + (c.patience/c.max)*6);
+    S.coins+=tip; S.served++;
+    popText(`Yum! +$${tip}`, "var(--mint)");
+    if(S.served%5===0){S.day++; popText(`Day ${S.day}! Busier now`, "var(--sky)");}
+  } else {
+    storm(c,"Wrong order!");
+  }
+  S.build=[]; renderAll();
+}
+
+function addIng(n){
+  if(!S.running) return;
+  if(!S.build.length && CAT[n]!=="Bread"){popText("Bread first!","var(--counter)");return;}
+  if(S.build.length && CAT[n]==="Bread"){popText("Already has bread!","var(--counter)");return;}
+  if(S.build.includes(n)){popText("Already added!","var(--counter)");return;}
+  if(S.build.length>=12) return;
+  S.build.push(n); renderBuild(); renderTicket();
+}
+
+function gameOver(){
+  S.running=false;
+  $("overlay").innerHTML=`<div class="card">
+    <h2>You're fired! 😱</h2>
+    <p>Three customers stormed out mad. The manager is not happy.</p>
+    <p class="big">Served ${S.served} · Tips $${S.coins} · Day ${S.day}</p>
+    <button id="againBtn">Try again</button></div>`;
+  $("overlay").hidden=false;
+  $("againBtn").onclick=start; $("againBtn").focus();
+}
+
+function popText(msg,color){
+  const el=document.createElement("div"); el.className="pop"; el.textContent=msg; el.style.color=color;
+  $("line").appendChild(el); setTimeout(()=>el.remove(),1100);
+}
+
+/* rendering */
+function renderHud(){
+  $("coins").textContent="$"+S.coins; $("served").textContent=S.served; $("day").textContent=S.day;
+  $("hearts").textContent="♥".repeat(Math.max(S.lives,0))+"♡".repeat(3-Math.max(S.lives,0));
+}
+function renderLine(){
+  const L=$("line"); L.querySelectorAll(".cust,.empty-line").forEach(e=>e.remove());
+  S.lastFront=S.line[0];
+  S.line.forEach((c,i)=>{
+    const d=document.createElement("div"); d.className="cust"+(i===0?" front":""); d.dataset.id=c.id;
+    d.innerHTML=`<span class="mood"></span><div class="face">${c.face}</div><div class="bar"><i></i></div><div class="name">${c.name}</div>`;
+    L.appendChild(d);
+  });
+  updateBars();
+}
+function updateBars(){
+  const els=$("line").querySelectorAll(".cust");
+  S.line.forEach((c,i)=>{
+    const el=els[i]; if(!el) return;
+    const f=Math.max(c.patience/c.max,0);
+    el.querySelector(".bar i").style.width=(f*100)+"%";
+    el.classList.toggle("warn",f<.5&&f>=.25); el.classList.toggle("mad",f<.25);
+    el.querySelector(".mood").textContent = f<.25?"😡":f<.5?"😠":"";
+  });
+}
+function renderTicket(){
+  const c=S.line[0], T=$("ticket");
+  if(!c){T.innerHTML=`<h2>No orders</h2><p class="who">Waiting for customers…</p>`;return;}
+  T.innerHTML=`<h2>Order for:</h2><div class="who">${c.face} ${c.name}</div><ul>${
+    c.order.map(n=>`<li class="${S.build.includes(n)?"got":""} ${CAT[n]==="Odd"?"odd":""}">${n}</li>`).join("")}</ul>`;
+}
+function renderBuild(){
+  const s=$("stack");
+  if(!S.build.length){s.innerHTML=`<div class="hint">Tap a bread to start the sandwich</div>`;return;}
+  s.innerHTML="";
+  S.build.forEach(n=>{
+    const l=document.createElement("div"); l.className="layer"+(CAT[n]==="Bread"?" bread":"");
+    l.style.background=COLOR[n]; l.textContent=n;
+    if(n==="Olives"||n==="Meatballs") l.style.color="#fff8e6";
+    s.appendChild(l);
+  });
+}
+function renderBins(){
+  const B=$("bins"); B.innerHTML="";
+  for(const c in ING){
+    const bin=document.createElement("div"); bin.className="bin"+(c==="Odd"?" odd":"");
+    bin.innerHTML=`<h3>${c==="Odd"?"Odd stuff":c.toUpperCase()}</h3><div class="row"></div>`;
+    ING[c].items.forEach(n=>{
+      const b=document.createElement("button"); b.className="ing"; b.textContent=n; b.id="ing-"+n.replace(/\s/g,"");
+      b.style.background=COLOR[n]; if(n==="Olives"||n==="Meatballs"||n==="Hot Chips") b.style.color="#fff8e6";
+      b.onclick=()=>addIng(n); bin.querySelector(".row").appendChild(b);
+    });
+    B.appendChild(bin);
+  }
+}
+function renderAll(){renderHud();renderLine();renderTicket();renderBuild();}
+
+$("serveBtn").onclick=serve;
+$("trashBtn").onclick=()=>{S&&(S.build=[],renderBuild(),renderTicket())};
+$("undoBtn").onclick=()=>{S&&(S.build.pop(),renderBuild(),renderTicket())};
+$("startBtn").onclick=start;
+renderBins();
+// show a sample order behind the start screen
+S={coins:0,served:0,day:1,lives:3,line:[],build:[],running:false};
+S.line=[{face:"👻",name:"Gus the Ghost",order:["Italian","Swiss","Turkey","Lettuce","Pickles","Ranch","Gummy Worms"],patience:10,max:10},{face:"🤖",name:"Beep-Bop 3000",order:[],patience:10,max:10}];
+S.build=["Italian","Swiss"];
+renderAll();
+</script>
+
+</body></html>

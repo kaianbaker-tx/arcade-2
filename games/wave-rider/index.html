@@ -1,0 +1,212 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Wave Rider</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Layout: one full-screen ocean canvas with a floating score bar and a center start card */
+:root{
+  --sky:#7fd3ef; --sea:#1d7fb8; --deep:#0d4f7a; --foam:#f3fbff;
+  --sun:#ffd23f; --ink:#0b2d45; --green:#2ec45a;
+  --display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --body:"Nunito",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--deep);color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:manipulation;user-select:none}
+#game{position:fixed;inset:0;display:block;width:100%;height:100%}
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:16px;right:16px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;font-family:var(--display);font-size:clamp(18px,4vw,26px);color:var(--foam);text-shadow:0 2px 0 var(--ink)}
+.hud span{font-variant-numeric:tabular-nums}
+.card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 32px));background:var(--foam);border:4px solid var(--ink);border-radius:20px;padding:22px 20px;text-align:center;box-shadow:0 8px 0 var(--ink);display:grid;gap:10px}
+.card h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(36px,9vw,52px);color:var(--sea);text-wrap:balance;letter-spacing:.5px;line-height:1}
+.card p{margin:0;font-size:15px;line-height:1.45}
+.keys{font-size:14px;font-weight:800;color:var(--deep)}
+.btn{font-family:var(--display);font-size:24px;background:var(--green);color:var(--foam);border:4px solid var(--ink);border-radius:14px;padding:10px 18px;cursor:pointer;box-shadow:0 5px 0 var(--ink);text-shadow:0 2px 0 var(--ink)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+.btn:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
+</style>
+
+<canvas id="game" aria-label="Surfing game"></canvas>
+<div class="hud"><div>Score <span id="score">0</span></div><div>Best <span id="best">0</span></div></div>
+<div class="card" id="card">
+  <h1 id="cardTitle">Wave Rider</h1>
+  <p id="cardText">Ride the waves! Dodge rocks, sharks, logs, jellyfish, crabs and seagulls, and grab the stars.</p>
+  <div class="keys">Space / ↑ / tap = jump · jump again in the air to flip. Finish the flip before you land or you drown!</div>
+  <button class="btn" id="go">Surf!</button>
+</div>
+
+<script>
+const cv=document.getElementById('game'),cx=cv.getContext('2d');
+const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best');
+const card=document.getElementById('card'),go=document.getElementById('go');
+let W,H,sea; function resize(){const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0);sea=H*0.62}
+addEventListener('resize',resize);resize();
+
+let best=0;try{best=+localStorage.getItem('waveRiderBest')||0}catch(e){}
+bestEl.textContent=best;
+
+let state='menu',t=0,speed,score,obs,stars,parts,spawnT,starT,boy;
+function reset(){speed=5;score=0;obs=[];stars=[];parts=[];spawnT=60;starT=40;
+  boy={x:Math.max(90,W*0.22),y:0,vy:0,jumps:0,spin:0,ground:true};}
+reset();
+
+function waveY(x){return sea+Math.sin((x+t*speed)*0.012)*14+Math.sin((x+t*speed*0.6)*0.031)*6}
+
+function jump(){
+  if(state!=='play')return;
+  if(boy.jumps<2){boy.vy=boy.jumps?-11:-13;boy.jumps++;boy.ground=false;if(boy.jumps===2)boy.spin=0.0001;splash(boy.x,waveY(boy.x),8)}
+}
+function splash(x,y,n){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.7)*4,vy:-Math.random()*5-1,l:30})}
+
+function start(){reset();state='play';card.hidden=true}
+go.addEventListener('click',e=>{e.stopPropagation();start()});
+addEventListener('keydown',e=>{if(['Space','ArrowUp','KeyW'].includes(e.code)){e.preventDefault();state==='play'?jump():start()}});
+cv.addEventListener('pointerdown',()=>{state==='play'?jump():null});
+
+const TYPES=['rock','shark','buoy','log','jelly','gull','bigrock','crab'];
+const SIZES={rock:{w:46,h:34},shark:{w:40,h:44},buoy:{w:26,h:48},log:{w:70,h:18},jelly:{w:30,h:30},gull:{w:44,h:20},bigrock:{w:60,h:62},crab:{w:36,h:22}};
+function spawn(){
+  const pool=score<600?TYPES.slice(0,5):TYPES;
+  const type=pool[Math.floor(Math.random()*pool.length)];
+  const o={type,x:W+40,...SIZES[type]};
+  if(type==='gull')o.alt=95+Math.random()*30;
+  obs.push(o);
+  // sometimes a buddy right behind
+  if(score>900&&type!=='gull'&&type!=='bigrock'&&Math.random()<0.3)obs.push({type:'rock',x:W+40+SIZES[type].w+70,...SIZES.rock});
+}
+function hits(o){
+  if(Math.abs(o.x-boy.x)>o.w/2+12)return false;
+  const oy=waveY(o.x);
+  if(o.type==='gull'){const gy=oy-o.alt;return boy.y-72<gy+10&&boy.y>gy-10}
+  return boy.y>oy-o.h+6;
+}
+
+function update(){
+  t++;
+  if(state!=='play')return;
+  speed=5+score/400;
+  score+=Math.round(speed/5);
+  // boy physics
+  const wy=waveY(boy.x);
+  boy.vy+=0.6;boy.y+=boy.vy;
+  if(boy.spin){boy.spin+=0.2;if(boy.spin>=Math.PI*2){boy.spin=0;boy.flipped=true}}
+  if(boy.y>=wy-4){
+    boy.y=wy-4;
+    if(!boy.ground&&boy.spin){crash('drown');return}
+    boy.vy=0;
+    if(!boy.ground&&boy.flipped){score+=150;floatTxt('+150 flip!')}
+    boy.ground=true;boy.jumps=0;boy.spin=0;boy.flipped=false}
+  if(boy.ground&&t%4===0)parts.push({x:boy.x-28,y:wy,vx:-speed*0.5,vy:-Math.random()*2,l:20});
+  // obstacles
+  if(--spawnT<=0){spawn();spawnT=Math.max(32,70-score/120)+Math.random()*45}
+  if(--starT<=0){stars.push({x:W+30,y:sea-90-Math.random()*90,got:false});starT=70+Math.random()*90}
+  for(const o of obs){o.x-=speed+(o.type==='gull'?1.5:0)+(o.type==='crab'?Math.sin(t*0.1)*1.5:0);
+    if(hits(o)){crash('hit');return}
+  }
+  obs=obs.filter(o=>o.x>-80);
+  for(const s of stars){s.x-=speed;if(!s.got&&Math.hypot(s.x-boy.x,s.y-(boy.y-40))<34){s.got=true;score+=100;floatTxt('+100');splash(s.x,s.y,10)}}
+  stars=stars.filter(s=>s.x>-40&&!s.got);
+  scoreEl.textContent=score;
+}
+let floats=[];function floatTxt(s){floats.push({s,x:boy.x,y:boy.y-80,l:50})}
+
+function crash(why){
+  state='over';splash(boy.x,boy.y,30);
+  if(score>best){best=score;bestEl.textContent=best;try{localStorage.setItem('waveRiderBest',best)}catch(e){}}
+  document.getElementById('cardTitle').textContent=why==='drown'?'You drowned!':'Wipeout!';
+  document.getElementById('cardText').textContent=(why==='drown'?'You didn\'t finish the flip and sank under the wave. ':'')+'You scored '+score+' points. Paddle back out and try again!';
+  go.textContent='Surf again';card.hidden=false;go.focus();
+}
+
+// ---------- drawing ----------
+function drawSky(){
+  const g=cx.createLinearGradient(0,0,0,sea);g.addColorStop(0,'#4fb6e6');g.addColorStop(1,'#bfeafa');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  cx.fillStyle='#ffd23f';cx.beginPath();cx.arc(W*0.82,H*0.16,38,0,7);cx.fill();
+  cx.fillStyle='rgba(255,255,255,.9)';
+  for(let i=0;i<4;i++){const x=((i*W/3)-(t*0.4)%(W+200)+W+200)%(W+200)-100,y=60+i*28%90;
+    cx.beginPath();cx.arc(x,y,22,0,7);cx.arc(x+26,y-8,28,0,7);cx.arc(x+54,y,20,0,7);cx.fill()}
+}
+function drawSea(){
+  // far wave
+  cx.fillStyle='#3a9fd4';cx.beginPath();cx.moveTo(0,H);
+  for(let x=0;x<=W;x+=10)cx.lineTo(x,sea-30+Math.sin((x+t*speed*0.4)*0.02)*8);
+  cx.lineTo(W,H);cx.fill();
+  // main wave
+  const g=cx.createLinearGradient(0,sea-20,0,H);g.addColorStop(0,'#2a90cc');g.addColorStop(1,'#0d4f7a');
+  cx.fillStyle=g;cx.beginPath();cx.moveTo(0,H);
+  for(let x=0;x<=W;x+=8)cx.lineTo(x,waveY(x));cx.lineTo(W,H);cx.fill();
+  cx.strokeStyle='#f3fbff';cx.lineWidth=4;cx.beginPath();
+  for(let x=0;x<=W;x+=8)x?cx.lineTo(x,waveY(x)):cx.moveTo(x,waveY(x));cx.stroke();
+}
+function drawObs(o){
+  const y=waveY(o.x);cx.save();cx.translate(o.x,y);
+  if(o.type==='rock'){cx.fillStyle='#6b6f7a';cx.beginPath();cx.moveTo(-24,4);cx.lineTo(-16,-26);cx.lineTo(2,-34);cx.lineTo(20,-20);cx.lineTo(26,4);cx.fill();
+    cx.fillStyle='#8d929c';cx.beginPath();cx.moveTo(-12,-22);cx.lineTo(2,-30);cx.lineTo(6,-14);cx.fill()}
+  if(o.type==='shark'){cx.fillStyle='#55657a';cx.beginPath();cx.moveTo(-20,4);cx.quadraticCurveTo(-6,-20,8,-44);cx.quadraticCurveTo(10,-14,22,4);cx.fill()}
+  if(o.type==='log'){cx.fillStyle='#8a5a2b';cx.beginPath();cx.roundRect(-35,-18,70,18,9);cx.fill();
+    cx.fillStyle='#c8955a';cx.beginPath();cx.ellipse(31,-9,5,8,0,0,7);cx.fill();cx.strokeStyle='#6b4420';cx.lineWidth=2;cx.beginPath();cx.moveTo(-24,-12);cx.lineTo(14,-12);cx.stroke()}
+  if(o.type==='jelly'){const b=Math.sin(t*0.15)*3;cx.fillStyle='rgba(214,120,255,.85)';cx.beginPath();cx.arc(0,-18+b,15,Math.PI,0);cx.closePath();cx.fill();
+    cx.strokeStyle='rgba(214,120,255,.85)';cx.lineWidth=3;for(let i=-10;i<=10;i+=5){cx.beginPath();cx.moveTo(i,-18+b);cx.quadraticCurveTo(i+4*Math.sin(t*0.2+i),-8,i,2);cx.stroke()}
+    cx.fillStyle='#fff';cx.beginPath();cx.arc(-5,-24+b,2,0,7);cx.arc(5,-24+b,2,0,7);cx.fill()}
+  if(o.type==='gull'){cx.translate(0,-o.alt);const f=Math.sin(t*0.3)*10;cx.fillStyle='#fff';cx.strokeStyle='#33424f';cx.lineWidth=2;
+    cx.beginPath();cx.ellipse(0,0,14,7,0,0,7);cx.fill();cx.stroke();
+    cx.beginPath();cx.moveTo(-4,-2);cx.quadraticCurveTo(-14,-14-f,-26,-6-f);cx.moveTo(4,-2);cx.quadraticCurveTo(14,-14-f,26,-6-f);cx.stroke();
+    cx.fillStyle='#ffb43a';cx.beginPath();cx.moveTo(-14,-1);cx.lineTo(-22,1);cx.lineTo(-14,3);cx.fill();cx.fillStyle='#000';cx.beginPath();cx.arc(-8,-2,1.6,0,7);cx.fill()}
+  if(o.type==='bigrock'){cx.fillStyle='#5a5e69';cx.beginPath();cx.moveTo(-32,4);cx.lineTo(-24,-40);cx.lineTo(-4,-62);cx.lineTo(18,-48);cx.lineTo(32,4);cx.fill();
+    cx.fillStyle='#7d828d';cx.beginPath();cx.moveTo(-16,-38);cx.lineTo(-4,-56);cx.lineTo(4,-30);cx.fill()}
+  if(o.type==='crab'){cx.fillStyle='#e8402f';cx.beginPath();cx.ellipse(0,-10,16,10,0,0,7);cx.fill();
+    const c=Math.sin(t*0.3)*4;cx.beginPath();cx.arc(-20,-18+c,6,0,7);cx.arc(20,-18-c,6,0,7);cx.fill();
+    cx.fillStyle='#fff';cx.beginPath();cx.arc(-5,-20,3.5,0,7);cx.arc(5,-20,3.5,0,7);cx.fill();cx.fillStyle='#000';cx.beginPath();cx.arc(-5,-20,1.6,0,7);cx.arc(5,-20,1.6,0,7);cx.fill()}
+  if(o.type==='buoy'){cx.fillStyle='#e8402f';cx.fillRect(-12,-40,24,40);cx.fillStyle='#fff';cx.fillRect(-12,-28,24,9);
+    cx.fillStyle='#333';cx.fillRect(-2,-50,4,12);cx.fillStyle=t%40<20?'#ffd23f':'#a07a10';cx.beginPath();cx.arc(0,-52,5,0,7);cx.fill()}
+  cx.restore();
+}
+function drawStar(s){cx.save();cx.translate(s.x,s.y);cx.rotate(t*0.05);cx.fillStyle='#ffd23f';cx.strokeStyle='#b8860b';cx.lineWidth=2;cx.beginPath();
+  for(let i=0;i<10;i++){const r=i%2?7:16,a=i*Math.PI/5-Math.PI/2;cx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}cx.closePath();cx.fill();cx.stroke();cx.restore()}
+
+function drawBoy(){
+  const x=boy.x,y=boy.y;
+  const tilt=boy.ground?Math.cos((x+t*speed)*0.012)*0.18:0;
+  cx.save();cx.translate(x,y);cx.rotate(tilt-boy.spin);
+  // surfboard
+  cx.fillStyle='#ff8c2b';cx.beginPath();cx.ellipse(0,0,40,7,0,0,7);cx.fill();
+  cx.fillStyle='#fff';cx.fillRect(-30,-1.5,60,3);
+  const bob=boy.ground?Math.sin(t*0.2)*1.5:0;
+  // green shoes
+  cx.fillStyle='#1e9e46';
+  cx.beginPath();cx.ellipse(-14,-5,9,5,0,0,7);cx.fill();
+  cx.beginPath();cx.ellipse(14,-5,9,5,0,0,7);cx.fill();
+  // blue pants (legs)
+  cx.strokeStyle='#2557c7';cx.lineWidth=9;cx.lineCap='round';
+  cx.beginPath();cx.moveTo(-13,-9);cx.lineTo(-6,-26+bob);cx.moveTo(13,-9);cx.lineTo(6,-26+bob);cx.stroke();
+  cx.fillStyle='#2557c7';cx.fillRect(-11,-34+bob,22,10);
+  // green t-shirt
+  cx.fillStyle='#2ec45a';cx.beginPath();cx.roundRect(-12,-58+bob,24,27,5);cx.fill();
+  // arms (sleeves + skin)
+  cx.strokeStyle='#2ec45a';cx.lineWidth=8;
+  cx.beginPath();cx.moveTo(-10,-52+bob);cx.lineTo(-20,-48+bob);cx.moveTo(10,-52+bob);cx.lineTo(20,-56+bob);cx.stroke();
+  cx.strokeStyle='#f1c39b';cx.lineWidth=6;
+  cx.beginPath();cx.moveTo(-20,-48+bob);cx.lineTo(-30,-42+bob);cx.moveTo(20,-56+bob);cx.lineTo(30,-62+bob);cx.stroke();
+  // head
+  cx.fillStyle='#f1c39b';cx.beginPath();cx.arc(2,-69+bob,11,0,7);cx.fill();
+  cx.fillStyle='#5a3418';cx.beginPath();cx.arc(0,-73+bob,11,Math.PI*1.05,Math.PI*2.05);cx.fill();
+  cx.fillStyle='#0b2d45';cx.beginPath();cx.arc(7,-70+bob,1.8,0,7);cx.fill();
+  cx.strokeStyle='#0b2d45';cx.lineWidth=1.6;cx.beginPath();cx.arc(6,-66+bob,4,0.2,1.5);cx.stroke();
+  cx.restore();
+}
+function drawParts(){cx.fillStyle='rgba(243,251,255,.9)';for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=0.25;p.l--;cx.beginPath();cx.arc(p.x,p.y,3,0,7);cx.fill()}parts=parts.filter(p=>p.l>0)}
+function drawFloats(){cx.font='22px "Lilita One",sans-serif';cx.textAlign='center';for(const f of floats){f.y-=1;f.l--;cx.fillStyle='#0b2d45';cx.fillText(f.s,f.x+2,f.y+2);cx.fillStyle='#ffd23f';cx.fillText(f.s,f.x,f.y)}floats=floats.filter(f=>f.l>0)}
+
+function frame(){
+  update();
+  drawSky();drawSea();
+  stars.forEach(drawStar);obs.forEach(drawObs);
+  if(state==='menu'){boy.y=waveY(boy.x)-4}
+  if(state!=='over')drawBoy();
+  drawParts();drawFloats();
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+
+</body></html>

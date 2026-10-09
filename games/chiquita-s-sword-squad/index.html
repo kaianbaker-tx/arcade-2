@@ -1,0 +1,312 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Chiquita's Sword Squad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
+<style>
+/* Layout: one-screen game — canvas stage centered, overlay menus on top. Single night-shrine look (deliberately dark only). */
+:root{
+  --night:#1b1530; --night2:#2a1f47; --sakura:#ff8fbf; --paper:#fff6fa;
+  --vermilion:#e8423b; --gold:#ffd84a; --ink:#120d22;
+  --display:"Dela Gothic One","Hiragino Kaku Gothic Pro",Impact,sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic Pro","Trebuchet MS",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ink);color:var(--paper);font-family:var(--body);margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-inline:16px;box-sizing:border-box;overflow:hidden}
+#stage{position:relative;width:100%;max-width:960px;aspect-ratio:900/560;max-height:calc(100% - 16px);border-radius:14px;overflow:hidden;box-shadow:0 0 0 3px var(--vermilion),0 10px 40px #0008}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#120d22cc;text-align:center;padding:16px;box-sizing:border-box}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(22px,5vw,48px);margin:0;letter-spacing:.02em;color:var(--paper);text-shadow:3px 3px 0 var(--vermilion);text-wrap:balance}
+.jp{font-size:clamp(12px,2vw,16px);color:var(--sakura);letter-spacing:.3em;margin:0}
+.picks{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.pick{background:var(--night2);border:3px solid #ffffff22;border-radius:12px;padding:8px 10px 10px;color:var(--paper);font-family:var(--body);font-weight:800;font-size:13px;cursor:pointer;width:clamp(96px,22vw,140px);display:flex;flex-direction:column;align-items:center;gap:4px}
+.pick canvas{width:100%;height:auto;aspect-ratio:1}
+.pick.sel{border-color:var(--sakura);box-shadow:0 0 14px var(--sakura)}
+.pick.locked{opacity:.55;cursor:not-allowed}
+.pick small{font-weight:500;font-size:11px;color:#d9cdea}
+.pick:focus-visible,.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn{font-family:var(--display);font-size:clamp(16px,3vw,22px);background:var(--vermilion);color:var(--paper);border:0;border-radius:999px;padding:10px 30px;cursor:pointer;box-shadow:0 4px 0 #8c1f1a}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8c1f1a}
+.help{font-size:12px;color:#d9cdea;margin:0;max-width:60ch}
+#burst{position:absolute;right:12px;bottom:12px;font-family:var(--display);font-size:14px;border-radius:50%;width:72px;height:72px;border:3px solid var(--paper);background:#ff8fbf55;color:var(--paper);cursor:pointer}
+#burst.ready{background:var(--sakura);box-shadow:0 0 18px var(--sakura)}
+@media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
+</style>
+
+<div id="stage">
+  <canvas id="game" width="900" height="560"></canvas>
+  <button id="burst" type="button" hidden>SPIN</button>
+  <div class="overlay" id="menu">
+    <p class="jp">チキータとなかまたち</p>
+    <h1>Chiquita's Sword Squad</h1>
+    <div class="picks" id="picks"></div>
+    <button class="btn" id="play" type="button">Play</button>
+    <p class="help">Move: arrow keys / WASD, or drag on the screen. Your spiky Y-sword swings at black mice by itself when they get close. Every 10 defeats, press Space or SPIN for a spinning sword attack.</p>
+  </div>
+  <div class="overlay" id="over" hidden>
+    <h1 id="overTitle">Game Over</h1>
+    <p class="help" id="overText"></p>
+    <button class="btn" id="again" type="button">Back to menu</button>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+const W=900,H=560;
+const HEROES={
+  mouse:{name:'Chiquita',body:'#fdf8fb',ear:'#ff9ec4',soulA:'#ffffff',soulB:'#ff8fbf',need:0,type:'mouse'},
+  cat:{name:'Blue-Ear Cat',body:'#eef1f8',ear:'#3fa9ff',soulA:'#9fd8ff',soulB:'#1f7fe0',need:30,type:'cat'},
+  bunny:{name:'Yellow Bunny',body:'#ffd84a',ear:'#ffd84a',soulA:'#fff3a0',soulB:'#f0b400',need:80,type:'bunny'}
+};
+let total=0; try{total=+localStorage.getItem('ssm_total')||0}catch(e){}
+function saveTotal(){try{localStorage.setItem('ssm_total',total)}catch(e){}}
+let chosen='mouse';
+
+/* ---------- drawing ---------- */
+function edge(pts,p0,c,p1,n,len,out){
+  for(let j=0;j<=2*n;j++){
+    const t=j/(2*n),u=1-t;
+    let x=u*u*p0[0]+2*u*t*c[0]+t*t*p1[0], y=u*u*p0[1]+2*u*t*c[1]+t*t*p1[1];
+    if(j%2){
+      const tx=2*u*(c[0]-p0[0])+2*t*(p1[0]-c[0]), ty=2*u*(c[1]-p0[1])+2*t*(p1[1]-c[1]);
+      let nx=-ty,ny=tx;const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+      if(Math.sign(ny)!==out){nx=-nx;ny=-ny;}
+      x+=nx*len;y+=ny*len;
+    }
+    pts.push([x,y]);
+  }
+}
+const BLADE=(()=>{const p=[[20,-3]];
+  edge(p,[38,-3],[56,-6],[78,-27],5,6,-1);   // outside of top prong
+  edge(p,[72,-21],[58,-6],[48,0],4,5,1);     // inside the curve of the Y
+  edge(p,[48,0],[58,6],[72,21],4,5,-1);
+  edge(p,[78,27],[56,6],[38,3],5,6,1);       // outside of bottom prong
+  p.push([20,3]);return p;})();
+function drawSword(c,x,y,ang,sc,A,B){
+  c.save();c.translate(x,y);c.rotate(ang);c.scale(sc,sc);
+  c.fillStyle='#3a1d2e';c.fillRect(-6,-3.5,22,7);
+  c.strokeStyle='#e8423b';c.lineWidth=2;
+  for(let i=-4;i<14;i+=5){c.beginPath();c.moveTo(i,-3.5);c.lineTo(i+4,3.5);c.stroke();}
+  c.fillStyle='#ffd84a';c.beginPath();c.ellipse(17,0,3.2,9,0,0,7);c.fill();
+  c.beginPath();BLADE.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.closePath();
+  const g=c.createLinearGradient(20,0,80,0);g.addColorStop(0,A);g.addColorStop(1,B);
+  c.shadowColor=B;c.shadowBlur=10;c.fillStyle=g;c.fill();c.shadowBlur=0;
+  c.lineWidth=1.6;c.strokeStyle='#2a1f47';c.stroke();
+  c.strokeStyle='#ffffffaa';c.lineWidth=1.2;c.beginPath();c.moveTo(22,0);c.lineTo(44,0);c.stroke();
+  c.restore();
+}
+
+function drawHero(c,kind,x,y,sc,face,t,evil){
+  const h=HEROES[kind]||HEROES.mouse;
+  const body=evil?'#1d1824':h.body, ear=evil?'#3b2f48':h.ear;
+  const bob=Math.sin(t*10)*1.5;
+  c.save();c.translate(x,y+bob);c.scale(sc*face,sc);
+  // shadow
+  c.fillStyle='#00000040';c.beginPath();c.ellipse(0,22-bob/sc,20,6,0,0,7);c.fill();
+  // tail
+  c.strokeStyle=evil?'#1d1824':(kind==='mouse'?'#ff9ec4':body);c.lineWidth=4;c.lineCap='round';
+  if(kind==='bunny'){c.fillStyle=body;c.beginPath();c.arc(-19,10,6,0,7);c.fill();}
+  else{c.beginPath();c.moveTo(-16,10);c.quadraticCurveTo(-34,8+Math.sin(t*8)*5,-30,-8);c.stroke();}
+  // body
+  c.fillStyle=body;c.beginPath();c.ellipse(0,8,17,15,0,0,7);c.fill();
+  // red sash (obi) with white sakura
+  if(!evil){c.fillStyle='#e8423b';c.fillRect(-16,6,32,6);c.fillStyle='#fff';c.beginPath();c.arc(6,9,2.4,0,7);c.fill();}
+  else{c.fillStyle='#5b2a6e';c.fillRect(-16,6,32,6);}
+  // ears
+  if(kind==='cat'){
+    for(const sx of[-1,1]){c.fillStyle=ear;c.beginPath();c.moveTo(sx*6,-20);c.lineTo(sx*18,-36);c.lineTo(sx*19,-14);c.closePath();c.fill();
+      c.fillStyle=evil?'#2a2233':'#bfe3ff';c.beginPath();c.moveTo(sx*10,-20);c.lineTo(sx*16,-30);c.lineTo(sx*16,-18);c.closePath();c.fill();}
+  }else if(kind==='bunny'){
+    for(const sx of[-1,1]){c.fillStyle=ear;c.beginPath();c.ellipse(sx*7,-36,5.5,15,sx*.15,0,7);c.fill();
+      c.fillStyle=evil?'#2a2233':'#ffb0c8';c.beginPath();c.ellipse(sx*7,-35,2.5,10,sx*.15,0,7);c.fill();}
+  }else{
+    for(const sx of[-1,1]){c.fillStyle=body;c.beginPath();c.arc(sx*13,-22,11,0,7);c.fill();
+      c.fillStyle=ear;c.beginPath();c.arc(sx*13,-22,7,0,7);c.fill();}
+  }
+  // head
+  c.fillStyle=body;c.beginPath();c.arc(0,-10,16,0,7);c.fill();
+  // hachimaki headband
+  c.fillStyle=evil?'#5b2a6e':'#e8423b';c.fillRect(-15,-20,30,5);
+  c.beginPath();c.moveTo(-14,-18);c.lineTo(-24,-12+Math.sin(t*9)*2);c.lineTo(-22,-20);c.closePath();c.fill();
+  if(!evil){c.fillStyle='#fff';c.beginPath();c.arc(0,-17.5,1.8,0,7);c.fill();}
+  // eyes
+  if(evil){c.fillStyle='#ff3355';c.shadowColor='#ff3355';c.shadowBlur=6;
+    c.beginPath();c.moveTo(1,-11);c.lineTo(9,-13);c.lineTo(8,-8);c.closePath();c.fill();
+    c.beginPath();c.moveTo(-9,-11);c.lineTo(-3,-12);c.lineTo(-4,-8);c.closePath();c.fill();c.shadowBlur=0;}
+  else{c.fillStyle='#2a1f47';c.beginPath();c.ellipse(-4,-9,2.6,3.4,0,0,7);c.ellipse(7,-9,2.6,3.4,0,0,7);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(-3.3,-10,1,0,7);c.arc(7.7,-10,1,0,7);c.fill();
+    c.fillStyle='#ff9ec488';c.beginPath();c.ellipse(-9,-3,3.5,2,0,0,7);c.ellipse(12,-3,3.5,2,0,0,7);c.fill();}
+  // nose + whiskers
+  c.fillStyle=evil?'#000':'#ff7aa8';c.beginPath();c.arc(15,-5,2.3,0,7);c.fill();
+  c.strokeStyle=evil?'#55486a':'#c9b8c9';c.lineWidth=1;
+  c.beginPath();c.moveTo(12,-4);c.lineTo(24,-7);c.moveTo(12,-3);c.lineTo(24,-1);c.stroke();
+  c.restore();
+}
+
+/* ---------- background ---------- */
+const petals=[...Array(26)].map(()=>({x:Math.random()*W,y:Math.random()*H,s:3+Math.random()*4,v:20+Math.random()*30,w:Math.random()*6}));
+function drawBG(t,dt){
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1b1530');g.addColorStop(1,'#2e2150');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // moon
+  ctx.fillStyle='#fff3e0';ctx.shadowColor='#fff3e0';ctx.shadowBlur=30;ctx.beginPath();ctx.arc(780,80,38,0,7);ctx.fill();ctx.shadowBlur=0;
+  // tatami floor grid
+  ctx.strokeStyle='#ffffff0d';ctx.lineWidth=2;
+  for(let x=0;x<W;x+=120){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // torii gate silhouette
+  ctx.fillStyle='#e8423b55';
+  ctx.fillRect(40,60,150,12);ctx.fillRect(30,50,170,10);ctx.fillRect(55,90,120,8);
+  ctx.fillRect(65,60,12,170);ctx.fillRect(153,60,12,170);
+  // petals
+  ctx.fillStyle='#ffb3d1';
+  for(const p of petals){p.y+=p.v*dt;p.x+=Math.sin(t+p.w)*15*dt;if(p.y>H+10){p.y=-10;p.x=Math.random()*W}
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(t+p.w);ctx.beginPath();ctx.ellipse(0,0,p.s,p.s*.55,0,0,7);ctx.fill();ctx.restore();}
+}
+
+/* ---------- game state ---------- */
+let G=null,keys={},touch=null,last=0,running=false;
+function newGame(){
+  G={p:{x:W/2,y:H/2,face:1,hp:5,inv:0,cd:0,swing:0,spin:0,spinHit:0,ang:-.9,aim:0},enemies:[],parts:[],wave:0,toSpawn:0,spawnT:0,kills:0,charge:0,banner:'',bannerT:0,t:0};
+  nextWave();
+}
+function nextWave(){G.wave++;G.toSpawn=5+G.wave*3;G.bossDue=true;G.banner='Wave '+G.wave;G.bannerT=2;}
+function spawn(boss){
+  const side=Math.floor(Math.random()*4);let x,y;
+  if(side==0){x=-30;y=Math.random()*H}else if(side==1){x=W+30;y=Math.random()*H}else if(side==2){x=Math.random()*W;y=-30}else{x=Math.random()*W;y=H+30}
+  const kinds=['mouse','mouse','mouse'];
+  G.enemies.push(boss?{x,y,r:34,hp:10+G.wave*2,max:10+G.wave*2,sp:45+G.wave*3,sc:1.9,boss:true,hit:0}
+                     :{x,y,r:16,hp:2,max:2,sp:60+G.wave*7+Math.random()*25,sc:.9,boss:false,hit:0});
+}
+function burst(){
+  if(!G||G.charge<10)return;G.charge=0;G.p.spin=.9;G.p.spinHit=0;G.p.swing=0;
+}
+function hitEnemy(e,d){
+  if(e.hp<=0)return;const p=G.p;e.hp-=d;e.hit=.12;
+  const a=Math.atan2(e.y-p.y,e.x-p.x),kb=e.boss?8:28;e.x+=Math.cos(a)*kb;e.y+=Math.sin(a)*kb;
+  puff(e.x,e.y,HEROES[chosen].soulB,6);
+}
+function puff(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*7,v=60+Math.random()*160;G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:.6,col});}}
+
+function update(dt){
+  const p=G.p,h=HEROES[chosen];G.t+=dt;
+  let mx=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0), my=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);
+  if(touch){const dx=touch.cx-touch.sx,dy=touch.cy-touch.sy,d=Math.hypot(dx,dy);if(d>8){mx=dx/Math.max(d,40);my=dy/Math.max(d,40);}}
+  const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;}
+  p.x=Math.max(24,Math.min(W-24,p.x+mx*230*dt));p.y=Math.max(40,Math.min(H-26,p.y+my*230*dt));
+  if(mx&&!(p.swing>0))p.face=mx>0?1:-1;
+  p.inv=Math.max(0,p.inv-dt);
+  // spawning
+  G.spawnT-=dt;
+  if(G.toSpawn>0&&G.spawnT<=0){spawn(false);G.toSpawn--;G.spawnT=Math.max(.35,1.2-G.wave*.08);}
+  if(G.toSpawn===0&&G.bossDue&&G.enemies.length<3){spawn(true);G.bossDue=false;G.banner='Big Black Mouse!';G.bannerT=1.6;}
+  if(G.toSpawn===0&&!G.bossDue&&G.enemies.length===0){nextWave();}
+  // sword: auto-swing at close enemies, spin attack when charged
+  const REACH=95;
+  p.cd-=dt;
+  if(p.spin>0){
+    p.spin-=dt;p.ang+=22*dt;p.spinHit-=dt;
+    if(p.spinHit<=0){p.spinHit=.15;for(const e of G.enemies)if(Math.hypot(e.x-p.x,e.y-p.y)<REACH*1.35+e.r)hitEnemy(e,1);}
+  }else if(p.swing>0){
+    p.swing-=dt;const k=1-p.swing/.24;p.ang=p.aim-1.3+2.6*k;
+    if(!p.didHit&&k>=.4){p.didHit=true;
+      for(const e of G.enemies){const d=Math.hypot(e.x-p.x,e.y-p.y);let da=Math.atan2(e.y-p.y,e.x-p.x)-p.aim;da=Math.atan2(Math.sin(da),Math.cos(da));
+        if(d<REACH+e.r&&Math.abs(da)<1.45)hitEnemy(e,1);}}
+  }else{
+    p.ang=p.face>0?-0.9:Math.PI+0.9;
+    if(p.cd<=0&&G.enemies.length){
+      let best=null,bd=1e9;for(const e of G.enemies){const d=Math.hypot(e.x-p.x,e.y-p.y)-e.r;if(d<bd){bd=d;best=e}}
+      if(bd<REACH+15){p.aim=Math.atan2(best.y-p.y,best.x-p.x);p.face=Math.cos(p.aim)>=0?1:-1;p.swing=.24;p.cd=.38;p.didHit=false;}
+    }
+  }
+  for(const e of G.enemies){
+    const a=Math.atan2(p.y-e.y,p.x-e.x);e.x+=Math.cos(a)*e.sp*dt;e.y+=Math.sin(a)*e.sp*dt;e.face=Math.cos(a)>0?1:-1;e.hit=Math.max(0,e.hit-dt);
+    if(e.hp<=0){puff(e.x,e.y,'#9b7bc7',e.boss?30:12);puff(e.x,e.y,h.soulB,8);G.kills++;total+=e.boss?3:1;G.charge=Math.min(10,G.charge+(e.boss?3:1));checkUnlock();}
+    else if(p.inv<=0&&Math.hypot(e.x-p.x,e.y-p.y)<e.r+16){p.hp--;p.inv=1.1;puff(p.x,p.y,'#ff3355',10);if(p.hp<=0)return endGame();}
+  }
+  G.enemies=G.enemies.filter(e=>e.hp>0);
+  for(const q of G.parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=.92;q.vy*=.92;q.life-=dt;}
+  G.parts=G.parts.filter(q=>q.life>0);
+  G.bannerT-=dt;
+  burstBtn.classList.toggle('ready',G.charge>=10);
+}
+let unlockedNow=new Set(Object.keys(HEROES).filter(k=>total>=HEROES[k].need));
+function checkUnlock(){
+  for(const k in HEROES){if(!unlockedNow.has(k)&&total>=HEROES[k].need){unlockedNow.add(k);G.banner='Unlocked: '+HEROES[k].name+'!';G.bannerT=2.5;}}
+  saveTotal();
+}
+const REACH_DRAW=95;
+function render(dt){
+  const t=G?G.t:performance.now()/1000;
+  drawBG(t,dt);
+  if(!G)return;
+  const h=HEROES[chosen];
+  for(const e of G.enemies){
+    ctx.globalAlpha=e.hit>0?.5:1;drawHero(ctx,'mouse',e.x,e.y,e.sc,e.face||1,t+e.x*.01,true);ctx.globalAlpha=1;
+    if(e.boss){ctx.fillStyle='#0008';ctx.fillRect(e.x-30,e.y-e.r-38,60,6);ctx.fillStyle='#ff3355';ctx.fillRect(e.x-30,e.y-e.r-38,60*e.hp/e.max,6);}
+  }
+  for(const q of G.parts){ctx.globalAlpha=q.life/.6;ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(q.x,q.y,3,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+  const p=G.p;
+  // swing trail
+  if(p.swing>0||p.spin>0){ctx.save();ctx.globalAlpha=.3;ctx.strokeStyle=h.soulB;ctx.lineWidth=16;ctx.beginPath();
+    if(p.spin>0)ctx.arc(p.x,p.y,REACH_DRAW*1.3,0,7);else ctx.arc(p.x,p.y,REACH_DRAW*.85,p.aim-1.3,p.ang);ctx.stroke();ctx.restore();}
+  if(!(p.inv>0&&Math.floor(p.inv*12)%2))drawHero(ctx,chosen,p.x,p.y,1.15,p.face,t,false);
+  drawSword(ctx,p.x+Math.cos(p.ang)*8,p.y+6+Math.sin(p.ang)*8,p.ang,p.spin>0?1.35:1.05,h.soulA,h.soulB);
+  // HUD
+  ctx.font='800 20px "M PLUS Rounded 1c",sans-serif';ctx.textBaseline='top';
+  for(let i=0;i<5;i++){ctx.fillStyle=i<p.hp?'#ff5c8a':'#ffffff30';heart(22+i*28,16);}
+  ctx.fillStyle='#fff6fa';ctx.textAlign='right';ctx.fillText('Defeated '+G.kills+'   Wave '+G.wave,W-18,14);
+  ctx.textAlign='left';ctx.fillStyle='#ffffff30';ctx.fillRect(18,48,130,8);ctx.fillStyle='#ff8fbf';ctx.fillRect(18,48,13*G.charge,8);
+  if(G.bannerT>0){ctx.globalAlpha=Math.min(1,G.bannerT);ctx.textAlign='center';ctx.font='42px "Dela Gothic One",Impact,sans-serif';
+    ctx.fillStyle='#e8423b';ctx.fillText(G.banner,W/2+3,H/2-117);ctx.fillStyle='#fff6fa';ctx.fillText(G.banner,W/2,H/2-120);ctx.globalAlpha=1;}
+}
+function heart(x,y){ctx.beginPath();ctx.moveTo(x+10,y+18);ctx.bezierCurveTo(x-6,y+8,x,y-4,x+10,y+4);ctx.bezierCurveTo(x+20,y-4,x+26,y+8,x+10,y+18);ctx.fill();}
+
+function loop(ts){
+  const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+  if(running)update(dt);
+  render(dt);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- menus ---------- */
+const menu=document.getElementById('menu'),over=document.getElementById('over'),picks=document.getElementById('picks'),burstBtn=document.getElementById('burst');
+function buildPicks(){
+  picks.innerHTML='';
+  for(const k in HEROES){
+    const h=HEROES[k],open=total>=h.need;
+    const b=document.createElement('button');b.type='button';b.id='pick-'+k;
+    b.className='pick'+(k===chosen?' sel':'')+(open?'':' locked');
+    const c=document.createElement('canvas');c.width=120;c.height=120;const x=c.getContext('2d');
+    drawHero(x,k,50,74,1.5,1,0,false);drawSword(x,62,80,-1.0,.62,h.soulA,h.soulB);
+    if(!open){x.fillStyle='#120d22aa';x.fillRect(0,0,120,120);}
+    b.append(c);
+    const n=document.createElement('span');n.textContent=h.name;b.append(n);
+    const sm=document.createElement('small');sm.textContent=open?'Ready':'Defeat '+h.need+' total ('+Math.min(total,h.need)+'/'+h.need+')';b.append(sm);
+    b.onclick=()=>{if(open){chosen=k;buildPicks();}};
+    picks.append(b);
+  }
+}
+function start(){newGame();running=true;menu.hidden=true;over.hidden=true;burstBtn.hidden=false;}
+function endGame(){running=false;saveTotal();burstBtn.hidden=true;
+  document.getElementById('overText').textContent='You defeated '+G.kills+' black mice and reached wave '+G.wave+'. All-time total: '+total+'.';
+  over.hidden=false;}
+document.getElementById('play').onclick=start;
+document.getElementById('again').onclick=()=>{over.hidden=true;G=null;buildPicks();menu.hidden=false;};
+burstBtn.onclick=burst;
+addEventListener('keydown',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=true;
+  if(k===' '){e.preventDefault();if(running)burst();}
+  if(k.startsWith('Arrow'))e.preventDefault();});
+addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false;});
+function pt(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
+cv.addEventListener('pointerdown',e=>{const q=pt(e);touch={sx:q.x,sy:q.y,cx:q.x,cy:q.y};cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{if(touch){const q=pt(e);touch.cx=q.x;touch.cy=q.y;}});
+['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,()=>touch=null));
+
+document.fonts&&document.fonts.ready.then(buildPicks);
+buildPicks();
+requestAnimationFrame(loop);
+</script>
+
+</body></html>

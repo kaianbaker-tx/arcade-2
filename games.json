@@ -1,4 +1,340 @@
 {
-  "games": [],
-  "skip": []
+  "games": [
+    {
+      "name": "Zip Flash",
+      "slug": "zip-flash",
+      "artifact": "https://claude.ai/artifact/B5G72wuCyQ7tLQc7HJ6A5S",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Rubber Ray's Rumble",
+      "slug": "rubber-ray-s-rumble",
+      "artifact": "https://claude.ai/artifact/TZuKT1tk6wTcbfan8VbEeR",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Bitbot Blaster",
+      "slug": "bitbot-blaster",
+      "artifact": "https://claude.ai/artifact/5NMBaym9agRD9twC1BRWhg",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Gloop Jump",
+      "slug": "gloop-jump",
+      "artifact": "https://claude.ai/artifact/SexGJ982R4tJrEH3QbJoFt",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Cubert's Block Drop",
+      "slug": "cubert-s-block-drop",
+      "artifact": "https://claude.ai/artifact/VaKfo6bEkBgFYqqKWTB4o9",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Scribble Run",
+      "slug": "scribble-run",
+      "artifact": "https://claude.ai/artifact/AQY7p6K3QTNYfthCFLKNbZ",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Muffin Multiverse",
+      "slug": "muffin-multiverse",
+      "artifact": "https://claude.ai/artifact/NLdL2XBQre81JhBCTwvv7i",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Random Smash",
+      "slug": "random-smash",
+      "artifact": "https://claude.ai/artifact/UC6wL8eEtNMEgVxua9kYya",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Smash Unite",
+      "slug": "smash-unite",
+      "artifact": "https://claude.ai/artifact/HyRZt98jADLT6G1R3hTnqE",
+      "added": "2026-10-08",
+      "updated": "2026-10-08"
+    },
+    {
+      "name": "Cereal Brawl",
+      "slug": "cereal-brawl",
+      "artifact": "https://claude.ai/artifact/6ciYyuHLTuoTLtH61ZnGpB",
+      "added": "2026-10-07",
+      "updated": "2026-10-07"
+    },
+    {
+      "name": "Volt Brawl",
+      "slug": "volt-brawl",
+      "artifact": "https://claude.ai/artifact/RLVL3ap3E4ZWGMQk8wiK53",
+      "added": "2026-10-06",
+      "updated": "2026-10-06"
+    },
+    {
+      "name": "Chiquita's Sword Squad",
+      "slug": "chiquita-s-sword-squad",
+      "artifact": "https://claude.ai/artifact/HLKo2RYLc7ZvuXfgF6jjRW",
+      "added": "2026-10-06",
+      "updated": "2026-10-06"
+    },
+    {
+      "name": "Cinema Roll Bake Dode",
+      "slug": "cinema-roll-bake-dode",
+      "artifact": "https://claude.ai/artifact/LXQzbH1m34mveWtCjSuJRa",
+      "added": "2026-10-06",
+      "updated": "2026-10-06"
+    },
+    {
+      "name": "Cave Cash",
+      "slug": "cave-cash",
+      "artifact": "https://claude.ai/artifact/NHRbageAY3oefM16p77tbH",
+      "added": "2026-10-04",
+      "updated": "2026-10-04"
+    },
+    {
+      "name": "Fizz Rush",
+      "slug": "fizz-rush",
+      "artifact": "https://claude.ai/artifact/WCHuYcqZ9PUKxVx7u2coyh",
+      "added": "2026-10-04",
+      "updated": "2026-10-04",
+      "creator": "Chipflake"
+    },
+    {
+      "name": "Flop Fish Fisherman",
+      "slug": "flop-fish-fisherman",
+      "artifact": "https://claude.ai/artifact/45zoqJ23TDLoJ2zPRak5eQ",
+      "added": "2026-10-04",
+      "updated": "2026-10-04"
+    },
+    {
+      "name": "Circle Tunes vs the Giant Bull",
+      "slug": "circle-tunes-vs-the-giant-bull",
+      "artifact": "https://claude.ai/artifact/UYNYWy1HctCymWKFjLv4QN",
+      "added": "2026-10-04",
+      "updated": "2026-10-04",
+      "creator": "Circle Tunes HD"
+    },
+    {
+      "name": "Plush Park",
+      "slug": "plush-park",
+      "artifact": "https://claude.ai/artifact/73QhyXRNhN1QYgvsKs3mTe",
+      "added": "2026-10-04",
+      "updated": "2026-10-04"
+    },
+    {
+      "name": "Spin the Wheel",
+      "slug": "spin-the-wheel",
+      "artifact": "https://claude.ai/artifact/ErPpycRmuccoq6WAzwpizE",
+      "added": "2026-10-04",
+      "updated": "2026-10-04"
+    },
+    {
+      "name": "Carrot Patch Pull",
+      "slug": "carrot-patch-pull",
+      "artifact": "https://claude.ai/artifact/5A1VuttBpmkRqkTV2s9psZ",
+      "added": "2026-10-04",
+      "updated": "2026-10-04",
+      "creator": "Garrett the Carrot"
+    },
+    {
+      "name": "Sandwich Brothers",
+      "slug": "sandwich-brothers",
+      "artifact": "https://claude.ai/artifact/H6zRstjFwyfDC4kmwMPRat",
+      "added": "2026-10-04",
+      "updated": "2026-10-04",
+      "creator": "Noob Stamp"
+    },
+    {
+      "name": "Ari and Tofu",
+      "slug": "ari-and-tofu",
+      "artifact": "https://claude.ai/artifact/Fx6PTWUNHCZR6MbFqfSGBU",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Jaden Animations"
+    },
+    {
+      "name": "Break the Pencil",
+      "slug": "break-the-pencil",
+      "artifact": "https://claude.ai/artifact/4fDyCkHbLRtHqGN2Lk4Y7X",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Pencilmation"
+    },
+    {
+      "name": "Boulder Chase",
+      "slug": "boulder-chase",
+      "artifact": "https://claude.ai/artifact/VDch7tHCdev41NnFgTz3eg",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "terminal montage"
+    },
+    {
+      "name": "Sky Armor Rescue",
+      "slug": "sky-armor-rescue",
+      "artifact": "https://claude.ai/artifact/ACz23oKiXmY3qsTXWit5Jq",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Blobby Clips"
+    },
+    {
+      "name": "Elevator Laugh Riot",
+      "slug": "elevator-laugh-riot",
+      "artifact": "https://claude.ai/artifact/614mj6SyhFswescKbExKNN",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "kovenant animations"
+    },
+    {
+      "name": "Super Mile Blows: Spikes Only",
+      "slug": "super-mile-blows-spikes-only",
+      "artifact": "https://claude.ai/artifact/388KFRryB5SqCxdDzquAxu",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Level Up Animations"
+    },
+    {
+      "name": "Toaster Showdown",
+      "slug": "toaster-showdown",
+      "artifact": "https://claude.ai/artifact/9EqRruy75nE4ZNSK9x254r",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "brodyanimates"
+    },
+    {
+      "name": "Ham Squasher",
+      "slug": "ham-squasher",
+      "artifact": "https://claude.ai/artifact/3mat1K55CXyJUqsH2Swwdx",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Haminations"
+    },
+    {
+      "name": "Frog Tag",
+      "slug": "frog-tag",
+      "artifact": "https://claude.ai/artifact/WUg8euCumvGjpgaxmQPwFm",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Unspeakable"
+    },
+    {
+      "name": "Wave Rider",
+      "slug": "wave-rider",
+      "artifact": "https://claude.ai/artifact/EZoWhou5uikowQUHoaTeUW",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Infamous Swoosh"
+    },
+    {
+      "name": "A Blaster",
+      "slug": "a-blaster",
+      "artifact": "https://claude.ai/artifact/Ur6veUuvMUCsAsxqkefLUm",
+      "added": "2026-10-03",
+      "updated": "2026-10-03",
+      "creator": "Alley A."
+    },
+    {
+      "name": "HamMan",
+      "slug": "hamman",
+      "artifact": "https://claude.ai/artifact/TeuCTZvSUokkMA2rYsRDmp",
+      "added": "2026-10-02",
+      "updated": "2026-10-02"
+    },
+    {
+      "name": "Cash Cave",
+      "slug": "cash-cave",
+      "artifact": "https://claude.ai/artifact/V1qSCF2jvmHQtdHmhgb6Jv",
+      "added": "2026-10-02",
+      "updated": "2026-10-02"
+    },
+    {
+      "name": "Ninjaflip",
+      "slug": "ninjaflip",
+      "artifact": "https://claude.ai/artifact/6e84PqHSHWma9RuHQiLXn5",
+      "added": "2026-10-02",
+      "updated": "2026-10-02",
+      "creator": "Ninja Kidz TV"
+    },
+    {
+      "name": "Memeow Catch",
+      "slug": "memeow-catch",
+      "artifact": "https://claude.ai/artifact/C9wf17BLMpVcTTjQXUtRR7",
+      "added": "2026-10-02",
+      "updated": "2026-10-02",
+      "creator": "Aphmau"
+    },
+    {
+      "name": "Soobway",
+      "slug": "soobway",
+      "artifact": "https://claude.ai/artifact/FRqRq6dBZX9Sn6YBPfxbu4",
+      "added": "2026-10-02",
+      "updated": "2026-10-02",
+      "creator": "odd 1s out"
+    },
+    {
+      "name": "Star Fighter",
+      "slug": "star-fighter",
+      "artifact": "https://claude.ai/artifact/1UHKEgr4sS3WDr8VfQYo3T",
+      "added": "2026-10-02",
+      "updated": "2026-10-02"
+    },
+    {
+      "name": "Chest Rush",
+      "slug": "chest-rush",
+      "artifact": "https://claude.ai/artifact/9D4scnxmb4ahjkDKgDk7oX",
+      "added": "2026-10-01",
+      "updated": "2026-10-01"
+    },
+    {
+      "name": "Notebook Stick Run",
+      "slug": "notebook-stick-run",
+      "artifact": "https://claude.ai/artifact/45pwJZCthQa9BVQRapWwcT",
+      "added": "2026-10-01",
+      "updated": "2026-10-01"
+    },
+    {
+      "name": "Cash Cave",
+      "slug": "cash-cave-2",
+      "artifact": "https://claude.ai/artifact/JTAL9hW3xyziHAA9XvNf7H",
+      "added": "2026-09-24",
+      "updated": "2026-09-24"
+    },
+    {
+      "name": "Maga and Dot",
+      "slug": "maga-and-dot",
+      "artifact": "https://claude.ai/artifact/MkbMU63djNWFzwvbsv9uJn",
+      "added": "2026-09-24",
+      "updated": "2026-09-24"
+    },
+    {
+      "name": "Shroud: Guardian of Halcyon",
+      "slug": "shroud-guardian-of-halcyon",
+      "artifact": "https://claude.ai/artifact/C21wAHpmnk7Sker3TTavYs",
+      "added": "2026-09-23",
+      "updated": "2026-09-23"
+    }
+  ],
+  "skip": [
+    {
+      "artifact": "https://claude.ai/artifact/GGzPEQugntG8nrL7hqy3vf",
+      "name": "The Coding Lab",
+      "why": "a coding tool, not a game, and its Idea Machine only works inside Claude"
+    },
+    {
+      "artifact": "https://claude.ai/artifact/8xHUhuXebYnaZhMDC3PmQq",
+      "name": "Kaian's File Sorter",
+      "why": "not a game"
+    },
+    {
+      "artifact": "https://claude.ai/artifact/Fsp8wTtUR1U9e1fzSSJ7uM",
+      "name": "Fun Friday: Archery Day (Oct 31)",
+      "why": "not a game (a flyer)"
+    }
+  ]
 }
