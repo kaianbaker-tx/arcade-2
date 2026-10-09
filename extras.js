@@ -4,7 +4,7 @@
 // comments button next to it, so it keeps working however index.html is rebuilt.
 
 // Paste the Web app URL from Google Apps Script here (see backend/SETUP.md).
-const ARCADE_API = '';
+const ARCADE_API = 'https://script.google.com/macros/s/AKfycbx3Kbc78H2jOep40mAT5MHL7UzD09GAkL5XGLc0u0UiEQ81s2cMCJo1_ds32sL9RRdTAQ/exec';
 
 const arcade = {
   ready: ARCADE_API !== '',
