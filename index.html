@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kaian's Arcade 2</title>
+<style>
+  body { margin:0; background:#14111f; color:#f3f0ff; font:16px/1.5 system-ui,-apple-system,sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { text-align:center; font-size:40px; margin:0; letter-spacing:1px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+  .grid a { display:block; padding:28px 16px; border-radius:16px; background:#221d33; border:1px solid #3a3354; color:inherit; text-decoration:none; text-align:center; font-weight:700; font-size:18px; }
+  .grid a:hover { border-color:#7c5cff; }
+  .empty { text-align:center; color:#b3abcf; }
+  footer { text-align:center; margin-top:40px; }
+  footer a { color:#b9a7ff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Kaian's Arcade 2</h1>
+  <div class="grid" id="games"></div>
+  <p class="empty" id="empty" hidden>New games show up here soon!</p>
+  <footer><a href="https://kaianbaker-tx.github.io/arcade/">← Kaian's first arcade</a></footer>
+</main>
+<script>
+  // Cards come from games.json until the nightly sweep writes them in.
+  fetch('games.json').then(r => r.json()).then(d => {
+    const games = (d.games || []).slice().sort((a, b) => (b.added || '').localeCompare(a.added || ''));
+    document.getElementById('empty').hidden = games.length > 0;
+    for (const g of games) {
+      const a = document.createElement('a');
+      a.href = 'games/' + g.slug + '/';
+      a.textContent = g.name;
+      document.getElementById('games').append(a);
+    }
+    window.dispatchEvent(new Event('arcade:cards'));
+  });
+</script>
+<!-- KEEP THIS LINE: it adds the visit counter, play counts and comments. -->
+<script src="extras.js" defer></script>
+</body>
+</html>

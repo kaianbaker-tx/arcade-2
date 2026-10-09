@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Approve comments - Kaian's Arcade 2</title>
+<link rel="stylesheet" href="extras.css">
+</head>
+<body>
+<main>
+  <div class="top"><a href="./">← Arcade</a></div>
+  <h1>Approve comments</h1>
+  <p class="sub">Only approved comments show on the arcade.</p>
+
+  <form id="login" class="card">
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <button>Log in</button>
+    <div class="msg" id="loginMsg" role="status"></div>
+  </form>
+
+  <div id="board" hidden>
+    <div class="tabs" id="tabs"></div>
+    <div id="list"></div>
+    <button id="logout" class="bad">Log out</button>
+  </div>
+</main>
+<script src="extras.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+let pw = sessionStorage.getItem('arcadePw') || '';
+let all = [], show = 'pending';
+
+// A link from Dad's email (?id=…&t=…) works without the password, for that one comment.
+if (q.get('id') && q.get('t')) single();
+else if (pw) refresh();
+
+async function single(op) {
+  $('login').hidden = true; $('board').hidden = false; $('tabs').hidden = true; $('logout').hidden = true;
+  try {
+    const r = await arcade.post({ action: 'review', id: q.get('id'), t: q.get('t'), op });
+    all = [r.comment]; draw(true);
+    const more = arcade.el('p', 'note'); more.innerHTML = '<a href="admin.html">See all comments →</a>';
+    $('list').append(more);
+  } catch (e) { $('list').replaceChildren(arcade.el('p', 'msg', e.message)); }
+}
+
+async function refresh(op, id) {
+  try {
+    const r = await arcade.post({ action: 'admin', pw, op, id });
+    sessionStorage.setItem('arcadePw', pw);
+    all = r.comments; $('login').hidden = true; $('board').hidden = false; draw();
+  } catch (e) {
+    sessionStorage.removeItem('arcadePw');
+    $('login').hidden = false; $('board').hidden = true; $('loginMsg').textContent = e.message;
+  }
+}
+
+function draw(one) {
+  if (!one) {
+    $('tabs').replaceChildren(...['pending', 'approved', 'rejected'].map(s => {
+      const b = arcade.el('button', s === show ? 'on' : '', s[0].toUpperCase() + s.slice(1) + ' (' + all.filter(c => c.status === s).length + ')');
+      b.type = 'button'; b.onclick = () => { show = s; draw(); };
+      return b;
+    }));
+  }
+  const rows = one ? all : all.filter(c => c.status === show);
+  $('list').replaceChildren();
+  if (!rows.length) $('list').append(arcade.el('p', 'note', 'Nothing here.'));
+  rows.forEach(c => {
+    const card = arcade.el('div', 'card');
+    const head = arcade.el('div');
+    const game = arcade.el('a', null, c.game); game.href = 'comments.html?game=' + c.game;
+    head.append(arcade.el('span', 'who', c.name), arcade.el('span', 'when', ' on '), game,
+                arcade.el('span', 'when', new Date(c.time).toLocaleString()), arcade.el('span', 'tag ' + c.status, c.status));
+    card.append(head, arcade.el('p', null, c.text));
+    const act = (label, cls, op) => {
+      const b = arcade.el('button', cls, label); b.type = 'button';
+      b.onclick = () => { b.disabled = true; one ? single(op) : refresh(op, c.id); };
+      return b;
+    };
+    if (c.status !== 'approved') card.append(act('Approve', 'ok', 'approve'), ' ');
+    if (c.status !== 'rejected') card.append(act(c.status === 'approved' ? 'Take down' : 'Reject', 'bad', 'reject'));
+    $('list').append(card);
+  });
+}
+
+$('login').addEventListener('submit', e => { e.preventDefault(); pw = $('pw').value; $('loginMsg').textContent = 'Checking…'; refresh(); });
+$('logout').onclick = () => { sessionStorage.removeItem('arcadePw'); location.href = 'admin.html'; };
+</script>
+</body>
+</html>

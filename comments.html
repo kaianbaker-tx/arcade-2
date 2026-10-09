@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comments - Kaian's Arcade 2</title>
+<link rel="stylesheet" href="extras.css">
+</head>
+<body>
+<main>
+  <div class="top"><a href="./">← Arcade</a><a id="play" href="./">▶ Play this game</a></div>
+  <h1 id="title">Comments</h1>
+  <p class="sub" id="plays"></p>
+
+  <div class="card">
+    <form id="form">
+      <label for="name">Your first name</label>
+      <input id="name" maxlength="20" autocomplete="given-name" required>
+      <label for="text">Your comment</label>
+      <textarea id="text" maxlength="300" required></textarea>
+      <!-- Robots fill in every box. People never see this one. -->
+      <input class="hide" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button id="send">Send comment</button>
+      <div class="msg" id="msg" role="status"></div>
+      <p class="note">Kaian's dad reads every comment before it shows up here. Please use your first name only.</p>
+    </form>
+  </div>
+
+  <div id="list"><p class="note">Loading comments…</p></div>
+</main>
+<script src="extras.js"></script>
+<script>
+const game = (new URLSearchParams(location.search).get('game') || '').toLowerCase();
+const $ = id => document.getElementById(id);
+
+if (!/^[a-z0-9-]{1,60}$/.test(game)) {
+  $('title').textContent = 'Game not found';
+  $('form').remove(); $('list').remove();
+} else {
+  $('play').href = 'games/' + game + '/';
+  $('play').addEventListener('click', () => arcade.ping({ action: 'play', game }));
+  fetch('games.json').then(r => r.json()).then(d => {
+    const g = (d.games || []).find(x => x.slug === game);
+    if (g) { $('title').textContent = g.name; document.title = g.name + ' - comments'; }
+  }).catch(() => {});
+  load();
+}
+
+async function load() {
+  if (!arcade.ready) { $('list').innerHTML = '<p class="note">Comments are not switched on yet.</p>'; $('send').disabled = true; return; }
+  try {
+    const [c, s] = await Promise.all([arcade.get({ action: 'comments', game }), arcade.get({ action: 'stats' })]);
+    const n = s.plays[game] || 0;
+    $('plays').textContent = '▶ ' + n.toLocaleString() + (n === 1 ? ' play' : ' plays');
+    $('list').replaceChildren();
+    if (!c.comments.length) $('list').append(arcade.el('p', 'note', 'No comments yet. Be the first!'));
+    c.comments.forEach(x => {
+      const card = arcade.el('div', 'card');
+      const head = arcade.el('div');
+      head.append(arcade.el('span', 'who', x.name), arcade.el('span', 'when', new Date(x.time).toLocaleDateString()));
+      card.append(head, arcade.el('p', null, x.text));
+      $('list').append(card);
+    });
+  } catch (e) {
+    $('list').replaceChildren(arcade.el('p', 'note', 'Could not load comments right now.'));
+  }
+}
+
+$('form').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  $('send').disabled = true; $('msg').textContent = 'Sending…';
+  try {
+    await arcade.post({ action: 'comment', game, name: $('name').value, text: $('text').value, website: $('website').value });
+    $('text').value = '';
+    $('msg').textContent = 'Thanks! Your comment will show up once it’s checked. ✅';
+  } catch (e) {
+    $('msg').textContent = e.message || 'That didn’t send. Try again?';
+  }
+  $('send').disabled = false;
+});
+</script>
+</body>
+</html>
