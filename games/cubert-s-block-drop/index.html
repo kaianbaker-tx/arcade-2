@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Cubert's Block Drop</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&family=Rubik:wght@400;600&display=swap">
@@ -31,11 +31,11 @@ kbd{font-family:var(--body);font-weight:600;background:var(--panel);border:1px s
 @media (max-width:420px){.pad button{width:54px;height:54px;font-size:11px}}
 </style>
 <div class="wrap">
-  <header><h1>Cubert's <span>Block Drop</span></h1><div class="hint keys"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd> jump · <kbd>Space</kbd> punch · <kbd>↓+Space</kbd> dig</div></header>
+  <header><h1>Cubert's <span>Block Drop</span></h1><div class="hint keys"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd> turn · <kbd>↓</kbd> faster · <kbd>Space</kbd> drop</div></header>
   <div class="arena"><canvas id="cv"></canvas>
-    <div id="over"><div id="ot">Cubert's Block Drop</div><div id="os">Blocks are falling! Punch them before any stack reaches the red line. Gems are worth big points and TNT goes BOOM. Hold ↓ + Space to dig down.</div><button class="btn" id="go">Play</button><div class="small keys">Press Space to start</div></div>
+    <div id="over"><div id="ot">Cubert's Block Drop</div><div id="os">Stack the falling blocks and fill whole rows to clear them, while Cubert cheers you on. Clear 4 rows at once for a TETRIS!</div><button class="btn" id="go">Play</button><div class="small keys">Press Space to start</div></div>
   </div>
-  <div class="pad"><div class="g"><button data-k="left" aria-label="Move left">◀</button><button data-k="right" aria-label="Move right">▶</button></div><div class="g"><button data-k="up" aria-label="up">▲</button><button data-k="down" aria-label="down">▼</button><button class="a" data-k="act">PUNCH</button></div></div>
+  <div class="pad"><div class="g"><button data-k="left" aria-label="Move left">◀</button><button data-k="right" aria-label="Move right">▶</button></div><div class="g"><button data-k="up" aria-label="up">⟳</button><button data-k="down" aria-label="down">▼</button><button class="a" data-k="act">DROP</button></div></div>
 </div>
 <script>
 (()=>{
@@ -183,81 +183,80 @@ function drawZip(c,f){ // anime speedster style
 }
 
 
-const COLS=12,CS=48,X0=(W-COLS*CS)/2,FLOOR=492,ROWS=9,TOPY=FLOOR-ROWS*CS;
-const BT={dirt:{c:'#8a5a2b',d:'#6b4320',l:'#a8743c',hp:1,pts:10},stone:{c:'#8d93a0',d:'#666b78',l:'#b0b5c2',hp:2,pts:20},
-  gem:{c:'#2fc7e8',d:'#1a8aa8',l:'#9af0ff',hp:1,pts:50},tnt:{c:'#d8312a',d:'#9a1e18',l:'#ff7a6a',hp:1,pts:15}};
-let cols,falling,P,spawnT,tick;
-const mk=t=>({type:t,hp:BT[t].hp});
-const surf=k=>k<0||k>=COLS?-1e9:FLOOR-cols[k].length*CS;
-const colOf=x=>Math.floor((x-X0)/CS);
-const groundAt=x=>Math.min(surf(colOf(x-13)),surf(colOf(x+13)));
-function pickType(){const r=R();return r<0.55?'dirt':r<0.78?'stone':r<0.9?'gem':'tnt'}
-function hurt(){if(P.inv>0)return;G.hearts--;P.inv=90;addShake(10);burst(P.x,P.y-30,'#ff4f6d',14,4);pop(P.x,P.y-80,'BONK!','#ff4f6d');if(G.hearts<=0)endGame('BONKED!')}
-function hitBlock(b,k){
-  b.hp--;const bx=k==null?b.x+CS/2:X0+k*CS+CS/2,by=k==null?b.y+CS/2:surf(k)+CS/2;
-  burst(bx,by,BT[b.type].c,8,3);addShake(3);
-  if(b.hp>0){pop(bx,by-30,'CRACK','#fff');return}
-  if(k==null)falling.splice(falling.indexOf(b),1);else cols[k].pop();
-  const t=BT[b.type];score+=t.pts;pop(bx,by-24,'+'+t.pts,t.l);burst(bx,by,t.l,14,5);
-  if(b.type==='tnt'){addShake(14);burst(bx,by,'#ffb030',34,8);pop(bx,by-50,'BOOM!','#ffb030');
-    const kk=k==null?colOf(bx):k;
-    for(const n of [kk-1,kk,kk+1]){if(n>=0&&n<COLS&&cols[n].length){const r=cols[n].pop();score+=5;burst(X0+n*CS+CS/2,surf(n)-CS/2,BT[r.type].c,10,5)}}}}
-function punch(down){
-  const fx1=P.facing>0?P.x:P.x-66,fx2=P.facing>0?P.x+66:P.x;
-  if(!down)for(const b of falling){if(b.x+CS>fx1&&b.x<fx2&&b.y+CS>P.y-84&&b.y<P.y){hitBlock(b,null);return}}
-  const k=down?colOf(P.x):colOf(P.x+P.facing*38);
-  if(k<0||k>=COLS||!cols[k].length)return;
-  const top=surf(k);
-  if(down?top>=P.y-2:(top<P.y+2&&top+CS>P.y-84))hitBlock(cols[k][cols[k].length-1],k)}
-function drawBlock(c,x,y,b,seed){const t=BT[b.type];
-  c.fillStyle=t.c;c.fillRect(x,y,CS,CS);c.fillStyle=t.l;c.fillRect(x,y,CS,6);c.fillRect(x,y,6,CS);
-  c.fillStyle=t.d;c.fillRect(x,y+CS-6,CS,6);c.fillRect(x+CS-6,y,6,CS);
-  for(let s=0;s<4;s++)c.fillRect(x+10+((s*17+seed*5)%24),y+10+((s*11+seed*7)%24),5,5);
-  if(b.type==='tnt'){c.fillStyle='#fff';c.fillRect(x+6,y+16,CS-12,15);c.fillStyle='#9a1e18';c.font='12px Bungee, Impact, sans-serif';c.textAlign='center';c.fillText('TNT',x+CS/2,y+29)}
-  if(b.type==='gem'){c.fillStyle='#fff';c.beginPath();c.moveTo(x+24,y+10);c.lineTo(x+36,y+24);c.lineTo(x+24,y+38);c.lineTo(x+12,y+24);c.fill();
-    c.fillStyle=t.c;c.beginPath();c.moveTo(x+24,y+16);c.lineTo(x+30,y+24);c.lineTo(x+24,y+32);c.lineTo(x+18,y+24);c.fill()}
-  if(b.type==='stone'&&b.hp===1){c.strokeStyle='#2a2d36';c.lineWidth=2;c.beginPath();c.moveTo(x+8,y+12);c.lineTo(x+22,y+24);c.lineTo(x+18,y+34);c.moveTo(x+22,y+24);c.lineTo(x+38,y+20);c.stroke()}
-  c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;c.strokeRect(x+1,y+1,CS-2,CS-2)}
-const G={hearts:3,
-init(){cols=Array.from({length:COLS},()=>R()<0.5?[mk('dirt')]:[]);
-  P={x:X0+CS*6,y:0,vx:0,vy:0,onGround:true,facing:1,t:0,atk:0,inv:0,cd:0};P.y=groundAt(P.x);falling=[];spawnT=60;tick=0;G.hearts=3},
-idle(){P.t++},
+const BW=10,BH=20,CS=24,BX=360,BY=30;
+const SHAPES={I:[[0,1],[1,1],[2,1],[3,1]],O:[[1,0],[2,0],[1,1],[2,1]],T:[[1,0],[0,1],[1,1],[2,1]],S:[[1,0],[2,0],[0,1],[1,1]],Z:[[0,0],[1,0],[1,1],[2,1]],J:[[0,0],[0,1],[1,1],[2,1]],L:[[2,0],[0,1],[1,1],[2,1]]};
+const MAT={I:{c:'#2fc7e8',l:'#9af0ff',d:'#1a8aa8'},O:{c:'#e8c02f',l:'#fff08a',d:'#a8861a'},T:{c:'#a05ad8',l:'#d4a8ff',d:'#6a3a9a'},
+  S:{c:'#5fb33a',l:'#9be85a',d:'#3a7a22'},Z:{c:'#d8312a',l:'#ff7a6a',d:'#9a1e18'},J:{c:'#3a5ad8',l:'#8aa8ff',d:'#22389a'},L:{c:'#d8862a',l:'#ffb86a',d:'#9a5a18'}};
+const LINE_PTS=[0,100,300,500,800], CHEERS=['Nice!','Boom!','Yes!','Smash it!','Awesome!'];
+let board,cur,next,bag,dropT,lines,level,clearing,clearT,moveT,K,speech,lockT;
+function rot(cells,n){let c=cells.map(p=>[...p]);for(let k=0;k<n;k++)c=c.map(([x,y])=>[2-y,x]);if(c===cells)return c;return c}
+function cellsOf(p){if(p.t==='O')return SHAPES.O;if(p.t==='I'){let c=SHAPES.I.map(q=>[...q]);for(let k=0;k<p.r%4;k++)c=c.map(([x,y])=>[3-y,x]);return c}return rot(SHAPES[p.t],p.r%4)}
+function fits(p,dx,dy,r){const q={t:p.t,r:r==null?p.r:r};for(const [x,y] of cellsOf(q)){const X=p.x+x+dx,Y=p.y+y+dy;if(X<0||X>=BW||Y>=BH)return false;if(Y>=0&&board[Y][X])return false}return true}
+function fromBag(){if(!bag.length)bag=Object.keys(SHAPES).sort(()=>R()-0.5);return bag.pop()}
+function spawn(){cur={t:next,r:0,x:3,y:next==='I'?-1:0};next=fromBag();lockT=0;if(!fits(cur,0,0)){K.vy=-6;endGame('STACKED UP!')}}
+function talk(t){speech={t,life:90}}
+function lock(){for(const [x,y] of cellsOf(cur)){const Y=cur.y+y;if(Y<0){endGame('STACKED UP!');return}board[Y][cur.x+x]=cur.t}
+  addShake(2);const full=[];for(let y=0;y<BH;y++)if(board[y].every(v=>v))full.push(y);
+  if(full.length){clearing=full;clearT=16;const pts=LINE_PTS[full.length]*level;score+=pts;
+    const cy=BY+full[0]*CS;pop(BX+BW*CS/2,cy,full.length===4?'TETRIS! +'+pts:'+'+pts,'#fff08a');
+    for(const y of full)for(let x=0;x<BW;x++)burst(BX+x*CS+12,BY+y*CS+12,MAT[board[y][x]].c,3,4);
+    K.atk=14;K.vy=-9;K.onGround=false;talk(full.length===4?'TETRIS!!':pick(CHEERS));addShake(full.length*3)}
+  else spawn()}
+function hardDrop(){let n=0;while(fits(cur,0,1)){cur.y++;n++}score+=n*2;for(const [x,y] of cellsOf(cur))burst(BX+(cur.x+x)*CS+12,BY+(cur.y+y)*CS+24,'rgba(255,255,255,.7)',2,2);lock()}
+function tryRotate(){const r=(cur.r+1)%4;for(const dx of [0,-1,1,-2,2])if(fits(cur,dx,0,r)){cur.x+=dx;cur.r=r;lockT=0;return}}
+function block(c,x,y,t,s){const m=MAT[t];s=s||CS;const e=Math.max(2,s/8);
+  c.fillStyle=m.c;c.fillRect(x,y,s,s);c.fillStyle=m.l;c.fillRect(x,y,s,e);c.fillRect(x,y,e,s);
+  c.fillStyle=m.d;c.fillRect(x,y+s-e,s,e);c.fillRect(x+s-e,y,e,s);c.fillRect(x+s*0.3,y+s*0.3,e,e);c.fillRect(x+s*0.6,y+s*0.55,e,e);
+  c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=1;c.strokeRect(x+0.5,y+0.5,s-1,s-1)}
+const G={
+init(){board=Array.from({length:BH},()=>Array(BW).fill(null));bag=[];next=fromBag();lines=0;level=1;clearing=null;clearT=0;moveT={left:0,right:0,down:0};
+  K={x:730,y:450,vx:1,vy:0,onGround:true,t:0,atk:0,dir:1};speech=null;dropT=0;spawn();talk("Let's stack!")},
+idle(){moveCubert()},
 update(i){
-  tick++;P.t++;for(const k of ['atk','inv','cd'])if(P[k]>0)P[k]--;
-  const level=1+Math.floor(tick/1500);
-  const dir=(i.right?1:0)-(i.left?1:0);if(dir)P.facing=dir;P.vx=dir*4.2;
-  if(dir){const nx=P.x+P.vx;let ok=true;for(const k of [colOf(nx-13),colOf(nx+13)])if(k<0||k>=COLS||surf(k)<P.y-2)ok=false;if(ok)P.x=nx}
-  if(i.upP&&P.onGround){P.vy=-12.5;P.onGround=false}
-  P.vy=Math.min(P.vy+0.62,14);let ny=P.y+P.vy;const g=groundAt(P.x);
-  if(P.vy>=0&&ny>=g){ny=g;P.vy=0;P.onGround=true}else P.onGround=false;
-  P.y=ny;
-  if(i.actP&&P.cd===0){P.atk=14;P.cd=16;punch(i.down)}
-  if(--spawnT<=0){const k=Math.floor(R()*COLS),b=mk(pickType());b.k=k;b.x=X0+k*CS;b.y=-CS;b.v=1.6+level*0.35+R()*0.6;falling.push(b);
-    spawnT=Math.max(22,80-level*7)+Math.floor(R()*30)}
-  for(const b of [...falling]){b.y+=b.v;
-    if(P.inv===0&&b.x+CS>P.x-13&&b.x<P.x+13&&b.y+CS>P.y-58&&b.y<P.y){falling.splice(falling.indexOf(b),1);burst(b.x+CS/2,b.y+CS/2,BT[b.type].c,12,4);hurt();if(state!=='play')return;continue}
-    const s=surf(b.k);
-    if(b.y+CS>=s){b.y=s-CS;falling.splice(falling.indexOf(b),1);cols[b.k].push(b);addShake(2);burst(b.x+CS/2,s,'rgba(255,255,255,.6)',5,2);
-      if(cols[b.k].length>=ROWS){endGame('TOO TALL!');return}}}
-  const g2=groundAt(P.x);if(P.y>g2)P.y=g2;
-  if(tick%60===0)score+=1},
+  moveCubert();
+  if(clearing){if(--clearT<=0){for(const y of clearing){board.splice(y,1);board.unshift(Array(BW).fill(null))}
+      lines+=clearing.length;const nl=1+Math.floor(lines/10);if(nl>level){level=nl;say('LEVEL '+level,'#9be85a');talk('Faster!')}clearing=null;spawn()}return}
+  for(const d of ['left','right']){if(i[d]){moveT[d]++;if(moveT[d]===1||(moveT[d]>10&&moveT[d]%3===0)){const dx=d==='left'?-1:1;if(fits(cur,dx,0)){cur.x+=dx;lockT=0}}}else moveT[d]=0}
+  if(i.upP)tryRotate();
+  if(i.actP){hardDrop();return}
+  const speed=Math.max(3,48-(level-1)*5);
+  if(i.down){if(++moveT.down%2===0&&fits(cur,0,1)){cur.y++;score+=1;dropT=0}}else moveT.down=0;
+  if(++dropT>=speed){dropT=0;if(fits(cur,0,1))cur.y++}
+  if(!fits(cur,0,1)){if(++lockT>=30)lock()}else lockT=0},
+hud(c){
+  c.fillStyle='rgba(10,20,40,.88)';c.fillRect(150,30,170,130);c.strokeStyle='rgba(255,255,255,.25)';c.strokeRect(150.5,30.5,169,129);
+  txt(c,'NEXT',235,56,14,'#fff','center');
+  if(next){const cs=SHAPES[next];const xs=cs.map(p=>p[0]),ys=cs.map(p=>p[1]);const w=(Math.max(...xs)-Math.min(...xs)+1)*22,h=(Math.max(...ys)-Math.min(...ys)+1)*22;
+    for(const [x,y] of cs)block(c,235-w/2+(x-Math.min(...xs))*22,108-h/2+(y-Math.min(...ys))*22,next,22)}
+  txt(c,'LINES '+lines,150,196,16,'#fff');txt(c,'LEVEL '+level,150,224,16,'#9be85a')},
 draw(c){
   ['#4aa6ec','#5cb2f0','#70bef3','#86caf6','#9cd6f9'].forEach((col,i)=>{c.fillStyle=col;c.fillRect(0,i*H/5,W,H/5+1)});
-  c.fillStyle='#ffe066';c.fillRect(820,40,56,56);c.fillStyle='#fff3a8';c.fillRect(832,52,32,32);
-  c.fillStyle='rgba(255,255,255,.9)';
-  for(let k=0;k<5;k++){const x=((k*260+frame*0.3)%(W+240))-120,y=40+(k*53)%130;c.fillRect(x,y,96,24);c.fillRect(x+24,y-16,48,16)}
-  for(const side of [X0-CS,X0+COLS*CS])for(let y=FLOOR-CS;y>=TOPY-CS;y-=CS)drawBlock(c,side,y,{type:'stone',hp:2},Math.floor(y/CS)+side);
-  c.fillStyle='rgba(20,40,80,.12)';c.fillRect(X0,TOPY,COLS*CS,FLOOR-TOPY);
-  c.strokeStyle='rgba(255,255,255,.12)';c.lineWidth=1;c.beginPath();for(let k=1;k<COLS;k++){c.moveTo(X0+k*CS,TOPY);c.lineTo(X0+k*CS,FLOOR)}c.stroke();
-  c.setLineDash([12,8]);c.strokeStyle='rgba(216,49,42,.9)';c.lineWidth=3;c.beginPath();c.moveTo(X0,TOPY);c.lineTo(X0+COLS*CS,TOPY);c.stroke();c.setLineDash([]);
-  c.fillStyle='#5fb33a';c.fillRect(0,FLOOR,W,10);c.fillStyle='#7a4f26';c.fillRect(0,FLOOR+10,W,H-FLOOR);
-  c.fillStyle='#6b4320';for(let x=0;x<W;x+=24)c.fillRect(x+((x/24)%3)*5,FLOOR+20+((x/24)%2)*12,6,6);
-  for(let k=0;k<COLS;k++){
-    if(cols[k].length>=ROWS-2){c.fillStyle=`rgba(255,60,60,${0.18+0.12*Math.sin(frame*0.2)})`;c.fillRect(X0+k*CS,TOPY,CS,FLOOR-TOPY)}
-    cols[k].forEach((b,j)=>drawBlock(c,X0+k*CS,FLOOR-(j+1)*CS,b,k*3+j))}
-  for(const b of falling){c.fillStyle='rgba(0,0,0,.18)';c.fillRect(b.x+6,surf(b.k)-6,CS-12,6);drawBlock(c,b.x,b.y,b,b.k)}
-  c.save();c.translate(P.x,P.y);c.scale(P.facing*1.05,1.05);if(P.inv>0&&Math.floor(P.t/4)%2)c.globalAlpha=0.4;drawCubert(c,{t:P.t,vx:P.vx,vy:P.vy,onGround:P.onGround,atk:P.atk});c.restore();c.globalAlpha=1}
+  c.fillStyle='#ffe066';c.fillRect(840,40,56,56);c.fillStyle='#fff3a8';c.fillRect(852,52,32,32);
+  c.fillStyle='rgba(255,255,255,.9)';for(let k=0;k<5;k++){const x=((k*260+frame*0.3)%(W+240))-120,y=40+(k*53)%130;c.fillRect(x,y,96,24);c.fillRect(x+24,y-16,48,16)}
+  c.fillStyle='#5fb33a';c.fillRect(0,510,W,10);c.fillStyle='#7a4f26';c.fillRect(0,520,W,20);
+  // Cubert's grass ledge
+  for(let x=640;x<850;x+=30){c.fillStyle='#7a4f26';c.fillRect(x,450,30,60);c.fillStyle='#5fb33a';c.fillRect(x,450,30,8);c.fillStyle='rgba(0,0,0,.2)';c.fillRect(x+28,450,2,60)}
+  // board frame
+  c.fillStyle='#666b78';c.fillRect(BX-12,BY-12,BW*CS+24,BH*CS+24);c.fillStyle='#8d93a0';c.fillRect(BX-12,BY-12,BW*CS+24,6);
+  c.fillStyle='#0f1a2e';c.fillRect(BX,BY,BW*CS,BH*CS);
+  c.strokeStyle='rgba(255,255,255,.05)';c.lineWidth=1;c.beginPath();for(let x=1;x<BW;x++){c.moveTo(BX+x*CS,BY);c.lineTo(BX+x*CS,BY+BH*CS)}for(let y=1;y<BH;y++){c.moveTo(BX,BY+y*CS);c.lineTo(BX+BW*CS,BY+y*CS)}c.stroke();
+  for(let y=0;y<BH;y++)for(let x=0;x<BW;x++)if(board[y][x]){
+    if(clearing&&clearing.includes(y)){c.fillStyle=clearT%4<2?'#fff':MAT[board[y][x]].l;c.fillRect(BX+x*CS,BY+y*CS,CS,CS)}else block(c,BX+x*CS,BY+y*CS,board[y][x])}
+  if(cur&&!clearing&&state==='play'){
+    let gy=0;while(fits(cur,0,gy+1))gy++;
+    c.strokeStyle='rgba(255,255,255,.45)';c.lineWidth=2;for(const [x,y] of cellsOf(cur)){if(cur.y+y+gy>=0)c.strokeRect(BX+(cur.x+x)*CS+2,BY+(cur.y+y+gy)*CS+2,CS-4,CS-4)}
+    for(const [x,y] of cellsOf(cur))if(cur.y+y>=0)block(c,BX+(cur.x+x)*CS,BY+(cur.y+y)*CS,cur.t)}
+  // Cubert
+  c.save();c.translate(K.x,K.y);c.scale(-K.dir*1.6,1.6);drawCubert(c,{t:K.t,vx:K.vx,vy:K.vy,onGround:K.onGround,atk:K.atk});c.restore();
+  if(speech){const sx=K.x+10,sy=K.y-128;c.globalAlpha=Math.min(1,speech.life/15);c.font='15px Bungee, Impact, sans-serif';const w=c.measureText(speech.t).width+24;
+    c.fillStyle='#fff';c.beginPath();c.roundRect(sx-w/2,sy-24,w,34,8);c.fill();c.beginPath();c.moveTo(sx-8,sy+10);c.lineTo(sx-18,sy+22);c.lineTo(sx+4,sy+10);c.fill();
+    c.fillStyle='#1f3a5a';c.textAlign='center';c.fillText(speech.t,sx,sy-1);c.globalAlpha=1}}
 };
+function moveCubert(){K.t++;if(K.atk>0)K.atk--;if(speech&&--speech.life<=0)speech=null;
+  if(K.onGround&&R()<0.006)K.vx=K.vx?0:(R()<0.5?-1:1)*1.2;
+  if(K.vx){K.x+=K.vx;K.dir=K.vx<0?1:-1;if(K.x<670||K.x>810){K.vx*=-1;K.x=clamp(K.x,670,810)}}
+  else K.dir=1;
+  if(!K.onGround){K.vy+=0.5;K.y+=K.vy;if(K.y>=450){K.y=450;K.vy=0;K.onGround=true}}}
 
 let last=performance.now(),acc=0;
 function loop(now){acc+=Math.min(100,now-last);last=now;

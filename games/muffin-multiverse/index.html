@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Muffin Multiverse</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;900&display=swap">
 <style>
@@ -66,7 +66,7 @@ button:focus-visible{outline:4px solid var(--mint);outline-offset:3px}
       <div>🍓 Berry<br>+1 life</div>
     </div>
     <h2>Pick your muffin <span id="flavorCount" style="font-size:15px"></span></h2>
-    <p style="font-size:13px;margin:0">Save up chips to unlock muffins. Purple ones are secret: beat their challenge to get them!</p>
+    <p style="font-size:13px;margin:0">All muffins are unlocked! Tap one to play as it.</p>
     <div class="flavors" id="flavors"></div>
     <p>Tap, click, or press Space to jump. Jump again in the air for a double jump!</p>
     <button id="startBtn">Play</button>
@@ -121,7 +121,7 @@ const FLAVORS=[
  {id:'angel',name:'Angel Cake',req:{worlds:7},top:'#ffffff',cup:'#ffe9a8',dots:'#ffd21f',acc:'halo'}
 ];
 const flavor=()=>FLAVORS.find(f=>f.id===flavorId&&isUnlocked(f))||FLAVORS[0];
-function isUnlocked(f,bk=bank){const r=f.req;
+function isUnlocked(f,bk=bank){return true;const r=f.req;
   if('bank' in r)return bk>=r.bank;if(r.worlds)return best.worlds>=r.worlds;if(r.run)return best.chips>=r.run;
   if(r.dist)return best.dist>=r.dist;if(r.gold)return stats.gold>=r.gold;if(r.powers)return stats.powers>=r.powers;return false}
 function reqText(f){const r=f.req;
