@@ -1,0 +1,412 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Meatball Roll</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+/* Layout: one arcade cabinet column — HUD strip, pixel game screen, controls line */
+:root{
+  --bg:#24120d;        /* dark pasta-pot brown */
+  --panel:#3a1d14;
+  --sauce:#d8342a;     /* tomato red */
+  --noodle:#f4d26b;    /* spaghetti yellow */
+  --cream:#fff4dc;
+  --basil:#5fae4e;
+  --pixel:"Press Start 2P", "Courier New", monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--cream);font-family:var(--pixel);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:16px;box-sizing:border-box}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.hud{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:12px;line-height:1.6}
+.hud .lives{color:var(--sauce);letter-spacing:4px}
+.hud .score{color:var(--noodle)}
+.hud .bar{flex:1 1 140px;min-width:100px;height:10px;background:var(--panel);border:2px solid var(--cream);position:relative}
+.hud .bar i{position:absolute;inset:0 auto 0 0;background:var(--basil);width:0}
+.stage{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border:4px solid var(--cream);box-shadow:0 0 0 4px var(--sauce);
+  touch-action:none;user-select:none;-webkit-user-select:none;background:#000}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  text-align:center;background:rgba(36,18,13,.82);padding:12px}
+.over h1{font-size:clamp(18px,5vw,40px);color:var(--noodle);margin:0;text-shadow:3px 3px 0 var(--sauce);text-wrap:balance}
+.over p{font-size:clamp(9px,1.8vw,13px);margin:0;line-height:1.9;max-width:34em}
+.over .big{color:var(--noodle)}
+button{font-family:var(--pixel);font-size:clamp(11px,2vw,15px);background:var(--sauce);color:var(--cream);border:3px solid var(--cream);
+  padding:12px 18px;cursor:pointer;box-shadow:4px 4px 0 #000}
+button:hover{background:#ee4a3e}
+button:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000}
+button:focus-visible{outline:3px solid var(--noodle);outline-offset:3px}
+.foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;font-size:10px;line-height:1.8;color:#e8c9a8}
+.foot button{font-size:10px;padding:8px 12px;background:var(--panel)}
+</style>
+
+<div class="wrap">
+  <div class="hud">
+    <span class="lives" id="lives">♥♥♥</span>
+    <span class="score" id="score">SAUCE 0</span>
+    <span id="lvl">LEVEL 1</span>
+    <div class="bar" aria-label="How close you are to the plate"><i id="prog"></i></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="game"></canvas>
+    <div class="over" id="over"></div>
+  </div>
+
+  <div class="foot">
+    <span>JUMP: tap, SPACE or ↑ &nbsp;·&nbsp; jump again in the air for a double jump!</span>
+    <button id="mus" type="button">MUSIC: ON</button>
+  </div>
+</div>
+
+<script>
+// ===== SETUP =====
+const W=192, H=108, G=86, R=6, GRAV=420, JUMP=-170, JUMP2=-150;
+const cv=document.getElementById('game'), cx=cv.getContext('2d');
+cv.width=W; cv.height=H;
+const $=id=>document.getElementById(id);
+
+const LEVELS=[
+  {len:1100, speed:62, holes:false, moving:false, name:"Tiny Table"},
+  {len:1500, speed:72, holes:true,  moving:false, name:"Long Table"},
+  {len:1900, speed:82, holes:true,  moving:true,  name:"Chef's Giant Table"}
+];
+
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+let state='title', lvl=0, lives=3, score=0, levelStartScore=0, best=0;
+let obs=[], drops=[], parts=[], p, shake=0, time=0, len=1100;
+try{best=+localStorage.getItem('meatballBest')||0}catch(e){}
+
+// ===== BUILD A LEVEL =====
+function build(n){
+  const c=LEVELS[n], r=rng(7+n*13);
+  obs=[]; drops=[]; parts=[]; len=c.len;
+  let x=140;
+  while(x<c.len-120){
+    if(c.holes && r()<0.28){
+      const w=22+Math.floor(r()*12);
+      obs.push({k:'hole',x,w});
+      drops.push({x:x+w/2,y:G-26,got:false});
+      x+=w+70+r()*40;
+    }else{
+      const h=10+Math.floor(r()*8), mv=c.moving&&r()<0.45;
+      obs.push({k:'fork',x,w:5,h,mv,ph:r()*6});
+      if(r()<0.6) drops.push({x:x+2,y:G-h-14,got:false});
+      x+=60+r()*45;
+    }
+    if(r()<0.7) drops.push({x:x-30,y:G-6,got:false});
+  }
+  p={x:20,y:G-R,vy:0,ang:0,ground:true,jumps:0,inv:0};
+}
+
+// ===== SOUND =====
+let ac=null, master, musicGain, sfxGain, musicOn=true, nextT=0, step=0;
+const MEL=[72,0,72,76,0,76, 79,77,76,74,0,74, 71,0,71,74,0,74, 77,76,74,72,0,0,
+           72,0,72,76,0,76, 79,81,79,77,76,77, 79,76,72,74,71,74, 72,0,67,72,0,0];
+const BASS=[48,43,48,43,43,50,43,47,48,43,41,48,43,47,48,36];
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function startAudio(){
+  if(ac){ if(ac.state==='suspended') ac.resume(); return; }
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  ac=new AC();
+  master=ac.createGain(); master.gain.value=0.5; master.connect(ac.destination);
+  musicGain=ac.createGain(); musicGain.gain.value=musicOn?0.35:0; musicGain.connect(master);
+  sfxGain=ac.createGain(); sfxGain.gain.value=0.8; sfxGain.connect(master);
+  nextT=ac.currentTime+0.05;
+  setInterval(schedule,25);
+}
+function tone(freq,t,dur,type,vol,dest){
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t+dur+0.03);
+}
+function sweep(f1,f2,dur,type,vol){
+  const t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+dur+0.03);
+}
+function noise(dur,ftype,freq,vol){
+  const t=ac.currentTime, b=ac.createBuffer(1,Math.floor(ac.sampleRate*dur),ac.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+  s.buffer=b; f.type=ftype; f.frequency.value=freq;
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(f); f.connect(g); g.connect(sfxGain); s.start(t);
+}
+function schedule(){
+  const stepDur=0.17-lvl*0.012;           // music gets a bit faster each level
+  while(nextT<ac.currentTime+0.12){
+    const m=MEL[step%48];
+    if(m) tone(mtof(m),nextT,stepDur*0.9,'square',0.10,musicGain);
+    const s=step%6;
+    if(s===0||s===3) tone(mtof(BASS[Math.floor(step/3)%16]),nextT,stepDur*2.2,'triangle',0.35,musicGain);
+    if(s===1||s===4) tone(mtof(BASS[Math.floor(step/3)%16]+16),nextT,stepDur*0.5,'square',0.04,musicGain); // little "pah"
+    nextT+=stepDur; step++;
+  }
+}
+const SFX={
+  boing(){ if(!ac)return; sweep(180,520,0.18,'sine',0.5); sweep(360,1040,0.12,'triangle',0.15); },
+  squish(){ if(!ac)return; noise(0.12,'lowpass',900,0.6); sweep(220,70,0.15,'sine',0.45); },
+  clang(){ if(!ac)return; const t=ac.currentTime; tone(1250,t,0.35,'square',0.12,sfxGain); tone(1870,t,0.3,'square',0.08,sfxGain); noise(0.08,'highpass',3000,0.4); },
+  yay(){ if(!ac)return; const t=ac.currentTime; [72,76,79,84].forEach((m,i)=>tone(mtof(m),t+i*0.1,0.22,'square',0.16,sfxGain)); tone(mtof(88),t+0.42,0.6,'square',0.16,sfxGain); tone(mtof(76),t+0.42,0.6,'triangle',0.3,sfxGain); }
+};
+$('mus').onclick=()=>{ musicOn=!musicOn; $('mus').textContent='MUSIC: '+(musicOn?'ON':'OFF'); if(musicGain) musicGain.gain.value=musicOn?0.35:0; };
+
+// ===== SCREENS =====
+function screen(html){ const o=$('over'); o.innerHTML=html; o.hidden=!html; const b=o.querySelector('button'); if(b) b.focus({preventScroll:true}); }
+function showTitle(){
+  state='title';
+  screen(`<h1>MEATBALL ROLL</h1>
+    <p>You are a meatball. Roll down the table to the spaghetti plate!</p>
+    <p>Jump over <span class="big">forks</span>. Grab <span class="big">sauce drops</span>.${''} Don't fall in the holes!</p>
+    <button id="go" type="button">START ROLLING</button>`);
+  $('go').onclick=()=>{ startAudio(); lvl=0; lives=3; score=0; startLevel(); };
+}
+function startLevel(){
+  build(lvl); levelStartScore=score; state='play'; screen('');
+  // show the level name for a moment
+  banner=2.2;
+}
+let banner=0;
+function levelClear(){
+  SFX.yay();
+  if(lvl===LEVELS.length-1){ return win(); }
+  state='clear';
+  screen(`<h1>YUM!</h1><p>Level ${lvl+1} done! You have <span class="big">${score}</span> sauce drops.</p>
+    <p>Next: <span class="big">${LEVELS[lvl+1].name}</span></p><button id="go" type="button">NEXT LEVEL</button>`);
+  $('go').onclick=()=>{ lvl++; startLevel(); };
+}
+function win(){
+  state='win';
+  const nb=score>best; if(nb){best=score; try{localStorage.setItem('meatballBest',best)}catch(e){}}
+  screen(`<h1>MAMMA MIA!</h1><p>You made it onto the BIG plate of spaghetti!</p>
+    <p>Sauce: <span class="big">${score}</span> &nbsp; Best: <span class="big">${best}</span>${nb?' &nbsp;NEW BEST!':''}</p>
+    <button id="go" type="button">ROLL AGAIN</button>`);
+  $('go').onclick=()=>{ lvl=0; lives=3; score=0; startLevel(); };
+}
+function gameOver(){
+  state='over';
+  screen(`<h1>SPLAT!</h1><p>The meatball got squashed on <span class="big">${LEVELS[lvl].name}</span>.</p>
+    <p>One more try? You start this level again.</p><button id="go" type="button">TRY AGAIN</button>`);
+  $('go').onclick=()=>{ lives=3; score=levelStartScore; startLevel(); };
+}
+
+// ===== INPUT =====
+function jump(){
+  if(state!=='play') return;
+  if(p.ground){ p.vy=JUMP; p.ground=false; p.jumps=1; SFX.boing(); }
+  else if(p.jumps<2){ p.vy=JUMP2; p.jumps=2; SFX.boing(); }
+}
+addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'){
+    if(state==='play'){ e.preventDefault(); jump(); }
+  }
+});
+$('stage').addEventListener('pointerdown',e=>{
+  if(e.target.closest('button')) return;
+  startAudio(); jump();
+});
+
+// ===== GAME LOGIC =====
+function forkH(f){ return f.mv ? Math.round(f.h*(0.45+0.6*Math.abs(Math.sin(time*2.4+f.ph)))) : f.h; }
+function hurt(){
+  lives--; SFX.clang(); shake=0.35; p.inv=1.5;
+  for(let i=0;i<10;i++) parts.push({x:p.x,y:p.y,vx:(Math.random()-.5)*80,vy:-Math.random()*90,t:0.6,c:'#8b4a2b'});
+  if(lives<=0) gameOver();
+}
+function update(dt){
+  time+=dt;
+  if(banner>0) banner-=dt;
+  for(const q of parts){ q.t-=dt; q.vy+=GRAV*0.6*dt; q.x+=q.vx*dt; q.y+=q.vy*dt; }
+  parts=parts.filter(q=>q.t>0);
+  if(shake>0) shake-=dt;
+  if(state!=='play') return;
+
+  const sp=LEVELS[lvl].speed;
+  p.x+=sp*dt; p.ang+=sp*dt/R;
+  p.vy+=GRAV*dt; p.y+=p.vy*dt;
+  if(p.inv>0) p.inv-=dt;
+
+  const hole=obs.find(o=>o.k==='hole' && p.x>o.x+3 && p.x<o.x+o.w-3);
+  if(!hole && p.vy>=0 && p.y>=G-R && p.y<G-R+8){ p.y=G-R; p.vy=0; p.ground=true; p.jumps=0; }
+  else if(p.y<G-R-0.5 || hole) p.ground=false;
+
+  // fell in a hole
+  if(p.y>H+12){
+    const h=obs.filter(o=>o.k==='hole' && o.x<p.x).pop();
+    lives--; SFX.clang(); shake=0.35;
+    if(lives<=0){ gameOver(); return; }
+    p.x=(h?h.x:p.x)-34; p.y=G-R; p.vy=0; p.ground=true; p.inv=1.5;
+  }
+
+  // forks
+  if(p.inv<=0){
+    for(const f of obs){
+      if(f.k!=='fork' || Math.abs(f.x-p.x)>14) continue;
+      const top=G-forkH(f), nx=Math.max(f.x+1,Math.min(p.x,f.x+4)), ny=Math.max(top,Math.min(p.y,G));
+      if((nx-p.x)**2+(ny-p.y)**2<(R-1)**2){ hurt(); break; }
+    }
+  }
+
+  // sauce drops
+  for(const d of drops){
+    if(d.got) continue;
+    const dy=d.y+Math.sin(time*4+d.x)*1.5;
+    if((d.x-p.x)**2+(dy-p.y)**2<(R+3)**2){
+      d.got=true; score++; SFX.squish();
+      for(let i=0;i<7;i++) parts.push({x:d.x,y:dy,vx:(Math.random()-.5)*70,vy:-Math.random()*70,t:0.5,c:'#d8342a'});
+    }
+  }
+
+  if(p.x>=len-40) levelClear();
+}
+
+// ===== DRAWING (pixel art) =====
+function px(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(Math.round(x),Math.round(y),w,h); }
+
+function drawBackground(cam){
+  const pr=cam*0.4, start=Math.floor(pr/8), off=pr-start*8;
+  for(let row=0;row<G/8+1;row++) for(let i=0;i<W/8+2;i++)
+    px(i*8-off,row*8,8,8,((start+i+row)&1)?'#e9c48f':'#f0d3a3');
+  // tile grout lines
+  for(let i=0;i<W/8+2;i++) px(i*8-off,0,1,G,'#d9ae76');
+  for(let row=0;row<G/8+1;row++) px(0,row*8,W,1,'#d9ae76');
+  // windows
+  for(let k=Math.floor(pr/96)-1;k<Math.floor(pr/96)+4;k++){
+    const wx=Math.round(k*96+30-pr);
+    px(wx-2,14,28,24,'#7a3b22'); px(wx,16,24,20,'#7fc4ec');
+    px(wx+3,20,6,2,'#ffffff'); px(wx+6,19,8,2,'#ffffff');           // cloud
+    px(wx+11,16,2,20,'#7a3b22'); px(wx,25,24,2,'#7a3b22');            // window bars
+    px(wx-4,38,32,3,'#7a3b22');                                         // sill
+    px(wx+2,33,4,5,'#c0602f'); px(wx+3,30,2,3,'#5fae4e');               // basil pot
+  }
+  // hanging garlic every so often (closer layer)
+  const pr2=cam*0.7;
+  for(let k=Math.floor(pr2/150)-1;k<Math.floor(pr2/150)+3;k++){
+    const gx=Math.round(k*150+90-pr2);
+    px(gx+2,0,1,8,'#7a3b22');
+    px(gx,8,5,5,'#fffaf0'); px(gx+1,13,3,1,'#fffaf0'); px(gx+2,7,1,1,'#bba'); px(gx+1,9,1,3,'#e8e0cc');
+  }
+}
+
+function drawTable(cam){
+  px(0,G,W,2,'#7a1d17');
+  const start=Math.floor(cam/6), off=cam-start*6;
+  for(let row=0;row<4;row++) for(let i=0;i<W/6+2;i++)
+    px(i*6-off,G+2+row*6,6,6,((start+i+row)&1)?'#d8342a':'#fff4dc');
+  px(0,G+2,W,1,'rgba(0,0,0,0.15)');
+  for(const o of obs){
+    if(o.k!=='hole') continue;
+    const x=o.x-cam; if(x>W||x+o.w<0) continue;
+    px(x,G,o.w,H-G,'#2a130c'); px(x,G,1,H-G,'#120705'); px(x+o.w-1,G,1,H-G,'#120705');
+  }
+}
+
+function drawFork(f,cam){
+  const x=Math.round(f.x-cam); if(x>W+4||x<-8) return;
+  const h=forkH(f), top=G-h;
+  const L='#d9e2ea', D='#8e9aa6';
+  px(x,top,1,5,L); px(x+2,top,1,5,L); px(x+4,top,1,5,L);          // tines
+  px(x,top+5,5,2,L); px(x+1,top+7,3,1,D);                          // neck
+  px(x+2,top+8,1,Math.max(0,h-8),L); px(x+3,top+8,1,Math.max(0,h-8),D); // handle
+}
+
+function drawDrop(d,cam){
+  if(d.got) return;
+  const x=Math.round(d.x-cam), y=Math.round(d.y+Math.sin(time*4+d.x)*1.5);
+  if(x<-5||x>W+5) return;
+  px(x,y-3,1,1,'#d8342a'); px(x-1,y-2,3,1,'#d8342a'); px(x-2,y-1,5,3,'#d8342a'); px(x-1,y+2,3,1,'#a3231b');
+  px(x-1,y-1,1,1,'#ff9a8a');
+}
+
+function drawMeatball(cam){
+  if(p.inv>0 && Math.floor(p.inv*12)%2===0) return;
+  const cxp=Math.round(p.x-cam), cyp=Math.round(p.y);
+  const spots=[0,2.1,4.2].map((a,i)=>({x:Math.cos(p.ang+a)*3.2,y:Math.sin(p.ang+a)*3.2,c:i===1?'#4f8f3d':'#4a2414'}));
+  for(let dy=-R;dy<=R;dy++) for(let dx=-R;dx<=R;dx++){
+    if(dx*dx+dy*dy>R*R+R*0.8) continue;
+    let c='#8b4a2b';
+    if(dx+dy<-R*0.6) c='#b06a3f';
+    else if(dx+dy>R*0.7) c='#5e2e1a';
+    for(const s of spots) if((dx-s.x)**2+(dy-s.y)**2<1.4) c=s.c;
+    px(cxp+dx,cyp+dy,1,1,c);
+  }
+  px(cxp-3,cyp-4,2,1,'#e0a070');  // shine
+
+  // ===== CUTE FACE (does not spin, always looks forward) =====
+  const ink='#1a0b06', white='#ffffff', blush='#ff8fa3';
+  const blink=Math.floor(time*10)%35===0;
+  if(p.inv>0){                       // ouch face: > <
+    px(cxp,cyp-3,1,1,ink); px(cxp+1,cyp-2,1,1,ink); px(cxp,cyp-1,1,1,ink);
+    px(cxp+4,cyp-3,1,1,ink); px(cxp+3,cyp-2,1,1,ink); px(cxp+4,cyp-1,1,1,ink);
+  } else if(blink){                  // blink
+    px(cxp,cyp-2,2,1,ink); px(cxp+3,cyp-2,2,1,ink);
+  } else {                           // big shiny eyes
+    px(cxp,cyp-3,2,2,white); px(cxp+3,cyp-3,2,2,white);
+    px(cxp+1,cyp-2,1,1,ink); px(cxp+4,cyp-2,1,1,ink);
+  }
+  px(cxp-1,cyp,1,1,blush); px(cxp+5,cyp,1,1,blush);   // rosy cheeks
+  if(!p.ground || p.inv>0){          // 'o' mouth when jumping or hurt
+    px(cxp+2,cyp+1,1,2,ink);
+  } else {                           // happy smile
+    px(cxp+1,cyp+1,1,1,ink); px(cxp+2,cyp+2,1,1,ink); px(cxp+3,cyp+1,1,1,ink);
+  }
+}
+
+function drawPlate(cam){
+  const x=Math.round(len-40-cam); if(x>W+30) return;
+  // flag
+  px(x+20,G-34,1,26,'#7a3b22'); px(x+21,G-34,10,6,'#5fae4e'); px(x+24,G-33,3,4,'#fff4dc');
+  // plate
+  px(x-14,G-2,32,2,'#ffffff'); px(x-16,G-4,36,2,'#ffffff'); px(x-12,G,28,1,'#c9c9c9');
+  // spaghetti pile
+  const ny='#f4d26b', nd='#d9ae3f';
+  px(x-10,G-7,24,3,ny); px(x-7,G-10,18,3,ny); px(x-4,G-12,12,2,ny);
+  for(let i=0;i<6;i++) px(x-9+i*4,G-8+(i%2),2,1,nd);
+  px(x-2,G-11,4,2,'#d8342a');          // sauce on top
+}
+
+function draw(){
+  const cam=Math.max(0,Math.min(p.x-55,len-W));
+  cx.save();
+  if(shake>0) cx.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));
+  drawBackground(cam);
+  drawTable(cam);
+  drawPlate(cam);
+  for(const o of obs) if(o.k==='fork') drawFork(o,cam);
+  for(const d of drops) drawDrop(d,cam);
+  if(p.y<H+10) drawMeatball(cam);
+  for(const q of parts) px(q.x-cam,q.y,2,2,q.c);
+  cx.restore();
+
+  if(state==='play' && banner>0){
+    cx.fillStyle='rgba(36,18,13,0.75)'; cx.fillRect(0,40,W,22);
+    cx.fillStyle='#f4d26b'; cx.font='8px "Press Start 2P", monospace'; cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText('LEVEL '+(lvl+1)+': '+LEVELS[lvl].name.toUpperCase(),W/2,51);
+  }
+
+  $('lives').textContent='♥'.repeat(Math.max(0,lives))+'♡'.repeat(Math.max(0,3-lives));
+  $('score').textContent='SAUCE '+score;
+  $('lvl').textContent='LEVEL '+(lvl+1);
+  $('prog').style.width=Math.min(100,Math.max(0,(p.x-20)/(len-60)*100))+'%';
+}
+
+// ===== MAIN LOOP =====
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.033,(now-last)/1000); last=now;
+  update(dt); draw();
+  requestAnimationFrame(loop);
+}
+build(0);
+showTitle();
+requestAnimationFrame(loop);
+</script>
+
+</body></html>

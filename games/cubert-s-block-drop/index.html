@@ -185,8 +185,24 @@ function drawZip(c,f){ // anime speedster style
 
 const BW=10,BH=20,CS=24,BX=360,BY=30;
 const SHAPES={I:[[0,1],[1,1],[2,1],[3,1]],O:[[1,0],[2,0],[1,1],[2,1]],T:[[1,0],[0,1],[1,1],[2,1]],S:[[1,0],[2,0],[0,1],[1,1]],Z:[[0,0],[1,0],[1,1],[2,1]],J:[[0,0],[0,1],[1,1],[2,1]],L:[[2,0],[0,1],[1,1],[2,1]]};
-const MAT={I:{c:'#2fc7e8',l:'#9af0ff',d:'#1a8aa8'},O:{c:'#e8c02f',l:'#fff08a',d:'#a8861a'},T:{c:'#a05ad8',l:'#d4a8ff',d:'#6a3a9a'},
-  S:{c:'#5fb33a',l:'#9be85a',d:'#3a7a22'},Z:{c:'#d8312a',l:'#ff7a6a',d:'#9a1e18'},J:{c:'#3a5ad8',l:'#8aa8ff',d:'#22389a'},L:{c:'#d8862a',l:'#ffb86a',d:'#9a5a18'}};
+// Each piece is a different block material, drawn as an 8x8 pixel texture.
+const MAT={I:{name:'diamond ore',c:'#7d7d7d',l:'#5ff0e6'},O:{name:'sand',c:'#dbcf8e',l:'#f2e8b0'},T:{name:'planks',c:'#a8834a',l:'#c29a5c'},
+  S:{name:'grass',c:'#6aa53a',l:'#8fd04e'},Z:{name:'bricks',c:'#965042',l:'#c06a58'},J:{name:'cobblestone',c:'#7a7a7a',l:'#a5a5a5'},L:{name:'log',c:'#6b5030',l:'#8e6b40'}};
+const hsh=(x,y,s)=>{let h=(x*374761393+y*668265263+s*1442695041)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967296};
+const shade=(arr,x,y,s)=>arr[Math.floor(hsh(x,y,s)*arr.length)];
+const TEX_PIX={
+  I:(x,y)=>{const ore=[[1,1],[2,1],[1,2],[5,2],[6,2],[5,3],[2,5],[3,5],[3,6],[6,6]];const o=ore.some(p=>p[0]===x&&p[1]===y);
+    return o?(hsh(x,y,9)<0.5?'#5ff0e6':'#2fbfb8'):shade(['#7d7d7d','#8a8a8a','#727272','#959595'],x,y,1)},
+  O:(x,y)=>shade(['#dbcf8e','#e3d89a','#d2c580','#ece2a8'],x,y,2),
+  T:(x,y)=>{if(y===3||y===7)return'#6e5430';if((y<3&&x===5)||(y>3&&y<7&&x===2))return'#7a5d36';return shade(['#a8834a','#b38d52','#9c7944'],x,y,3)},
+  S:(x,y)=>{const g=y<2||(y===2&&hsh(x,0,4)<0.55);return g?shade(['#6aa53a','#7cbb45','#5d9632'],x,y,4):shade(['#86603a','#79552f','#946b42','#6a4a29'],x,y,5)},
+  Z:(x,y)=>{if(y===3||y===7)return'#b8b0a4';const off=y<3?0:4;if((x+off)%8===3)return'#b8b0a4';return shade(['#965042','#a65a4a','#8a4a3c'],x,y,6)},
+  J:(x,y)=>{const edge=[[0,2],[1,2],[2,2],[3,1],[3,0],[4,4],[5,4],[6,4],[7,3],[2,5],[2,6],[2,7],[6,5],[6,6]];if(edge.some(p=>p[0]===x&&p[1]===y))return'#4e4e4e';
+    return shade(['#7a7a7a','#8e8e8e','#a5a5a5','#6c6c6c'],x,y,7)},
+  L:(x,y)=>{const stripe=x%3===0;return stripe?shade(['#4f3a22','#5a4227'],x,y,8):shade(['#6b5030','#7a5c38','#634a2c'],x,y,9)}};
+const TEX={};
+for(const k in TEX_PIX){const t=document.createElement('canvas');t.width=t.height=8;const g=t.getContext('2d');
+  for(let y=0;y<8;y++)for(let x=0;x<8;x++){g.fillStyle=TEX_PIX[k](x,y);g.fillRect(x,y,1,1)}TEX[k]=t}
 const LINE_PTS=[0,100,300,500,800], CHEERS=['Nice!','Boom!','Yes!','Smash it!','Awesome!'];
 let board,cur,next,bag,dropT,lines,level,clearing,clearT,moveT,K,speech,lockT;
 function rot(cells,n){let c=cells.map(p=>[...p]);for(let k=0;k<n;k++)c=c.map(([x,y])=>[2-y,x]);if(c===cells)return c;return c}
@@ -204,10 +220,9 @@ function lock(){for(const [x,y] of cellsOf(cur)){const Y=cur.y+y;if(Y<0){endGame
   else spawn()}
 function hardDrop(){let n=0;while(fits(cur,0,1)){cur.y++;n++}score+=n*2;for(const [x,y] of cellsOf(cur))burst(BX+(cur.x+x)*CS+12,BY+(cur.y+y)*CS+24,'rgba(255,255,255,.7)',2,2);lock()}
 function tryRotate(){const r=(cur.r+1)%4;for(const dx of [0,-1,1,-2,2])if(fits(cur,dx,0,r)){cur.x+=dx;cur.r=r;lockT=0;return}}
-function block(c,x,y,t,s){const m=MAT[t];s=s||CS;const e=Math.max(2,s/8);
-  c.fillStyle=m.c;c.fillRect(x,y,s,s);c.fillStyle=m.l;c.fillRect(x,y,s,e);c.fillRect(x,y,e,s);
-  c.fillStyle=m.d;c.fillRect(x,y+s-e,s,e);c.fillRect(x+s-e,y,e,s);c.fillRect(x+s*0.3,y+s*0.3,e,e);c.fillRect(x+s*0.6,y+s*0.55,e,e);
-  c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=1;c.strokeRect(x+0.5,y+0.5,s-1,s-1)}
+function block(c,x,y,t,s){s=s||CS;c.imageSmoothingEnabled=false;c.drawImage(TEX[t],x,y,s,s);
+  c.fillStyle='rgba(255,255,255,.14)';c.fillRect(x,y,s,Math.max(1,s/12));c.fillStyle='rgba(0,0,0,.22)';c.fillRect(x,y+s-Math.max(1,s/12),s,Math.max(1,s/12));
+  c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=1;c.strokeRect(x+0.5,y+0.5,s-1,s-1)}
 const G={
 init(){board=Array.from({length:BH},()=>Array(BW).fill(null));bag=[];next=fromBag();lines=0;level=1;clearing=null;clearT=0;moveT={left:0,right:0,down:0};
   K={x:730,y:450,vx:1,vy:0,onGround:true,t:0,atk:0,dir:1};speech=null;dropT=0;spawn();talk("Let's stack!")},

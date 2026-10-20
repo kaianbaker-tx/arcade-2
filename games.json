@@ -1,6 +1,22 @@
 {
   "games": [
     {
+      "name": "Pollycraft",
+      "slug": "pollycraft",
+      "artifact": "https://claude.ai/artifact/ULDJURwbpeRA8hHKXFDDQP",
+      "added": "2026-10-19",
+      "updated": "2026-10-19",
+      "blurb": "Be Polly the parrot: build, fly, and survive the night!"
+    },
+    {
+      "name": "Meatball Roll",
+      "slug": "meatball-roll",
+      "artifact": "https://claude.ai/artifact/CnsQokXfvjo3NvPKfDue8w",
+      "added": "2026-10-19",
+      "updated": "2026-10-19",
+      "blurb": "Roll a meatball past forks to the spaghetti plate!"
+    },
+    {
       "name": "Zip Flash",
       "slug": "zip-flash",
       "artifact": "https://claude.ai/artifact/B5G72wuCyQ7tLQc7HJ6A5S",
@@ -41,7 +57,7 @@
       "slug": "cubert-s-block-drop",
       "artifact": "https://claude.ai/artifact/VaKfo6bEkBgFYqqKWTB4o9",
       "added": "2026-10-08",
-      "updated": "2026-10-09",
+      "updated": "2026-10-19",
       "blurb": "Punch falling blocks before the stacks hit the red line. TNT goes BOOM!",
       "thumb": "games/cubert-s-block-drop/thumb.jpg"
     },
