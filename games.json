@@ -1,11 +1,27 @@
 {
   "games": [
     {
+      "name": "Burnt Orange Bowl",
+      "slug": "burnt-orange-bowl",
+      "artifact": "https://claude.ai/artifact/AV5WxgJZUZanX2Sapad1cS",
+      "added": "2026-10-23",
+      "updated": "2026-10-23",
+      "blurb": "Call every play as the Longhorns and beat Ohio State!"
+    },
+    {
+      "name": "Pixel Gridiron",
+      "slug": "pixel-gridiron",
+      "artifact": "https://claude.ai/artifact/5L7r1tLEgZrtVGL9MEfTSS",
+      "added": "2026-10-23",
+      "updated": "2026-10-23",
+      "blurb": "8-bit football: score touchdowns before the clock hits zero!"
+    },
+    {
       "name": "Pollycraft",
       "slug": "pollycraft",
       "artifact": "https://claude.ai/artifact/ULDJURwbpeRA8hHKXFDDQP",
       "added": "2026-10-19",
-      "updated": "2026-10-19",
+      "updated": "2026-10-22",
       "blurb": "Be Polly the parrot: build, fly, and survive the night!"
     },
     {
@@ -344,6 +360,11 @@
       "artifact": "https://claude.ai/artifact/FRqRq6dBZX9Sn6YBPfxbu4",
       "name": "Soobway",
       "why": "Kaian took it off Arcade 2 (YouTube game or the wheel)"
+    },
+    {
+      "artifact": "https://claude.ai/artifact/FGsVPcvs5kxzaY5orzvqWS",
+      "name": "Retro Football Games",
+      "why": "not a game (a hub page linking his football games)"
     }
   ]
 }

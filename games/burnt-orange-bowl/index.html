@@ -1,0 +1,619 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Burnt Orange Bowl</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* Layout: one stadium column. LED scoreboard on top, pixel field in the middle, play-call panel underneath. */
+:root{
+  --bg:#0a0d0b; --panel:#131915; --panel2:#1b231e; --line:#2c3730; --ink:#f3eee6; --dim:#a9b3ab;
+  --orange:#bf5700; --scarlet:#c8102e; --gray:#a7adb3; --led:#ffb000; --gold:#ffd400; --cyan:#3fe0ff;
+  --pixel:"Press Start 2P", ui-monospace, Menlo, monospace;
+  --body:"VT323", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:21px;line-height:1.15}
+.wrap{max-width:900px;margin:0 auto;padding-block:14px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--pixel);font-size:clamp(13px,2.6vw,18px);margin:0;letter-spacing:.04em;color:var(--led);text-shadow:2px 2px 0 var(--orange);text-wrap:balance}
+.chip{font-family:var(--pixel);font-size:10px;background:var(--panel2);color:var(--ink);border:2px solid var(--line);padding:8px 10px;cursor:pointer}
+.chip:focus-visible,.card:focus-visible,.big:focus-visible,.pad button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.board{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;background:#050605;border:3px solid #000;box-shadow:0 0 0 2px var(--line);padding:10px}
+.team{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.tname{font-family:var(--pixel);font-size:clamp(9px,1.8vw,12px);padding:6px 8px;width:100%;text-align:center;letter-spacing:.06em}
+.tex .tname{background:var(--orange);color:#fff}
+.osu .tname{background:var(--scarlet);color:#fff;box-shadow:inset 0 -3px 0 var(--gray)}
+.score{font-family:var(--pixel);font-size:clamp(22px,5vw,34px);color:var(--led);text-shadow:0 0 8px rgba(255,176,0,.45);font-variant-numeric:tabular-nums}
+.mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;text-align:center}
+#sQ{font-family:var(--pixel);font-size:10px;color:var(--dim)}
+.clock{font-family:var(--pixel);font-size:clamp(14px,3vw,20px);color:#ff4d3a;text-shadow:0 0 8px rgba(255,77,58,.45);font-variant-numeric:tabular-nums}
+#sDown{font-size:20px;color:var(--ink);white-space:nowrap}
+
+.stage{position:relative;border:4px solid #000;box-shadow:0 0 0 2px var(--line);background:#000}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%}
+#banner{position:absolute;left:0;right:0;top:34%;text-align:center;pointer-events:none;padding-inline:12px}
+#bT{font-family:var(--pixel);font-size:clamp(16px,4.4vw,32px);color:var(--gold);text-shadow:3px 3px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000}
+#bS{margin-top:8px;font-size:clamp(18px,3vw,26px);color:#fff;text-shadow:2px 2px 0 #000,-1px -1px 0 #000}
+
+.panel{background:var(--panel);border:2px solid var(--line);padding:14px;min-height:150px}
+.kicker{font-family:var(--pixel);font-size:10px;color:var(--led);letter-spacing:.08em;margin:0 0 10px}
+.panel p{margin:0 0 12px;max-width:62ch}
+.big{font-family:var(--pixel);font-size:14px;background:var(--orange);color:#fff;border:0;padding:14px 18px;cursor:pointer;box-shadow:4px 4px 0 #000}
+.big:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000}
+.keys{color:var(--dim);font-size:19px}
+kbd{font-family:var(--pixel);font-size:9px;background:var(--panel2);border:1px solid var(--line);padding:3px 5px;color:var(--ink)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.card{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--panel2);color:var(--ink);border:3px solid var(--line);padding:12px;cursor:pointer;font-family:var(--body);font-size:20px;min-width:0}
+.card:hover{border-color:var(--led)}
+.card .nm{font-family:var(--pixel);font-size:13px;color:var(--led);display:flex;justify-content:space-between;gap:8px}
+.card .risk{color:var(--dim);font-size:18px}
+.card.fg .nm{color:var(--gold)}
+
+.pad{display:none;justify-content:space-between;align-items:center;gap:16px;touch-action:none;user-select:none;-webkit-user-select:none}
+.dpad{display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,56px);gap:4px}
+.pad button{font-family:var(--pixel);font-size:14px;background:var(--panel2);color:var(--ink);border:2px solid var(--line);touch-action:none}
+.pad .throws{display:flex;gap:12px}
+.pad .t1,.pad .t2{width:76px;height:76px;border-radius:50%;font-size:22px;color:#000;border:3px solid #000}
+.pad .t1{background:var(--gold)} .pad .t2{background:var(--cyan)}
+@media (pointer:coarse){ .pad{display:flex} .keys{display:none} }
+@media (prefers-reduced-motion:reduce){ .big:active{transform:none} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Burnt Orange Bowl</h1>
+    <button id="mute" class="chip" type="button">Sound: on</button>
+  </header>
+
+  <section class="board" aria-label="Scoreboard">
+    <div class="team tex"><span class="tname">LONGHORNS</span><span class="score" id="sHome">0</span></div>
+    <div class="mid"><span id="sQ">1ST QTR</span><span class="clock" id="sClock">5:00</span><span id="sDown">1st &amp; 10 · TEX 25</span></div>
+    <div class="team osu"><span class="tname">OHIO STATE</span><span class="score" id="sAway">0</span></div>
+  </section>
+
+  <div class="stage">
+    <canvas id="field" width="320" height="180" aria-label="Football field"></canvas>
+    <div id="banner" hidden><div id="bT"></div><div id="bS"></div></div>
+  </div>
+
+  <section class="panel">
+    <div id="pTitle">
+      <p class="kicker">LONGHORNS vs OHIO STATE</p>
+      <p>You're the Longhorns. Before every snap you call the play. Then run, dodge and throw your way to the end zone.</p>
+      <p class="keys">Move: <kbd>Arrows</kbd> or <kbd>WASD</kbd> · Throw to 1: <kbd>Z</kbd> · Throw to 2: <kbd>X</kbd></p>
+      <button class="big" id="startBtn" type="button">KICKOFF!</button>
+    </div>
+    <div id="pCall" hidden>
+      <p class="kicker" id="callHead">CALL THE PLAY</p>
+      <div class="cards" id="cards"></div>
+    </div>
+    <div id="pPlay" hidden>
+      <p class="keys">Move: <kbd>Arrows</kbd> or <kbd>WASD</kbd> · Throw to <span style="color:var(--gold)">1</span>: <kbd>Z</kbd> · Throw to <span style="color:var(--cyan)">2</span>: <kbd>X</kbd></p>
+      <div class="pad">
+        <div class="dpad">
+          <span></span><button data-k="arrowup" aria-label="Up">▲</button><span></span>
+          <button data-k="arrowleft" aria-label="Left">◀</button><span></span><button data-k="arrowright" aria-label="Right">▶</button>
+          <span></span><button data-k="arrowdown" aria-label="Down">▼</button><span></span>
+        </div>
+        <div class="throws"><button class="t1" id="tb1" aria-label="Throw to 1">1</button><button class="t2" id="tb2" aria-label="Throw to 2">2</button></div>
+      </div>
+    </div>
+    <div id="pFinal" hidden>
+      <p class="kicker">FINAL</p>
+      <p id="finalTxt"></p>
+      <button class="big" id="againBtn" type="button">PLAY AGAIN</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(()=>{
+// ---------- setup ----------
+const cv=document.getElementById('field'), ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const YD=8, TOP=10, FH=160, GOAL_L=80, GOAL_R=880;
+const fieldCv=document.createElement('canvas'); fieldCv.width=960; fieldCv.height=180;
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const ylx=yl=>(10+yl)*YD;
+const xyl=x=>Math.round(x/YD-10);
+
+// ---------- audio ----------
+const A={ac:null,master:null,music:null,sfx:null,noise:null,muted:false,next:0,step:0};
+const STEP=60/132/4;
+const KICK=[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0], SNARE=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,1], HORN=[1,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0];
+const CH=[[233.08,293.66,349.23],[311.13,392,466.16],[349.23,440,523.25],[233.08,293.66,349.23]];
+function audioInit(){
+  if(A.ac){A.ac.resume();return}
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ac=A.ac=new AC();
+  A.master=ac.createGain(); A.master.gain.value=A.muted?0:0.8; A.master.connect(ac.destination);
+  A.music=ac.createGain(); A.music.gain.value=0.2; A.music.connect(A.master);
+  A.sfx=ac.createGain(); A.sfx.gain.value=0.9; A.sfx.connect(A.master);
+  const b=ac.createBuffer(1,ac.sampleRate,ac.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  A.noise=b; A.next=ac.currentTime+0.1;
+  setInterval(sched,25);
+}
+function osc(type,f,t,dur,g,dest,f2){
+  const ac=A.ac,o=ac.createOscillator(),a=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(f,t); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  a.gain.setValueAtTime(g,t); a.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(a); a.connect(dest); o.start(t); o.stop(t+dur+0.03); return o;
+}
+function noise(t,dur,g,type,freq,q,dest,attack){
+  const ac=A.ac,s=ac.createBufferSource(),fl=ac.createBiquadFilter(),a=ac.createGain();
+  s.buffer=A.noise; s.loop=true; fl.type=type; fl.frequency.setValueAtTime(freq,t); fl.Q.value=q||1;
+  if(attack){a.gain.setValueAtTime(0.001,t);a.gain.exponentialRampToValueAtTime(g,t+attack);a.gain.exponentialRampToValueAtTime(0.001,t+dur)}
+  else{a.gain.setValueAtTime(g,t);a.gain.exponentialRampToValueAtTime(0.001,t+dur)}
+  s.connect(fl); fl.connect(a); a.connect(dest); s.start(t,Math.random()*0.5); s.stop(t+dur+0.05); return fl;
+}
+function sched(){
+  const ac=A.ac; if(!ac) return;
+  while(A.next<ac.currentTime+0.12){ playStep(A.step,A.next); A.next+=STEP; A.step=(A.step+1)%64; }
+}
+function playStep(s,t){
+  const bar=s>>4,i=s&15,M=A.music;
+  if(KICK[i]) osc('sine',150,t,0.14,0.9,M,40);
+  if(SNARE[i]){ noise(t,0.14,0.45,'highpass',1200,0.7,M); osc('triangle',190,t,0.08,0.25,M); }
+  if(i%2===0) noise(t,0.035,0.12,'highpass',7000,0.7,M);
+  if(HORN[i]){
+    const ac=A.ac,lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1700; lp.connect(M);
+    for(const f of CH[bar]) osc('sawtooth',f,t,0.22,0.09,lp);
+  }
+  if(i===0||i===8) osc('square',CH[bar][0]/2,t,0.3,0.12,M);
+}
+const S={
+  go(fn){ if(!A.ac||A.muted) return; fn(A.ac.currentTime+0.01,A.sfx); },
+  hut(){S.go((t,d)=>{osc('square',190,t,0.09,0.25,d);osc('square',170,t+0.2,0.1,0.25,d)})},
+  clack(){S.go((t,d)=>{noise(t,0.07,0.9,'bandpass',2600,4,d);osc('square',1150,t,0.05,0.22,d,600);osc('triangle',140,t,0.14,0.5,d,60)})},
+  thud(){S.go((t,d)=>noise(t,0.07,0.3,'bandpass',300,1,d))},
+  whistle(){S.go((t,d)=>{const ac=A.ac,o=ac.createOscillator(),l=ac.createOscillator(),lg=ac.createGain(),a=ac.createGain();
+    o.type='sine';o.frequency.value=2900;l.frequency.value=32;lg.gain.value=160;l.connect(lg);lg.connect(o.frequency);
+    a.gain.setValueAtTime(0.18,t);a.gain.setValueAtTime(0.18,t+0.35);a.gain.exponentialRampToValueAtTime(0.001,t+0.45);
+    o.connect(a);a.connect(d);o.start(t);l.start(t);o.stop(t+0.5);l.stop(t+0.5)})},
+  ooh(){S.go((t,d)=>{const f=noise(t,1.4,0.55,'bandpass',420,3,d,0.45);f.frequency.linearRampToValueAtTime(760,t+0.6);f.frequency.linearRampToValueAtTime(380,t+1.4)})},
+  roar(){S.go((t,d)=>{noise(t,2.6,0.6,'lowpass',1500,0.7,d,0.25);[233.08,293.66,349.23,466.16].forEach((f,i)=>osc('sawtooth',f,t+i*0.12,i===3?0.6:0.15,0.12,d))})},
+  buzzer(){S.go((t,d)=>{osc('square',98,t,0.9,0.18,d);osc('square',104,t,0.9,0.18,d)})},
+  throw(){S.go((t,d)=>osc('sine',500,t,0.18,0.2,d,1100))},
+  catch(){S.go((t,d)=>{osc('square',660,t,0.06,0.15,d);osc('square',990,t+0.06,0.08,0.15,d)})},
+  boot(){S.go((t,d)=>{osc('triangle',130,t,0.16,0.6,d,50);noise(t,0.05,0.5,'bandpass',900,1,d)})}
+};
+
+// ---------- sprites ----------
+const SPR_A=["..HSH..",".HHSHM.",".HHHHM.","JJJJJJJ","JJWWJJJ",".JJJJJ.",".PPPPP.",".PP.PP.",".LL.LL.",".KK.KK."];
+const SPR_B=["..HSH..",".HHSHM.",".HHHHM.","JJJJJJJ","JJWWJJJ",".JJJJJ.",".PPPPP.","PP...PP","LL...LL","KK...KK"];
+const PAL={
+  o:{H:'#f4f1ee',S:'#bf5700',M:'#4a4a4a',J:'#bf5700',W:'#ffffff',P:'#f4f1ee',L:'#bf5700',K:'#111'},
+  d:{H:'#b4bac0',S:'#c8102e',M:'#4a4a4a',J:'#c8102e',W:'#ffffff',P:'#b4bac0',L:'#c8102e',K:'#111'}
+};
+function drawPlayer(e,cx){
+  const sx=Math.round(e.x)-cx, sy=Math.round(e.y)+TOP;
+  if(sx<-10||sx>330) return;
+  ctx.fillStyle='rgba(0,0,0,.32)'; ctx.fillRect(sx-3,sy,7,2);
+  const spr=((e.anim>>3)&1)?SPR_B:SPR_A, pal=PAL[e.team];
+  for(let r=0;r<10;r++){ const row=spr[r];
+    for(let c=0;c<7;c++){ const ch=row[e.face>0?c:6-c]; if(ch==='.') continue;
+      ctx.fillStyle=pal[ch]; ctx.fillRect(sx-3+c,sy-9+r,1,1); } }
+}
+
+// ---------- field ----------
+function rng(seed){return()=> (seed=(seed*1664525+1013904223)>>>0)/4294967296}
+function renderField(){
+  const f=fieldCv.getContext('2d'), R=rng(7);
+  f.fillStyle='#151a16'; f.fillRect(0,0,960,180);
+  const crowd=['#bf5700','#f4f1ee','#c8102e','#b4bac0','#2b2f2c','#bf5700'];
+  for(let x=0;x<960;x+=2) for(const y of [1,4,7,171,174,177]){ if(R()<0.75){ f.fillStyle=crowd[(R()*crowd.length)|0]; f.fillRect(x,y,2,2);} }
+  for(let i=0;i<20;i++){ f.fillStyle=i%2?'#2f7d32':'#2a7330'; f.fillRect(80+i*40,TOP,40,FH); }
+  f.fillStyle='#bf5700'; f.fillRect(0,TOP,80,FH);
+  f.fillStyle='#a50d26'; f.fillRect(880,TOP,80,FH);
+  f.fillStyle='#ffffff';
+  f.fillRect(0,TOP,960,1); f.fillRect(0,TOP+FH-1,960,1); f.fillRect(0,TOP,1,FH); f.fillRect(959,TOP,1,FH);
+  for(let yd=0;yd<=100;yd+=5) f.fillRect(80+yd*YD,TOP,1,FH);
+  f.fillStyle='rgba(255,255,255,.8)';
+  for(let yd=1;yd<100;yd++){ if(yd%5===0) continue; const x=80+yd*YD;
+    f.fillRect(x,TOP+2,1,2); f.fillRect(x,TOP+FH-4,1,2); f.fillRect(x,TOP+58,1,2); f.fillRect(x,TOP+100,1,2); }
+  f.font='8px "Press Start 2P", monospace'; f.textAlign='center'; f.textBaseline='middle'; f.fillStyle='rgba(255,255,255,.9)';
+  for(let yd=10;yd<=90;yd+=10){ const n=yd<=50?yd:100-yd, x=80+yd*YD; f.fillText(String(n),x+1,TOP+22); f.fillText(String(n),x+1,TOP+FH-20); }
+  f.fillStyle='#ffffff'; f.font='14px "Press Start 2P", monospace';
+  f.save(); f.translate(40,TOP+80); f.rotate(-Math.PI/2); f.fillText('LONGHORNS',0,1); f.restore();
+  f.save(); f.translate(920,TOP+80); f.rotate(Math.PI/2); f.fillText('OHIO STATE',0,1); f.restore();
+  f.fillStyle='#ffd400'; f.fillRect(956,TOP+68,2,24); f.fillRect(2,TOP+68,2,24);
+}
+renderField();
+if(document.fonts) document.fonts.load('8px "Press Start 2P"').then(renderField).catch(()=>{});
+
+// ---------- game state ----------
+let G;
+function newGame(){
+  G={home:0,away:0,quarter:1,clock:300,los:25,down:1,fdl:35,state:'title',players:[],off:null,def:null,
+     ball:{holder:null,fly:null,lx:0,ly:80},play:null,carrier:null,camX:0,diff:1,bannerT:0,result:null};
+  setupFormation(); G.camX=clamp(ylx(G.los)-130,0,640);
+}
+function P(team,role,x,y,spd){return{team,role,x,y,vx:0,vy:0,spd,blocked:0,immune:0,engaged:null,anim:0,face:team==='o'?1:-1,route:null,wp:0,isTarget:false}}
+function setupFormation(){
+  const lx=ylx(G.los), s=G.diff;
+  G.off={C:P('o','C',lx-4,80,0.95),QB:P('o','QB',lx-18,80,1.2),RB:P('o','RB',lx-32,84,1.45),WR1:P('o','WR1',lx-4,26,1.38),WR2:P('o','WR2',lx-4,134,1.32)};
+  G.def={DL1:P('d','DL1',lx+7,72,0.95*s),DL2:P('d','DL2',lx+7,88,0.95*s),CB1:P('d','CB1',lx+22,30,1.18*s),CB2:P('d','CB2',lx+22,130,1.15*s),S:P('d','S',lx+64,80,1.22*s)};
+  G.players=[...Object.values(G.off),...Object.values(G.def)];
+  G.ball={holder:G.off.QB,fly:null,lx:lx,ly:80}; G.carrier=null;
+}
+
+// ---------- banner + panel ----------
+function banner(t,s,frames){ $('bT').textContent=t; $('bS').textContent=s||''; $('banner').hidden=false; G.bannerT=frames||90; }
+function hideBanner(){ $('banner').hidden=true; }
+function panel(name){ for(const id of ['pTitle','pCall','pPlay','pFinal']) $(id).hidden=(id!==name); }
+
+const ORD=['1st','2nd','3rd','4th'];
+function spotTxt(yl){ return yl===50?'50':yl<50?'TEX '+yl:'OSU '+(100-yl); }
+let lastBoard='';
+function updBoard(){
+  const m=Math.floor(G.clock/60), s=String(G.clock%60).padStart(2,'0');
+  const toGo=G.fdl>=100?'Goal':String(G.fdl-G.los);
+  const down=G.state==='osu'?'OHIO STATE ball':`${ORD[Math.min(G.down,4)-1]} & ${toGo} · ${spotTxt(G.los)}`;
+  const q=['1ST','2ND','3RD','4TH'][G.quarter-1]+' QTR';
+  const key=[G.home,G.away,m,s,down,q].join('|'); if(key===lastBoard) return; lastBoard=key;
+  $('sHome').textContent=G.home; $('sAway').textContent=G.away; $('sClock').textContent=`${m}:${s}`; $('sDown').textContent=down; $('sQ').textContent=q;
+}
+
+// ---------- play calling ----------
+function toCall(){
+  setupFormation(); G.state='call'; G.play=null; panel('pCall');
+  $('callHead').textContent=`CALL THE PLAY · ${ORD[G.down-1]} & ${G.fdl>=100?'GOAL':G.fdl-G.los}`;
+  const cards=[
+    {k:'r',nm:'RUN',d:'Hand it to your running back. Find a hole and go!',risk:'Safe · short gains'},
+    {k:'p',nm:'PASS',d:'Drop back. Throw to 1 or 2 before they get you.',risk:'Medium risk'},
+    {k:'t',nm:'TRICK',d:'Flea flicker! Fake the run, pitch it back, bomb it to 1.',risk:'Big play or big oops'}
+  ];
+  if(G.down===4 && G.los>=60){ const d=100-G.los+17; cards.push({k:'f',nm:'FIELD GOAL',d:`Kick it for 3 points. ${d} yards.`,risk:`About ${Math.round(fgChance(d)*100)}% to make it`,fg:true}); }
+  const box=$('cards'); box.innerHTML='';
+  for(const c of cards){ const b=document.createElement('button'); b.type='button'; b.className='card'+(c.fg?' fg':'');
+    b.innerHTML=`<span class="nm"><span>${c.nm}</span><kbd>${c.k.toUpperCase()}</kbd></span><span>${c.d}</span><span class="risk">${c.risk}</span>`;
+    b.addEventListener('click',()=>pick(c.k)); box.appendChild(b); }
+}
+function fgChance(d){ return clamp(1.6-0.022*d,0.3,0.97); }
+function pick(k){
+  if(G.state!=='call') return;
+  if(k==='f'){ if(G.down===4&&G.los>=60) startKick(); return; }
+  const type={r:'run',p:'pass',t:'trick'}[k]; if(type) snap(type);
+}
+
+// ---------- snap ----------
+function launch(fromE,toE,dur,kind,peak,tx,ty){
+  G.ball.holder=null;
+  G.ball.fly={sx:fromE.x+3*fromE.face,sy:fromE.y,to:toE,tx,ty,t:0,dur,kind,peak,cx:fromE.x,cy:fromE.y,h:0};
+  return G.ball.fly;
+}
+function snap(type){
+  setupFormation();
+  const O=G.off, lx=ylx(G.los);
+  G.play={type,t:0,thrown:false,canThrow:type==='pass',readIt:Math.random()<0.3,phase:0,pt:0,handed:false};
+  G.state='live'; panel('pPlay'); hideBanner(); S.hut();
+  if(type==='pass'){ O.WR1.route=[[lx+70,22],[lx+320,22]]; O.WR2.route=[[lx+36,134],[lx+62,98],[lx+280,92]]; G.carrier=O.QB; }
+  else { launch(O.QB,O.RB,10,'hand',3); if(type==='trick') O.WR1.route=[[lx+340,24]]; }
+}
+
+// ---------- AI helpers ----------
+function go(e,tx,ty,spd){ const dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy); if(d<0.5){e.vx=0;e.vy=0;return} const v=Math.min(spd,d); e.vx=dx/d*v; e.vy=dy/d*v; }
+function followRoute(r){ const w=r.route[r.wp]; go(r,w[0],w[1],r.spd); if(Math.hypot(w[0]-r.x,w[1]-r.y)<3){ r.wp++; if(r.wp>=r.route.length){ r.route=null; r.vx=0; r.vy=0; } } }
+function isBlocker(e,p){
+  if(e===G.carrier||e===G.ball.holder||e.route||e.isTarget||e.role==='QB') return false;
+  if(e.role==='RB'&&((p.type==='run'&&!p.handed)||(p.type==='trick'&&p.phase<1.5))) return false;
+  return true;
+}
+function blockAI(b){
+  if(b.engaged){ const d=b.engaged; if(d.blocked>0){ go(b,d.x-5,d.y,b.spd); return; } b.engaged=null; }
+  let best=null,bd=80;
+  for(const d of Object.values(G.def)){ if(d.blocked>0||d.immune>0) continue; const dd=dist(b,d); if(dd<bd){bd=dd;best=d} }
+  if(!best) return;
+  go(b,best.x,best.y,b.spd);
+  if(bd<7){ best.blocked=40+((Math.random()*25)|0); b.engaged=best; S.thud(); }
+}
+function ballPos(){ const f=G.ball.fly; if(f) return {x:f.cx,y:f.cy}; const h=G.ball.holder; if(h) return {x:h.x+3*h.face,y:h.y}; return {x:G.ball.lx,y:G.ball.ly}; }
+function deepest(){ const O=G.off; const rs=[O.WR1,O.WR2].filter(r=>r.route||r.isTarget); if(!rs.length) return null; return rs.reduce((a,b)=>a.x>b.x?a:b); }
+function defAI(d,p,lx){
+  if(d.blocked>0){ d.blocked--; if(d.blocked===0) d.immune=35; const bp=ballPos(); go(d,bp.x,bp.y,0.12); return; }
+  if(d.immune>0) d.immune--;
+  const f=G.ball.fly,h=G.ball.holder,O=G.off, isCB=d.role[0]==='C', isS=d.role==='S';
+  if(f){ if(f.kind==='pass') go(d,f.tx,f.ty,d.spd*1.05); else go(d,f.to.x,f.to.y,d.spd); return; }
+  if(!h) return;
+  const dropback=h===O.QB&&(p.type==='pass'||(p.type==='trick'&&p.phase>=2))&&O.QB.x<=lx+2;
+  if(dropback&&(isCB||isS)){
+    const r=isS?deepest():(d.role==='CB1'?O.WR1:O.WR2);
+    if(r&&(r.route||r.isTarget)){
+      if(isS) go(d,Math.max(r.x+16,d.x),r.y,d.spd*(p.type==='trick'&&!p.readIt?0.9:1));
+      else go(d,r.x+4,r.y+(r.y<80?3:-3),d.spd*(p.type==='trick'?0.88:0.95));
+      return;
+    }
+  }
+  if(p.type==='trick'&&p.phase<2&&isS&&p.readIt){ go(d,O.WR1.x+14,O.WR1.y,d.spd); return; }
+  if(p.type==='run'&&(isCB||isS)&&p.t<14){ return; }
+  go(d,h.x+h.vx*12,h.y+h.vy*12,d.spd);
+}
+function separate(){
+  const ps=G.players;
+  for(let i=0;i<ps.length;i++) for(let j=i+1;j<ps.length;j++){ const a=ps[i],b=ps[j]; if(a.team!==b.team) continue;
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy); if(d>0.01&&d<6){ const k=0.25/d; a.x-=dx*k;a.y-=dy*k;b.x+=dx*k;b.y+=dy*k; } }
+}
+function integrate(){
+  for(const e of G.players){
+    e.x=clamp(e.x+e.vx,2,958); e.y+=e.vy;
+    if(e!==G.ball.holder) e.y=clamp(e.y,3,157);
+    if(Math.abs(e.vx)+Math.abs(e.vy)>0.2) e.anim++;
+    if(e.vx>0.1) e.face=1; else if(e.vx<-0.1) e.face=-1;
+  }
+}
+
+// ---------- input ----------
+const keys={};
+const K=k=>keys[k]?1:0;
+function userSpd(c){ return c.role==='QB'?1.2:c.role==='RB'?1.45:1.4; }
+function pressed(k){
+  if(G.state==='title'||G.state==='final'){ if(k==='enter'||k===' ') startGame(); return; }
+  if(G.state==='call'){ pick(k); return; }
+  if(G.state==='live'){ if(k==='z') throwTo(1); if(k==='x') throwTo(2); }
+}
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(!keys[k]) pressed(k); keys[k]=true;
+});
+addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; });
+document.querySelectorAll('.dpad button').forEach(b=>{
+  const k=b.dataset.k, on=e=>{e.preventDefault();keys[k]=true}, off=e=>{e.preventDefault();keys[k]=false};
+  b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off); b.addEventListener('pointerleave',off); b.addEventListener('pointercancel',off);
+});
+$('tb1').addEventListener('pointerdown',e=>{e.preventDefault();throwTo(1)});
+$('tb2').addEventListener('pointerdown',e=>{e.preventDefault();throwTo(2)});
+
+// ---------- throwing ----------
+function throwTo(n){
+  const p=G.play,O=G.off;
+  if(G.state!=='live'||!p.canThrow||p.thrown||G.ball.holder!==O.QB||G.ball.fly) return;
+  if(p.type==='trick'&&n===2) return;
+  const r=n===1?O.WR1:O.WR2, QB=O.QB;
+  let t=dist(QB,r)/3.2, lx=r.x+r.vx*t, ly=r.y+r.vy*t;
+  const d=Math.hypot(lx-QB.x,ly-QB.y); t=d/3.2; lx=r.x+r.vx*t; ly=clamp(r.y+r.vy*t,6,154);
+  p.thrown=true; G.carrier=null; r.isTarget=true; r.route=[[lx,ly]]; r.wp=0;
+  const f=launch(QB,null,Math.max(10,Math.round(t)),'pass',Math.min(30,6+d*0.1),lx,ly); f.rec=r;
+  S.throw();
+}
+function resolvePass(f){
+  const r=f.rec, pt={x:f.tx,y:f.ty}, O=G.off;
+  r.isTarget=false;
+  let near=null,bd=99;
+  for(const d of Object.values(G.def)){ if(d.blocked>0) continue; const dd=dist(d,pt); if(dd<bd){bd=dd;near=d} }
+  const recOK=dist(r,pt)<11, defNear=bd<7, roll=Math.random();
+  let out='inc';
+  if(recOK&&!defNear) out='catch';
+  else if(recOK&&defNear) out=roll<0.2?'int':roll<0.55?'inc':'catch';
+  else if(defNear) out=roll<0.45?'int':'inc';
+  if(out==='catch'){
+    G.ball.holder=r; G.carrier=r; r.route=null; O.WR1.route=null; O.WR2.route=null;
+    S.catch(); if(pt.x-ylx(G.los)>110){ S.ooh(); banner('BOMB!','',40); }
+  } else if(out==='int'){ G.ball.holder=near; endPlay('int',near.x); }
+  else endPlay('inc',pt.x);
+}
+function arrive(f){
+  const p=G.play,O=G.off;
+  if(f.kind==='hand'){ G.ball.holder=f.to; p.handed=true; if(p.type==='run') G.carrier=f.to; else {p.phase=1;p.pt=0;} }
+  else if(f.kind==='pitch'){ if(f.fumble){ endPlay('fumble',f.cx); return; } G.ball.holder=O.QB; G.carrier=O.QB; p.phase=2; p.canThrow=true; }
+  else if(f.kind==='pass') resolvePass(f);
+}
+function flyStep(){
+  const f=G.ball.fly; f.t++;
+  const k=f.t/f.dur, tx=f.to?f.to.x:f.tx, ty=f.to?f.to.y:f.ty;
+  f.cx=f.sx+(tx-f.sx)*k; f.cy=f.sy+(ty-f.sy)*k; f.h=Math.sin(Math.PI*k)*f.peak;
+  if(f.t>=f.dur){ G.ball.fly=null; arrive(f); }
+}
+
+// ---------- live play ----------
+function updateLive(){
+  const p=G.play; p.t++;
+  const O=G.off, lx=ylx(G.los);
+  for(const e of G.players){ e.vx*=0.8; e.vy*=0.8; }
+  const c=G.carrier;
+  if(c){ const dx=(K('arrowright')||K('d'))-(K('arrowleft')||K('a')), dy=(K('arrowdown')||K('s'))-(K('arrowup')||K('w'));
+    if(dx||dy){ const m=Math.hypot(dx,dy),sp=userSpd(c); c.vx=dx/m*sp; c.vy=dy/m*sp; } }
+  if(p.type==='run'){ if(!p.handed) go(O.RB,lx-12,O.RB.y,0.7); if(O.QB!==G.carrier) go(O.QB,lx-30,O.QB.y,0.5); }
+  if(p.type==='trick'){
+    if(p.phase===0){ go(O.RB,lx-14,82,0.6); }
+    else if(p.phase===1){ p.pt++; go(O.RB,lx-4,80,1.0); go(O.QB,lx-38,80,0.8);
+      if(p.pt>=22&&!G.ball.fly){ const f=launch(O.RB,O.QB,16,'pitch',8); f.fumble=Math.random()<0.08; p.phase=1.5; } }
+    else if(p.phase===1.5){ go(O.QB,lx-38,80,0.6); }
+  }
+  for(const r of [O.WR1,O.WR2]) if(r.route&&r!==G.carrier) followRoute(r);
+  for(const b of Object.values(O)) if(isBlocker(b,p)) blockAI(b);
+  for(const d of Object.values(G.def)) defAI(d,p,lx);
+  separate(); integrate();
+  if(G.ball.fly) flyStep();
+  if(G.state!=='live') return;
+  if(p.canThrow&&O.QB.x>lx+2) p.canThrow=false;
+  const h=G.ball.holder;
+  if(h&&!G.ball.fly){
+    G.ball.lx=h.x; G.ball.ly=h.y;
+    if(h.x>=GOAL_R) return endPlay('td',h.x);
+    if(h.y<2||h.y>158) return endPlay(h.x<GOAL_L?'safety':'oob',h.x);
+    for(const d of Object.values(G.def)){
+      if(d.blocked<=0&&dist(d,h)<7){ return endPlay(h.x<GOAL_L?'safety':'tackle',h.x); }
+    }
+  }
+}
+function endPlay(kind,x){
+  if(G.state!=='live') return;
+  const p=G.play,O=G.off, wasQB=G.ball.holder===O.QB;
+  G.state='dead'; G.deadT=0; G.result={kind,x}; G.carrier=null;
+  if(kind==='td'){ banner('TOUCHDOWN!','+7 for the Longhorns',100); S.roar(); return; }
+  S.whistle();
+  if(kind==='tackle'||kind==='oob'){
+    const ny=clamp(xyl(x),1,99), gain=ny-G.los;
+    if(kind==='tackle') S.clack();
+    let t;
+    if(kind==='tackle'&&wasQB&&gain<0&&p.type!=='run') t='SACKED!';
+    else if(ny>=G.fdl) t='FIRST DOWN!';
+    else if(kind==='oob') t='OUT OF BOUNDS';
+    else t=gain>=8?'NICE RUN!':gain<=0?'STUFFED!':'TACKLED';
+    banner(t,`${gain>=0?'+':''}${gain} yard${Math.abs(gain)===1?'':'s'}`,90);
+    if(gain>=20) S.ooh();
+  }
+  else if(kind==='inc'){ banner('INCOMPLETE','',90); S.ooh(); }
+  else if(kind==='int'){ banner('INTERCEPTED!','Ohio State grabs it',90); S.ooh(); }
+  else if(kind==='fumble'){ banner('FUMBLE!','The pitch hit the turf',90); S.ooh(); }
+  else if(kind==='safety'){ S.clack(); banner('SAFETY!','+2 for Ohio State',90); }
+}
+function applyResult(){
+  const r=G.result;
+  switch(r.kind){
+    case 'tackle': case 'oob': {
+      const ny=clamp(xyl(r.x),1,99); G.los=ny;
+      if(ny>=G.fdl){ G.down=1; G.fdl=Math.min(ny+10,100); } else G.down++;
+      if(tick(r.kind==='oob'?6:14)) return; break; }
+    case 'inc': G.down++; if(tick(5)) return; break;
+    case 'td': G.home+=7; if(tick(8)) return; return osuDrive(75,'After your touchdown');
+    case 'safety': G.away+=2; if(tick(8)) return; return osuDrive(60,'After the safety');
+    case 'int': case 'fumble': { const yl=r.x>=GOAL_R?80:clamp(xyl(r.x),1,99); if(tick(8)) return; return osuDrive(yl,r.kind==='int'?'After the interception':'After the fumble'); }
+  }
+  if(G.down>4) return osuDrive(G.los,'Turnover on downs');
+  toCall();
+}
+function tick(sec){
+  G.clock-=sec;
+  if(G.clock<=0){
+    if(G.quarter>=4){ G.clock=0; showFinal(); return true; }
+    G.quarter++; G.clock=300; G.diff=G.quarter===3?1.05:G.quarter===4?1.1:1;
+    S.buzzer(); G.pendingMsg=`END OF Q${G.quarter-1}`;
+  }
+  return false;
+}
+
+// ---------- field goal ----------
+function startKick(){
+  setupFormation(); const d=100-G.los+17, sx=ylx(G.los)-56;
+  const good=Math.random()<fgChance(d);
+  G.off.QB.x=sx+4; G.off.QB.y=80; G.off.RB.x=sx-22; G.off.RB.y=78; G.ball.holder=null;
+  G.kick={t:0,sx,tx:956,ty:good?80:80+(Math.random()<0.5?-1:1)*(16+Math.random()*10),good,cx:sx,cy:80,h:0};
+  G.state='kick'; panel('pPlay'); hideBanner(); S.hut();
+}
+function updateKick(){
+  const k=G.kick; k.t++;
+  for(const e of G.players){ e.vx*=0.8; e.vy*=0.8; }
+  if(k.t<20) go(G.off.RB,k.sx-3,80,1.1);
+  integrate();
+  if(k.t===20) S.boot();
+  if(k.t>=20&&k.t<=90){ const q=(k.t-20)/70; k.cx=k.sx+(k.tx-k.sx)*q; k.cy=80+(k.ty-80)*q; k.h=Math.sin(Math.PI*q*0.85)*50; }
+  if(k.t===90){ if(k.good){banner("IT'S GOOD!",'+3 for the Longhorns',90);S.roar();} else {banner('NO GOOD!','Ohio State takes over',90);S.ooh();} }
+  if(k.t>=170){
+    if(k.good) G.home+=3;
+    if(tick(10)) return;
+    if(k.good) osuDrive(75,'After your field goal'); else osuDrive(clamp(G.los-7,1,99),'Missed field goal');
+  }
+}
+
+// ---------- Ohio State drive ----------
+function osuDrive(d,reason){
+  const fq=G.quarter>=3?1.08:1, tdP=clamp((0.6-0.32*d/100)*fq,0.15,0.7), r=Math.random();
+  const res=r<tdP?'td':r<tdP+0.2?'fg':'stop';
+  const endYL=res==='td'?-3:res==='fg'?Math.min(d,15+Math.random()*10):clamp(d-(5+Math.random()*25),20,d);
+  const runner=P('d','RB',ylx(d),80,1); runner.face=-1;
+  G.players=[runner]; G.ball={holder:runner,fly:null,lx:runner.x,ly:80}; G.carrier=null;
+  G.osu={t:0,res,sx:ylx(d),ex:ylx(endYL),runner};
+  G.state='osu'; panel('pPlay'); banner('OHIO STATE BALL',reason,80);
+}
+function updateOsu(){
+  const o=G.osu; o.t++;
+  if(o.t<=80){ const q=o.t/80, r=o.runner, nx=o.sx+(o.ex-o.sx)*q; r.vx=nx-r.x; r.x=nx; r.y=80+Math.sin(o.t/7)*16; r.anim++; r.face=-1; }
+  if(o.t===85){
+    if(o.res==='td'){ G.away+=7; banner('OHIO STATE TOUCHDOWN','They go all the way',100); S.ooh(); }
+    else if(o.res==='fg'){ G.away+=3; banner('OHIO STATE FIELD GOAL','+3 for them',100); S.boot(); }
+    else { banner('DEFENSE HOLDS!','They punt it away',100); S.roar(); }
+  }
+  if(o.t>=185){
+    if(tick(90+((Math.random()*80)|0))) return;
+    G.los=o.res==='stop'?15+((Math.random()*20)|0):25; G.down=1; G.fdl=G.los+10;
+    toCall(); banner(G.pendingMsg||'LONGHORNS BALL',`Start at ${spotTxt(G.los)}`,80); G.pendingMsg=null;
+  }
+}
+
+// ---------- start / end ----------
+function startGame(){
+  audioInit(); newGame(); G.state='call'; toCall(); banner('KICKOFF!','Longhorns ball at the 25',80);
+}
+function showFinal(){
+  G.state='final'; panel('pFinal'); S.buzzer();
+  const w=G.home>G.away, tie=G.home===G.away;
+  const msg=tie?'TIE GAME!':w?'LONGHORNS WIN!':'OHIO STATE WINS';
+  $('finalTxt').textContent=`Longhorns ${G.home}, Ohio State ${G.away}. ${tie?'Nobody blinked.':w?'Hook \'em! You called a great game.':'So close. Call a new play and try again!'}`;
+  banner(msg,`${G.home} – ${G.away}`,100000); if(w) S.roar(); else S.ooh();
+}
+$('startBtn').addEventListener('click',startGame);
+$('againBtn').addEventListener('click',startGame);
+$('mute').addEventListener('click',()=>{ A.muted=!A.muted; if(A.master) A.master.gain.value=A.muted?0:0.8; $('mute').textContent='Sound: '+(A.muted?'off':'on'); if(!A.ac&&!A.muted) audioInit(); });
+
+// ---------- draw ----------
+function draw(){
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,320,180);
+  const cx=Math.round(G.camX);
+  ctx.drawImage(fieldCv,-cx,0);
+  if(G.state==='call'||G.state==='live'||G.state==='title'){
+    ctx.fillStyle='#3d7bff'; ctx.fillRect(ylx(G.los)-cx,TOP,1,FH);
+    if(G.fdl<100){ ctx.fillStyle='#ffd400'; ctx.fillRect(ylx(G.fdl)-cx,TOP,1,FH); }
+  }
+  const list=[...G.players].sort((a,b)=>a.y-b.y);
+  for(const e of list) drawPlayer(e,cx);
+  // ball
+  let bx,by,bh=0;
+  if(G.state==='kick'&&G.kick.t>=20){ bx=G.kick.cx;by=G.kick.cy;bh=G.kick.h; }
+  else if(G.ball.fly){ bx=G.ball.fly.cx;by=G.ball.fly.cy;bh=G.ball.fly.h; }
+  else if(G.state==='kick'){ bx=G.kick.sx; by=80; }
+  else if(G.ball.holder){ const h=G.ball.holder; bx=h.x+3*h.face; by=h.y-3; }
+  if(bx!==undefined){
+    const sx=Math.round(bx)-cx, sy=Math.round(by)+TOP;
+    if(bh>1){ ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(sx-1,sy+1,3,1); }
+    const yy=sy-Math.round(bh);
+    ctx.fillStyle='#7a3f12'; ctx.fillRect(sx-1,yy-1,4,2); ctx.fillStyle='#fff'; ctx.fillRect(sx,yy-1,2,1);
+  }
+  // indicators
+  if(G.state==='live'){
+    const p=G.play, O=G.off;
+    ctx.font='8px "Press Start 2P", monospace'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    const tag=(e,t,col)=>{ const sx=Math.round(e.x)-cx, sy=Math.round(e.y)+TOP-12; ctx.fillStyle='#000'; ctx.fillText(t,sx+2,sy+1); ctx.fillStyle=col; ctx.fillText(t,sx+1,sy); };
+    if(p.canThrow&&!p.thrown){ tag(O.WR1,'1','#ffd400'); if(p.type==='pass') tag(O.WR2,'2','#3fe0ff'); }
+    if(G.carrier){ const c=G.carrier, sx=Math.round(c.x)-cx, sy=Math.round(c.y)+TOP-13; ctx.fillStyle='#ffd400'; ctx.fillRect(sx-2,sy,5,1); ctx.fillRect(sx-1,sy+1,3,1); ctx.fillRect(sx,sy+2,1,1); }
+  }
+}
+function updateCamera(){
+  let fx;
+  if(G.state==='kick') fx=G.kick.t>=20?G.kick.cx+60:G.kick.sx+60;
+  else if(G.state==='osu') fx=G.osu.runner.x-40;
+  else fx=ballPos().x;
+  const target=clamp(fx-130,0,640);
+  G.camX+=(target-G.camX)*0.12;
+}
+
+// ---------- loop ----------
+function step(){
+  if(G.bannerT>0&&--G.bannerT===0&&G.state!=='final') hideBanner();
+  if(G.state==='live') updateLive();
+  else if(G.state==='dead'){ for(const e of G.players){e.vx*=0.85;e.vy*=0.85;} integrate(); if(G.ball.fly) G.ball.fly=null; if(++G.deadT>=90) applyResult(); }
+  else if(G.state==='osu') updateOsu();
+  else if(G.state==='kick') updateKick();
+  updateCamera(); updBoard();
+}
+newGame(); panel('pTitle');
+let last=performance.now(), acc=0;
+function frame(now){
+  acc+=Math.min(100,now-last); last=now;
+  while(acc>=1000/60){ step(); acc-=1000/60; }
+  draw(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
