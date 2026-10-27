@@ -1,6 +1,22 @@
 {
   "games": [
     {
+      "name": "Sharks vs Wolves",
+      "slug": "sharks-vs-wolves",
+      "artifact": "https://claude.ai/artifact/8Rafo6AuBuzNzzMNZbZKjv",
+      "added": "2026-10-26",
+      "updated": "2026-10-26",
+      "blurb": "Juke and throw to lead the Sea Sharks past the Night Wolves!"
+    },
+    {
+      "name": "Paper Brawl",
+      "slug": "paper-brawl",
+      "artifact": "https://claude.ai/artifact/KgSmGNtALAfnKbA4vApr93",
+      "added": "2026-10-26",
+      "updated": "2026-10-26",
+      "blurb": "Paper fighters punch, throw and knock each other off the stage!"
+    },
+    {
       "name": "Burnt Orange Bowl",
       "slug": "burnt-orange-bowl",
       "artifact": "https://claude.ai/artifact/AV5WxgJZUZanX2Sapad1cS",

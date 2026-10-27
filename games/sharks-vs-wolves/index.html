@@ -1,0 +1,570 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sharks vs Wolves</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+/* Layout: a stadium cabinet — scoreboard on top, pixel field screen, controls below. One dark arcade look on purpose. */
+:root{
+  --night:#0a0f1f; --panel:#141b36; --line:#2a3566;
+  --shark:#22d3c5; --wolf:#a77bff; --gold:#ffd23f; --ink:#eef2ff; --dim:#8d97c4;
+  --display:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  --body:"Chakra Petch", system-ui, sans-serif;
+  color-scheme:dark;
+}
+html,body{background:var(--night);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 24px}
+.cab{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 16px}
+h1{font-family:var(--display);font-size:clamp(14px,3.4vw,22px);margin:0;letter-spacing:.04em;text-wrap:balance}
+h1 .s{color:var(--shark)} h1 .w{color:var(--wolf)} h1 .vs{color:var(--dim);font-size:.6em;margin:0 .4em}
+.by{font-family:var(--display);font-size:9px;color:var(--dim);letter-spacing:.12em}
+#mute{font-family:var(--display);font-size:9px;background:transparent;color:var(--dim);border:2px solid var(--line);padding:6px 8px;cursor:pointer}
+#mute:focus-visible,.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;background:var(--panel);border:3px solid var(--line);padding:8px 12px;font-family:var(--display)}
+.team{display:flex;flex-direction:column;gap:6px;min-width:0}
+.team.r{align-items:flex-end;text-align:right}
+.team .n{font-size:clamp(8px,1.8vw,11px);letter-spacing:.08em}
+.team .sc{font-size:clamp(20px,5vw,34px);color:var(--gold);font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(255,210,63,.45)}
+.team.l .n{color:var(--shark)} .team.r .n{color:var(--wolf)}
+.mid{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+#clock{font-size:clamp(14px,3.4vw,22px);color:#ff6b5e;font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(255,107,94,.45)}
+#qtr{font-size:9px;color:var(--dim)}
+.down{grid-column:1/-1;text-align:center;font-size:clamp(8px,1.8vw,10px);color:var(--ink);border-top:2px dashed var(--line);padding-top:8px;letter-spacing:.06em}
+
+.screen{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;background:#000;border:3px solid var(--line);overflow:hidden;touch-action:none}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;text-align:center;background:rgba(6,9,22,.72)}
+.ov h2{font-family:var(--display);font-size:clamp(14px,3.6vw,26px);margin:0;color:var(--gold);text-shadow:3px 3px 0 #000;text-wrap:balance;line-height:1.4}
+.ov p{margin:0;max-width:46ch;color:var(--ink);font-size:clamp(12px,2.2vw,15px);line-height:1.45}
+.ov .small{font-family:var(--display);font-size:clamp(7px,1.5vw,9px);color:var(--dim);letter-spacing:.06em;line-height:1.8}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{font-family:var(--display);font-size:clamp(9px,2vw,12px);color:#0a0f1f;background:var(--gold);border:0;padding:12px 14px;cursor:pointer;box-shadow:0 4px 0 #b58f12;display:flex;flex-direction:column;gap:6px;align-items:center;min-width:110px}
+.btn small{font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:0}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b58f12}
+.btn.run{background:var(--shark);box-shadow:0 4px 0 #0f8c83}
+.btn.pass{background:#ff9f43;box-shadow:0 4px 0 #b86a1f}
+.btn.kick{background:#cfd6ff;box-shadow:0 4px 0 #7d86b8}
+.drivebar{width:min(260px,80%);height:12px;background:#1d6b2c;border:2px solid #fff;position:relative}
+.drivebar i{position:absolute;top:1px;width:8px;height:6px;background:#8a4b1c;border-radius:50%;transition:left 2s linear}
+
+.pad{display:none;justify-content:space-between;align-items:center;gap:12px;user-select:none;-webkit-user-select:none}
+@media (hover:none) and (pointer:coarse){ .pad{display:flex} .keys{display:none} }
+.stick{width:120px;height:120px;border-radius:50%;background:var(--panel);border:3px solid var(--line);position:relative;touch-action:none}
+.knob{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:var(--shark);opacity:.85}
+.pbtns{display:grid;grid-template-columns:repeat(2,64px);gap:10px}
+.pb{font-family:var(--display);font-size:10px;width:64px;height:64px;border-radius:50%;border:3px solid var(--line);color:#0a0f1f;touch-action:none}
+.pb.j{background:var(--gold);grid-column:1/-1;justify-self:center}
+.pb.t{background:#ff9f43}
+.keys{font-family:var(--display);font-size:9px;color:var(--dim);line-height:2;text-align:center;margin:0}
+.keys b{color:var(--ink);font-weight:400}
+@media (prefers-reduced-motion:reduce){.drivebar i{transition:none}}
+</style>
+
+<main class="cab">
+  <header>
+    <h1><span class="s">SEA SHARKS</span><span class="vs">vs</span><span class="w">NIGHT WOLVES</span></h1>
+    <div class="row" style="align-items:center"><span class="by">BY NAIAK GAMES</span><button id="mute" type="button">SOUND: ON</button></div>
+  </header>
+
+  <section class="board" aria-label="Scoreboard">
+    <div class="team l"><span class="n">SHARKS</span><span class="sc" id="sh">0</span></div>
+    <div class="mid"><span id="clock">1:15</span><span id="qtr">QTR 1</span></div>
+    <div class="team r"><span class="n">WOLVES</span><span class="sc" id="wo">0</span></div>
+    <div class="down" id="down">1ST &amp; 10 · OWN 25</div>
+  </section>
+
+  <div class="screen" id="screen">
+    <canvas id="cv" width="320" height="180"></canvas>
+    <div class="ov" id="ov"></div>
+  </div>
+
+  <div class="pad" id="pad">
+    <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+    <div class="pbtns">
+      <button class="pb t" id="t1" type="button">1</button>
+      <button class="pb t" id="t2" type="button">2</button>
+      <button class="pb j" id="pj" type="button">JUKE</button>
+    </div>
+  </div>
+  <p class="keys"><b>ARROWS / WASD</b> MOVE · <b>SPACE</b> JUKE · <b>1 / 2</b> THROW (OR CLICK A RECEIVER) · <b>M</b> SOUND</p>
+</main>
+
+<script>
+(()=>{
+// ---------- constants ----------
+const W=320,H=180,YD=8,FT=22,FB=174,MIDY=(FT+FB)/2,WORLD=120*YD,QLEN=75;
+const yx=yd=>(yd+10)*YD, xy=x=>x/YD-10;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const cv=document.getElementById('cv'), cx=cv.getContext('2d');
+cx.imageSmoothingEnabled=false;
+const ov=document.getElementById('ov');
+const $=id=>document.getElementById(id);
+
+let G, P=null, state='title', camX=yx(25)-140, toast=null, cheer=0, fontReady=false;
+let best=0; try{best=+localStorage.getItem('svw-best')||0}catch(e){}
+document.fonts && document.fonts.load('8px "Press Start 2P"').then(()=>fontReady=true).catch(()=>{});
+
+function newGame(){ G={sh:0,wo:0,q:1,clock:QLEN,los:25,down:1,togo:10,diff:1}; P=null; hud(); }
+newGame();
+
+// ---------- audio ----------
+let AC=null,master,musicG,sfxG,noiseBuf,muted=false,nextT=0,step=0;
+function initAudio(){
+  if(AC){ if(AC.state==='suspended') AC.resume(); return; }
+  try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  master=AC.createGain(); master.gain.value=muted?0:.8; master.connect(AC.destination);
+  musicG=AC.createGain(); musicG.gain.value=.3; musicG.connect(master);
+  sfxG=AC.createGain(); sfxG.gain.value=1; sfxG.connect(master);
+  noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);
+  const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  // crowd murmur
+  const m=AC.createBufferSource(); m.buffer=noiseBuf; m.loop=true;
+  const f=AC.createBiquadFilter(); f.type='bandpass'; f.frequency.value=450; f.Q.value=.4;
+  const g=AC.createGain(); g.gain.value=.035; m.connect(f).connect(g).connect(sfxG); m.start();
+  nextT=AC.currentTime+.1; setInterval(sched,25);
+}
+function noise(t,dur,type,freq,q,vol,dest){
+  const s=AC.createBufferSource(); s.buffer=noiseBuf;
+  const f=AC.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q;
+  const g=AC.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  s.connect(f).connect(g).connect(dest||sfxG); s.start(t,Math.random()); s.stop(t+dur+.05);
+}
+function tone(t,type,f0,f1,dur,vol,dest,filt){
+  const o=AC.createOscillator(); o.type=type; o.frequency.setValueAtTime(f0,t);
+  if(f1) o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  const g=AC.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  let n=o; if(filt){const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=filt; o.connect(f); n=f;}
+  n.connect(g).connect(dest||sfxG); o.start(t); o.stop(t+dur+.05);
+}
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function sched(){
+  const spb=60/132/4;
+  while(nextT<AC.currentTime+.12){
+    const t=nextT, st=step%16, bar=Math.floor(step/16)%4, root=[40,40,43,38][bar];
+    if(st%4===0) tone(t,'sine',150,40,.16,.9,musicG);
+    if(st===4||st===12) noise(t,.13,'bandpass',1500,.8,.55,musicG);
+    if(st%4===2) noise(t,.04,'highpass',7000,.5,.18,musicG);
+    if([0,3,6,8,10,14].includes(st)) tone(t,'square',mtof(root+(st===10?12:0)),0,.14,.16,musicG,700);
+    if(bar%2===1&&[8,11,14].includes(st)) [12,15,19].forEach(i=>tone(t,'sawtooth',mtof(root+i+12),0,st===14?.3:.12,.05,musicG,2200));
+    nextT+=spb; step++;
+  }
+}
+function sfx(name,big){
+  if(!AC||muted) return; const t=AC.currentTime;
+  if(name==='whistle'){ const o=AC.createOscillator(),l=AC.createOscillator(),lg=AC.createGain(),g=AC.createGain();
+    o.frequency.value=2900; l.frequency.value=32; lg.gain.value=140; l.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.06,t+.02); g.gain.setValueAtTime(.06,t+.32); g.gain.linearRampToValueAtTime(0,t+.38);
+    o.connect(g).connect(sfxG); o.start(t); l.start(t); o.stop(t+.4); l.stop(t+.4); }
+  if(name==='thud'){ tone(t,'sine',110,40,.14,.7); noise(t,.1,'lowpass',300,.7,.5); }
+  if(name==='throw') tone(t,'triangle',500,1000,.12,.25);
+  if(name==='juke') tone(t,'triangle',300,1300,.1,.25);
+  if(name==='catch') tone(t,'square',880,1320,.08,.12,null,3000);
+  if(name==='roar'){
+    const peak=big?.75:.3, dur=big?3.2:1.6;
+    [[520,.5],[1500,1.1],[3200,1.5]].forEach(([fr,q],i)=>{
+      const s=AC.createBufferSource(); s.buffer=noiseBuf; s.loop=true;
+      const f=AC.createBiquadFilter(); f.type='bandpass'; f.frequency.value=fr; f.Q.value=q;
+      const g=AC.createGain(); const p=peak*(i===0?1:i===1?.6:.25);
+      g.gain.setValueAtTime(.001,t); g.gain.exponentialRampToValueAtTime(p,t+.3);
+      g.gain.setValueAtTime(p,t+dur*.45); g.gain.exponentialRampToValueAtTime(.001,t+dur);
+      s.connect(f).connect(g).connect(sfxG); s.start(t); s.stop(t+dur+.1);
+    });
+    if(big){ musicG.gain.setValueAtTime(.3,t); musicG.gain.linearRampToValueAtTime(.1,t+.2); musicG.gain.linearRampToValueAtTime(.3,t+dur); }
+  }
+}
+$('mute').onclick=toggleMute;
+function toggleMute(){ muted=!muted; $('mute').textContent='SOUND: '+(muted?'OFF':'ON'); if(master) master.gain.value=muted?0:.8; }
+
+// ---------- input ----------
+const keys={}; let stick={x:0,y:0}, wantJuke=false;
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  keys[k]=true;
+  if(k===' ') wantJuke=true;
+  if(k==='m') toggleMute();
+  if(state==='live'){ if(k==='1'||k==='z') throwTo(1); if(k==='2'||k==='x') throwTo(2); }
+  else if(state==='call'){ if(k==='1'||k==='r') call('run'); if(k==='2'||k==='p') call('pass'); if((k==='3'||k==='k')&&G.down===4) call('kick'); }
+  else if(k==='enter'){ const b=ov.querySelector('button'); if(b) b.click(); }
+});
+addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+function getInput(){
+  let x=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0);
+  let y=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
+  x+=stick.x; y+=stick.y; const m=Math.hypot(x,y); if(m>1){x/=m;y/=m;}
+  return {x,y};
+}
+const st=$('stick'), kn=$('knob');
+function stickMove(e){ const r=st.getBoundingClientRect(); let dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+  const m=Math.hypot(dx,dy), R=r.width/2-20; if(m>R){dx*=R/m;dy*=R/m;}
+  stick={x:dx/R,y:dy/R}; kn.style.transform=`translate(${dx}px,${dy}px)`; }
+st.addEventListener('pointerdown',e=>{st.setPointerCapture(e.pointerId);stickMove(e);});
+st.addEventListener('pointermove',e=>{ if(st.hasPointerCapture(e.pointerId)) stickMove(e); });
+['pointerup','pointercancel'].forEach(ev=>st.addEventListener(ev,()=>{stick={x:0,y:0};kn.style.transform='';}));
+$('pj').addEventListener('pointerdown',e=>{e.preventDefault();wantJuke=true;});
+$('t1').addEventListener('pointerdown',e=>{e.preventDefault();throwTo(1);});
+$('t2').addEventListener('pointerdown',e=>{e.preventDefault();throwTo(2);});
+cv.addEventListener('pointerdown',e=>{
+  if(state!=='live'||!P||!P.canThrow) return;
+  const r=cv.getBoundingClientRect(); const wx=(e.clientX-r.left)/r.width*W+camX, wy=(e.clientY-r.top)/r.height*H;
+  let bestR=null,bd=30; P.recs.forEach(rc=>{const d=Math.hypot(rc.x-wx,rc.y-6-wy); if(d<bd){bd=d;bestR=rc;}});
+  if(bestR) throwTo(bestR.num);
+});
+
+// ---------- players ----------
+const SKIN=['#f1c27d','#c68642','#8d5524','#e0ac69','#5c3a21'];
+function mk(x,y,team,role){ return {x,y,vx:0,vy:0,team,role,anim:Math.random(),skin:SKIN[(Math.random()*SKIN.length)|0],num:0,ri:0,route:null}; }
+function moveTo(e,tx,ty,sp,dt){
+  const dx=tx-e.x, dy=ty-e.y, m=Math.hypot(dx,dy);
+  if(m<.5){e.vx=e.vy=0;return;}
+  const s=Math.min(sp,m/dt); e.vx=dx/m*s; e.vy=dy/m*s; e.x+=e.vx*dt; e.y+=e.vy*dt; e.anim+=dt*s/40;
+}
+function followRoute(r,dt,sp){
+  const wp=r.route[r.ri]; const tx=wp?wp[0]:r.x+100, ty=wp?wp[1]:r.y;
+  moveTo(r,tx,ty,sp,dt); r.y=clamp(r.y,FT+6,FB-6);
+  if(wp&&Math.hypot(wp[0]-r.x,wp[1]-r.y)<3) r.ri++;
+}
+
+function setupPlay(type){
+  const lx=yx(G.los);
+  P={type,t:0,off:[],def:[],blockers:[],recs:[],carrier:null,qb:null,ball:null,canThrow:type==='pass',juke:0,cd:0,trail:[]};
+  [-16,0,16].forEach(dy=>{ const b=mk(lx-6,MIDY+dy,'S','OL'); b.hold=0; P.blockers.push(b); P.off.push(b); });
+  const top=FT+24, bot=FB-24;
+  const r1=mk(lx-2,top,'S','WR'); r1.num=1;
+  const r2=mk(lx-2,bot,'S','WR'); r2.num=2;
+  if(type==='pass'){
+    r1.route=[[lx+5*YD,top],[lx+10*YD,top+34],[lx+70*YD,top+44]];   // short slant
+    r2.route=[[lx+80*YD,bot]];                                       // deep go
+    const qb=mk(lx-5*YD,MIDY,'S','QB'); P.qb=qb; P.carrier=qb; P.off.push(qb);
+  } else {
+    r1.route=[[lx+12*YD,top]]; r2.route=[[lx+12*YD,bot]];
+    const rb=mk(lx-4*YD,MIDY,'S','RB'); P.carrier=rb; P.off.push(rb);
+  }
+  P.recs=[r1,r2]; P.off.push(r1,r2);
+  // defense
+  P.blockers.forEach(b=>{ const d=mk(lx+8,b.y,'W','DL'); d.base=44; b.dl=d; P.def.push(d); });
+  const j=()=>Math.random()*16-8;
+  const lb1=mk(lx+5*YD,MIDY-26+j(),'W','LB'); lb1.base=54; lb1.blitz=true;
+  const lb2=mk(lx+5*YD,MIDY+26+j(),'W','LB'); lb2.base=52; lb2.zone=true;
+  if(Math.random()<.5){ lb1.y=MIDY+26+j(); lb2.y=MIDY-26+j(); }
+  const db1=mk(lx+7*YD+j(),top,'W','DB'); db1.base=58; db1.cover=r1;
+  const db2=mk(lx+8*YD+j(),bot,'W','DB'); db2.base=58; db2.cover=r2;
+  P.def.push(lb1,lb2,db1,db2);
+}
+
+function predict(r,T){
+  const c={x:r.x,y:r.y,ri:r.ri,route:r.route,anim:0,vx:0,vy:0}; const dt=1/60;
+  for(let t=0;t<T;t+=dt) followRoute(c,dt,64);
+  return {x:c.x,y:c.y};
+}
+function throwTo(n){
+  if(state!=='live'||!P||!P.canThrow||P.carrier!==P.qb) return;
+  const qb=P.qb, r=P.recs[n-1];
+  const T=clamp(dist(qb,r)/170,.35,1.15), p=predict(r,T);
+  P.ball={sx:qb.x,sy:qb.y-7,tx:p.x,ty:p.y,t:0,T,r}; P.carrier=null; P.canThrow=false; sfx('throw');
+}
+
+// ---------- game flow ----------
+function hud(){
+  $('sh').textContent=G.sh; $('wo').textContent=G.wo;
+  const c=Math.ceil(G.clock); $('clock').textContent=Math.floor(c/60)+':'+String(c%60).padStart(2,'0');
+  $('qtr').textContent='QTR '+G.q;
+  const ord=['1ST','2ND','3RD','4TH'][G.down-1]||'4TH';
+  const goal=G.los+G.togo>=100;
+  const spot=G.los<50?'OWN '+Math.round(G.los):G.los>50?'WOLVES '+Math.round(100-G.los):'MIDFIELD';
+  $('down').textContent=`${ord} & ${goal?'GOAL':Math.max(1,Math.round(G.togo))} · ${spot}`;
+}
+function setOv(html){ ov.innerHTML=html; ov.hidden=!html; }
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function banner(title,sub,ms=1500){ setOv(`<h2>${title}</h2>${sub?`<p>${sub}</p>`:''}`); await wait(ms); }
+
+function titleScreen(){
+  state='title';
+  setOv(`<h2>SEA SHARKS<br>vs NIGHT WOLVES</h2>
+  <p>You coach the Sea Sharks. Call a play, then juke past tacklers or throw it deep. Score more than the Wolves before the clock runs out.</p>
+  <div class="small">4 QUARTERS · 4 DOWNS TO GO 10 YARDS${best?` · BEST: ${best} PTS`:''}</div>
+  <div class="row"><button class="btn" id="go" type="button">KICK OFF!</button></div>`);
+  $('go').onclick=()=>{ initAudio(); newGame(); showCall(); };
+}
+function showCall(){
+  state='call'; P=null; hud();
+  const fgDist=Math.round(100-G.los+17), canFG=fgDist<=55;
+  const ord=['1ST','2ND','3RD','4TH'][G.down-1];
+  setOv(`<div class="small">${ord} DOWN · CALL YOUR PLAY, COACH</div>
+  <div class="row">
+    <button class="btn run" id="cRun" type="button">RUN<small>Juke past tacklers</small></button>
+    <button class="btn pass" id="cPass" type="button">PASS<small>Throw to 1 or 2</small></button>
+    ${G.down===4?`<button class="btn kick" id="cKick" type="button">${canFG?'FIELD GOAL':'PUNT'}<small>${canFG?fgDist+' yard kick':'Pin them deep'}</small></button>`:''}
+  </div>
+  <div class="small">KEYS: 1 RUN · 2 PASS${G.down===4?' · 3 KICK':''}</div>`);
+  $('cRun').onclick=()=>call('run'); $('cPass').onclick=()=>call('pass');
+  if($('cKick')) $('cKick').onclick=()=>call('kick');
+}
+async function call(type){
+  if(state!=='call') return; initAudio();
+  if(type==='kick') return kick();
+  setupPlay(type); state='presnap'; setOv('');
+  toast={text:'READY... HUT!',t:.9};
+  await wait(700); if(state==='presnap'){ state='live'; }
+}
+async function kick(){
+  state='dead'; const fgDist=Math.round(100-G.los+17);
+  if(fgDist<=55){
+    await banner('THE KICK IS UP...','',1100);
+    const p=clamp(1-(fgDist-20)/42,.25,.97);
+    if(Math.random()<p){ G.sh+=3; hud(); sfx('roar',true); cheer=2.5; await banner('IT\'S GOOD!',`${fgDist} yard field goal. Sharks +3`,1800); if(!await clockCheck()) return; return wolvesDrive(75); }
+    sfx('whistle'); await banner('NO GOOD!','Wide right. Wolves take over.',1600); if(!await clockCheck()) return; return wolvesDrive(G.los);
+  }
+  const spot=Math.min(G.los+40,92); sfx('thud');
+  await banner('BIG PUNT!',`The Wolves start way back at their own ${Math.round(100-spot)}.`,1600);
+  if(!await clockCheck()) return; return wolvesDrive(spot);
+}
+async function endPlay(kind,yd){
+  if(state!=='live') return; state='dead';
+  sfx('whistle'); if(kind==='tackle'||kind==='sack') sfx('thud');
+  if(kind==='td'){
+    G.sh+=7; G.diff=Math.min(1.6,G.diff+.1); hud(); sfx('roar',true); cheer=3.5;
+    await wait(500); await banner('TOUCHDOWN!','Sharks +7. The Wolves are mad now. Their defense got faster!',2400);
+    if(!await clockCheck()) return; return wolvesDrive(75);
+  }
+  if(kind==='int'){
+    await wait(400); await banner('INTERCEPTED!','The Wolves picked it off.',1700);
+    if(!await clockCheck()) return; return wolvesDrive(clamp(yd,5,95));
+  }
+  const spot=kind==='inc'?G.los:clamp(yd,1,99);
+  const gain=spot-G.los;
+  let msg;
+  if(kind==='inc') msg='INCOMPLETE';
+  else if(kind==='sack') msg=`SACKED! ${Math.round(gain)} YDS`;
+  else if(kind==='oob') msg=`OUT OF BOUNDS · ${gain>=0?'+':''}${Math.round(gain)} YDS`;
+  else msg=gain>=0?`GAIN OF ${Math.round(gain)}`:`LOSS OF ${Math.round(-gain)}`;
+  let first=false, turnover=false;
+  if(spot>=G.los+G.togo){ first=true; G.los=spot; G.down=1; G.togo=Math.min(10,100-spot); }
+  else { G.togo-=gain; G.los=spot; G.down++; if(G.down>4) turnover=true; }
+  if(first){ sfx('roar',false); cheer=1.2; }
+  toast={text:msg,t:1.6}; hud();
+  await wait(1300);
+  if(first) await banner('FIRST DOWN!','',1000);
+  if(turnover){ await banner('TURNOVER ON DOWNS','The Wolves stopped you on 4th down.',1700); if(!await clockCheck()) return; return wolvesDrive(G.los); }
+  if(!await clockCheck()) return;
+  showCall();
+}
+async function clockCheck(){
+  if(G.clock>0) return true;
+  if(G.q<4){ G.q++; G.clock=QLEN; hud(); await banner(G.q===3?'HALFTIME!':'END OF QUARTER',`Quarter ${G.q} is next.`,1700); return true; }
+  gameOver(); return false;
+}
+async function wolvesDrive(need){
+  state='drive'; P=null;
+  const startPct=clamp((need+10)/120*100,4,96);
+  setOv(`<div class="small">NIGHT WOLVES HAVE THE BALL</div><h2>WOLVES DRIVE...</h2><div class="drivebar"><i id="dball" style="left:${startPct}%"></i></div>`);
+  const pTD=clamp(.62-need/220,.18,.55)*(1-(G.diff-1)*.3), pFG=.25, r=Math.random();
+  const res=r<pTD?'td':r<pTD+pFG?'fg':'stop';
+  const endYd=res==='td'?-5:res==='fg'?clamp(need*.35,8,30):clamp(need*.55,20,70);
+  await wait(60); const b=$('dball'); if(b) b.style.left=clamp((endYd+10)/120*100,2,96)+'%';
+  await wait(2100);
+  G.clock=Math.max(0,G.clock-22);
+  if(res==='td'){ G.wo+=7; hud(); sfx('whistle'); await banner('WOLVES SCORE','Night Wolves touchdown. +7',1800); }
+  else if(res==='fg'){ G.wo+=3; hud(); sfx('whistle'); await banner('WOLVES KICK A FIELD GOAL','Night Wolves +3',1700); }
+  else { sfx('roar',false); cheer=1.5; await banner('DEFENSE HOLDS!','The Sharks D stopped them. Your ball!',1700); }
+  G.los=res==='stop'?clamp(Math.round(endYd),10,40):25; G.down=1; G.togo=10; hud();
+  if(!await clockCheck()) return;
+  showCall();
+}
+function gameOver(){
+  state='over'; P=null; hud();
+  const win=G.sh>G.wo, tie=G.sh===G.wo, newBest=G.sh>best;
+  if(newBest){ best=G.sh; try{localStorage.setItem('svw-best',best)}catch(e){} }
+  if(win){ sfx('roar',true); cheer=4; }
+  setOv(`<div class="small">FINAL</div>
+  <h2>${win?'SHARKS WIN!':tie?'IT\'S A TIE!':'WOLVES WIN'}</h2>
+  <p>Sea Sharks ${G.sh} · Night Wolves ${G.wo}</p>
+  <div class="small">${newBest&&G.sh>0?'NEW RECORD! ':''}BEST: ${best} PTS</div>
+  <div class="row"><button class="btn" id="again" type="button">ONE MORE GAME</button></div>`);
+  $('again').onclick=()=>{ newGame(); showCall(); };
+}
+
+// ---------- live update ----------
+function update(dt){
+  if(toast){ toast.t-=dt; if(toast.t<=0) toast=null; }
+  cheer=Math.max(0,cheer-dt);
+  if(state!=='live'||!P){ wantJuke=false; return; }
+  P.t+=dt; G.clock=Math.max(0,G.clock-dt); hud();
+  P.cd=Math.max(0,P.cd-dt); P.juke=Math.max(0,P.juke-dt);
+  const c=P.carrier;
+  if(c){
+    const inp=getInput();
+    if(wantJuke&&P.cd<=0&&(c!==P.qb||!P.canThrow)){ P.juke=.32; P.cd=1.4; sfx('juke'); }
+    let sp=c.role==='QB'?58:c.role==='RB'?74:70; if(P.juke>0) sp*=1.75;
+    c.vx=inp.x*sp; c.vy=inp.y*sp; c.x+=c.vx*dt; c.y+=c.vy*dt; c.anim+=dt*Math.hypot(c.vx,c.vy)/40;
+    c.x=Math.max(c.x,yx(-8));
+    if(P.juke>0){ P.trail.push({x:c.x,y:c.y,t:.2}); }
+  }
+  wantJuke=false;
+  P.trail.forEach(t=>t.t-=dt); P.trail=P.trail.filter(t=>t.t>0);
+  if(P.qb&&P.carrier===P.qb&&P.canThrow&&P.qb.x>yx(G.los)){ P.canThrow=false; toast={text:'QB SCRAMBLE!',t:1}; }
+  P.recs.forEach(r=>{ if(r!==P.carrier) followRoute(r,dt,64); });
+  // blockers
+  P.blockers.forEach(b=>{
+    const d=b.dl; if(b.done){ d.engaged=false; return; }
+    if(dist(b,d)<10){ d.engaged=true; b.hold+=dt; b.x=d.x-7; b.y+=(d.y-b.y)*Math.min(1,dt*8);
+      if(b.hold>(P.type==='run'?1.7:1.5)/G.diff){ b.done=true; b.fall=true; d.engaged=false; } }
+    else { d.engaged=false; moveTo(b,d.x-7,d.y,50,dt); }
+  });
+  // defenders
+  P.def.forEach(d=>{
+    let tx=d.x,ty=d.y,sp=d.base*G.diff;
+    if(d.engaged) sp*=.1;
+    if(P.ball){ tx=P.ball.tx; ty=P.ball.ty; if(d.role==='DL') sp*=.6; }
+    else if(c){
+      const cover=d.role==='DB'&&((P.type==='pass'&&c===P.qb)||(P.type==='run'&&P.t<.6));
+      if(cover){ tx=d.cover.x+14; ty=d.cover.y; sp*=.85; }
+      else if(d.zone&&c===P.qb&&P.canThrow){ tx=yx(G.los)+7*YD; ty=MIDY+(c.y-MIDY)*.5; }
+      else if(d.blitz&&P.type==='pass'&&P.t<.8){ tx=d.x; ty=d.y; }
+      else { tx=c.x+c.vx*.3; ty=c.y+c.vy*.3; }
+    }
+    moveTo(d,tx,ty,sp,dt);
+  });
+  for(let i=0;i<P.def.length;i++) for(let j=i+1;j<P.def.length;j++){
+    const a=P.def[i],b=P.def[j],dx=b.x-a.x,dy=b.y-a.y,m=Math.hypot(dx,dy);
+    if(m>0&&m<8){ const p=(8-m)/2; a.x-=dx/m*p; a.y-=dy/m*p; b.x+=dx/m*p; b.y+=dy/m*p; }
+  }
+  // ball in the air
+  if(P.ball){
+    const B=P.ball; B.t+=dt;
+    if(B.t>=B.T){
+      const r=B.r, tgt={x:B.tx,y:B.ty}; P.ball=null;
+      if(dist(r,tgt)>14) return endPlay('inc');
+      let nd=99; P.def.forEach(d=>nd=Math.min(nd,dist(d,r)));
+      const roll=Math.random();
+      let out='catch';
+      if(nd<8) out=roll<.2?'int':roll<.6?'inc':'catch';
+      else if(nd<16) out=roll<.35?'inc':'catch';
+      else if(roll<.04) out='inc';
+      if(out==='int') return endPlay('int',xy(r.x));
+      if(out==='inc') return endPlay('inc');
+      P.carrier=r; sfx('catch'); toast={text:'CAUGHT IT!',t:.9};
+    }
+    return;
+  }
+  // tackles, TD, sidelines
+  if(c){
+    const yd=xy(c.x);
+    if(yd>=100) return endPlay('td');
+    if(c.y<FT+1||c.y>FB-1) return endPlay('oob',yd);
+    if(P.juke<=0) for(const d of P.def){ if(dist(d,c)<7) return endPlay(c===P.qb&&P.type==='pass'&&P.recs.every(r=>r!==c)&&xy(c.x)<G.los?'sack':'tackle',yd); }
+  }
+}
+
+// ---------- drawing ----------
+const crowd=[]; for(let i=0;i<(WORLD*.6+W)/3;i++) for(let row=0;row<3;row++) crowd.push({x:i*3+(row%2),row,col:Math.random()<.5?'#22d3c5':Math.random()<.5?'#a77bff':Math.random()<.5?'#eef2ff':'#ffd23f',ph:Math.random()*6});
+let time=0;
+function drawCrowd(){
+  cx.fillStyle='#10142a'; cx.fillRect(0,0,W,16);
+  const off=camX*.6;
+  for(const p of crowd){ const x=Math.round(p.x-off); if(x<-2||x>W) continue;
+    const jump=cheer>0?Math.round(Math.max(0,Math.sin(time*14+p.ph))*2):0;
+    const y=3+p.row*4-jump;
+    cx.fillStyle=p.col; cx.fillRect(x,y+1,2,2); cx.fillStyle='#d9a066'; cx.fillRect(x,y,2,1); }
+  cx.fillStyle='#0a0d1c'; cx.fillRect(0,15,W,1);
+}
+function drawField(){
+  cx.fillStyle='#1c5f2a'; cx.fillRect(0,16,W,H-16);
+  const y0=Math.floor(xy(camX))-1, y1=Math.ceil(xy(camX+W))+1;
+  for(let yd=y0;yd<=y1;yd++){
+    const x=Math.round(yx(yd)-camX);
+    let col;
+    if(yd<0) col='#127f86'; else if(yd>=100) col='#4b2a86';
+    else col=Math.floor(yd/5)%2?'#2e8a3c':'#349a43';
+    if(yd>=-10&&yd<110){ cx.fillStyle=col; cx.fillRect(x,FT,YD,FB-FT); }
+    if(yd>=0&&yd<=100){
+      cx.fillStyle='rgba(255,255,255,.85)';
+      if(yd%5===0) cx.fillRect(x,FT,1,FB-FT);
+      else { cx.fillRect(x,FT,1,3); cx.fillRect(x,FB-3,1,3); cx.fillRect(x,MIDY-24,1,2); cx.fillRect(x,MIDY+22,1,2); }
+    }
+  }
+  // sidelines
+  cx.fillStyle='#fff'; cx.fillRect(0,FT-1,W,1); cx.fillRect(0,FB,W,1);
+  cx.font='8px "Press Start 2P", monospace'; cx.textAlign='center'; cx.textBaseline='middle';
+  for(let yd=10;yd<=90;yd+=10){ const x=Math.round(yx(yd)-camX); if(x<-20||x>W+20) continue;
+    const n=String(yd<=50?yd:100-yd); cx.fillStyle='rgba(255,255,255,.75)';
+    cx.fillText(n,x,FT+11); cx.fillText(n,x,FB-9); }
+  // end zone words
+  cx.font='10px "Press Start 2P", monospace';
+  [[yx(-5),'SHARKS',-1],[yx(105),'WOLVES',1]].forEach(([wx,t,dir])=>{
+    const x=wx-camX; if(x<-40||x>W+40) return;
+    cx.save(); cx.translate(Math.round(x),MIDY); cx.rotate(dir*Math.PI/2); cx.fillStyle='rgba(255,255,255,.8)'; cx.fillText(t,0,0); cx.restore(); });
+  // scrimmage + first-down lines
+  if(state==='call'||state==='presnap'||state==='live'){
+    const lx=Math.round(yx(G.los)-camX); cx.fillStyle='#3aa0ff'; cx.fillRect(lx,FT,2,FB-FT);
+    if(G.los+G.togo<100){ const fx=Math.round(yx(G.los+G.togo)-camX); cx.fillStyle='#ffd23f'; cx.fillRect(fx,FT,2,FB-FT); }
+  }
+}
+const COL={S:{helm:'#22d3c5',jer:'#127f86',str:'#fff',pant:'#e8eef7',mask:'#cfd6ff'},W:{helm:'#c9cbe0',jer:'#3b2365',str:'#a77bff',pant:'#1b1430',mask:'#555'}};
+function drawGuy(e,ghost){
+  const x=Math.round(e.x-camX), y=Math.round(e.y), c=COL[e.team], f=e.team==='S'?1:-1;
+  if(x<-10||x>W+10) return;
+  if(ghost){ cx.globalAlpha=.35; }
+  if(!ghost){ cx.fillStyle='rgba(0,0,0,.3)'; cx.fillRect(x-3,y-1,7,2); }
+  if(e.fall){ cx.fillStyle=c.jer; cx.fillRect(x-5,y-4,8,3); cx.fillStyle=c.helm; cx.fillRect(x+3,y-5,3,3); cx.globalAlpha=1; return; }
+  const moving=Math.hypot(e.vx,e.vy)>3, fr=moving?Math.floor(e.anim*6)%2:0;
+  cx.fillStyle=c.pant; cx.fillRect(x-2,y-5,5,2);
+  cx.fillStyle='#222'; cx.fillRect(x-2,y-3-(fr?1:0),2,3); cx.fillRect(x+1,y-3-(fr?0:1),2,3);
+  cx.fillStyle=c.jer; cx.fillRect(x-3,y-9,7,4); cx.fillRect(x-4,y-9,1,3); cx.fillRect(x+4,y-9,1,3);
+  cx.fillStyle=c.str; cx.fillRect(x,y-8,1,2);
+  cx.fillStyle=c.helm; cx.fillRect(x-2,y-13,5,4);
+  cx.fillStyle=e.skin; cx.fillRect(f>0?x+1:x-1,y-11,2,2);
+  cx.fillStyle=c.mask; cx.fillRect(f>0?x+3:x-3,y-12,1,3);
+  cx.fillStyle=c.str; cx.fillRect(x,y-13,1,1);
+  if(P&&P.carrier===e&&!ghost){ cx.fillStyle='#8a4b1c'; cx.fillRect(x+(f>0?3:-5),y-8,3,2); cx.fillStyle='#fff'; cx.fillRect(x+(f>0?4:-4),y-8,1,1); }
+  cx.globalAlpha=1;
+}
+function pixText(t,x,y,col,size=8){
+  cx.font=`${size}px "Press Start 2P", monospace`; cx.textAlign='center'; cx.textBaseline='middle';
+  cx.fillStyle='#000'; cx.fillText(t,x+1,y+1); cx.fillStyle=col; cx.fillText(t,x,y);
+}
+function render(dt){
+  // camera
+  let fx=yx(G.los);
+  if(P){ if(P.ball){ const B=P.ball; fx=B.sx+(B.tx-B.sx)*(B.t/B.T); } else if(P.carrier) fx=P.carrier.x; }
+  const target=clamp(fx-130,0,WORLD-W); camX+=(target-camX)*Math.min(1,dt*5);
+  drawCrowd(); drawField();
+  if(P){
+    P.trail.forEach(t=>drawGuy({...P.carrier,x:t.x,y:t.y,vx:0,vy:0},true));
+    [...P.off,...P.def].sort((a,b)=>a.y-b.y).forEach(e=>drawGuy(e));
+    // receiver tags
+    if(P.canThrow&&state==='live') P.recs.forEach(r=>{ const x=Math.round(r.x-camX), y=Math.round(r.y)-21;
+      cx.fillStyle='#ff9f43'; cx.fillRect(x-5,y-5,11,10); pixText(String(r.num),x+1,y+1,'#0a0f1f'); });
+    // carrier marker + juke meter
+    const c=P.carrier;
+    if(c&&state==='live'){ const x=Math.round(c.x-camX), y=Math.round(c.y)-18+Math.round(Math.sin(time*8));
+      cx.fillStyle='#ffd23f'; cx.fillRect(x-2,y,5,1); cx.fillRect(x-1,y+1,3,1); cx.fillRect(x,y+2,1,1);
+      if(!(c===P.qb&&P.canThrow)){ cx.fillStyle='#000'; cx.fillRect(x-5,Math.round(c.y)+2,11,2); cx.fillStyle=P.cd>0?'#7d86b8':'#ffd23f'; cx.fillRect(x-5,Math.round(c.y)+2,Math.round(11*(1-P.cd/1.4)),2); } }
+    // ball
+    if(P.ball){ const B=P.ball, k=B.t/B.T, bx=B.sx+(B.tx-B.sx)*k, by=B.sy+(B.ty-6-B.sy)*k, z=Math.sin(Math.PI*k)*Math.min(30,B.T*30);
+      cx.fillStyle='rgba(0,0,0,.35)'; cx.fillRect(Math.round(bx-camX)-1,Math.round(B.sy+7+(B.ty-B.sy)*k),3,1);
+      cx.fillStyle='#8a4b1c'; cx.fillRect(Math.round(bx-camX)-1,Math.round(by-z),4,3); cx.fillStyle='#fff'; cx.fillRect(Math.round(bx-camX)+1,Math.round(by-z)+1,1,1); }
+    // hints
+    if(state==='live'&&P.t<3){
+      const h=P.canThrow?'THROW: PRESS 1 / 2 OR TAP A RECEIVER':'SPACE / JUKE = DODGE';
+      cx.fillStyle='rgba(6,9,22,.7)'; cx.fillRect(0,FB-12,W,12); pixText(h,W/2,FB-6,'#eef2ff',6);
+    }
+  }
+  if(toast) pixText(toast.text,W/2,34,'#ffd23f',10);
+}
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now; time+=dt;
+  update(dt); render(dt);
+  requestAnimationFrame(loop);
+}
+titleScreen(); requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>
