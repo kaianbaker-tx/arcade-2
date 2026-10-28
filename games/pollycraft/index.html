@@ -107,6 +107,11 @@ h3.big{font-family:var(--logo);font-size:clamp(18px,5vw,28px);margin:0 0 6px;tex
 /* inventory */
 #inv{background:rgba(0,0,0,.6);align-items:flex-start}
 .panel{background:var(--gui);color:var(--gui-text);border:2px solid #000;box-shadow:inset 3px 3px 0 var(--gui-hi),inset -3px -3px 0 var(--gui-lo);padding:12px;display:grid;gap:10px}
+#searchBar{width:min(760px,calc(100vw - 32px));display:flex;gap:8px;align-items:center;padding:8px 12px}
+#searchBar label{font-weight:600;font-size:15px}
+#invSearch{flex:1;min-width:0;font-family:var(--ui);font-size:17px;padding:6px 10px;background:#000;color:#fff;border:2px solid #a0a0a0;outline:none}
+#invSearch:focus{border-color:#fff}
+.empty{font-size:14px;color:#4c4c4c;padding:6px 0}
 .invWrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:flex-start;margin:auto}
 .panel h4{margin:0;font-size:17px;font-weight:600}
 .grid9{display:grid;grid-template-columns:repeat(9,var(--s));gap:0}
@@ -186,7 +191,7 @@ h3.big{font-family:var(--logo);font-size:clamp(18px,5vw,28px);margin:0 0 6px;tex
       <summary>How to play</summary>
       <b>Move</b> WASD · <b>Jump</b> Space · <b>Sneak</b> Shift · <b>Sprint</b> double-tap W<br>
       <b>Look</b> move the mouse (click the world first) · <b>Pause</b> Esc<br>
-      <b>Mine</b> hold left click · <b>Place / Use</b> right click · <b>Pick block</b> middle click<br>
+      <b>Mine</b> hold the mouse button · <b>Place / Use</b> quick click (or right click) · <b>Pick block</b> middle click<br>
       <b>Bag &amp; crafting</b> E · <b>Hotbar</b> 1–9 or scroll · <b>Drop</b> Q · <b>Camera</b> V or F5<br>
       <b>Polly flies!</b> Jump, then press Space again in the air to flap. Out of wing power? Hold Space to glide.<br>
       <b>Squawk</b> F scares nearby cats away. In Creative, double-tap Space to fly.<br>
@@ -217,6 +222,7 @@ h3.big{font-family:var(--logo);font-size:clamp(18px,5vw,28px);margin:0 0 6px;tex
 
 <div id="inv" class="overlay" hidden>
   <div class="invWrap">
+    <div class="panel" id="searchBar"><label for="invSearch">Search</label><input id="invSearch" type="search" autocomplete="off" placeholder="Type a block name, like glass or torch"></div>
     <div class="panel" id="book"></div>
     <div class="panel" id="invPanel"></div>
   </div>
@@ -738,6 +744,7 @@ const P={pos:new V3(),vel:new V3(),hw:.3,h:1.8,onGround:false,flying:false,hp:20
 let spawn=[0,0,0];
 let inv=new Array(36).fill(null),sel=0,cursorItem=null;
 const cats=[],drops=[],parts=[];
+let tapL=null,pendingTap=false;const HOLD=.22;
 let mining=null,mouseL=false,mouseR=false,useCD=0,breakCD=0,attackCD=0,swingT=0,equipT=0,squawkCD=0,locked=false,noLock=isTouch,leftEdge=false;
 let catsBopped=0,saveT=0,spawnT=0;
 const DAY_LEN=600;
@@ -795,8 +802,8 @@ function slotHTML(i,s,extra=''){return`<button type="button" class="slot ${extra
 function renderInv(){
   if(mode==='creative'){
     bookEl.hidden=true;
-    let h='<h4>Creative Blocks</h4><div class="grid9">';CREATIVE_LIST.forEach(id=>h+=`<button type="button" class="slot" data-pal="${id}" title="${nameOf(id)}"><img class="px" src="${iconURL(id)}" alt=""></button>`);
-    h+='</div><div class="tip">Tap a block to put it in your selected hotbar slot (white outline).</div><h4>Hotbar</h4><div class="grid9">';
+    let h='<h4>Creative Blocks</h4><div class="grid9">';const list=CREATIVE_LIST.filter(matchQ);list.forEach(id=>h+=`<button type="button" class="slot" data-pal="${id}" title="${nameOf(id)}"><img class="px" src="${iconURL(id)}" alt=""></button>`);
+    if(!list.length)h+='</div><div class="empty">No blocks match that search.';h+='</div><div class="tip">Tap a block to put it in your selected hotbar slot (white outline).</div><h4>Hotbar</h4><div class="grid9">';
     for(let i=0;i<9;i++)h+=slotHTML(i,inv[i],i===sel?'sel':'');
     h+='</div><button type="button" class="btn sm" id="invClose">Done</button>';invPanel.innerHTML=h;
   }else{
@@ -804,17 +811,23 @@ function renderInv(){
     const nT=nearBlock(TABLE,4),nF=nearBlock(FURNACE,4);
     let b=`<h4>Recipe Book</h4><div class="stn"><span class="${nT?'y':'n'}">Crafting table: ${nT?'nearby':'not nearby'}</span><span class="${nF?'y':'n'}">Furnace: ${nF?'nearby':'not nearby'}</span></div>`;
     let cat='';
-    RECIPES.forEach((r,ri)=>{
+    let shown=0;RECIPES.forEach((r,ri)=>{
+      if(!matchQ(r.out)&&!r.ing.some(([id])=>matchQ(id)))return;shown++;
       if(r.cat!==cat){cat=r.cat;b+=`<div class="cat">${cat}</div>`}
       const stOK=r.st==='hand'||(r.st==='table'&&nT)||(r.st==='furnace'&&nF);
       const have=r.ing.every(([id,n])=>countItem(id)>=n);const can=stOK&&have;
       b+=`<div class="rec ${can?'':'off'}"><img class="px out" src="${iconURL(r.out)}" alt=""><div><div class="nm">${nameOf(r.out)}${r.n>1?' ×'+r.n:''}</div><div class="ings">${r.ing.map(([id,n])=>`<span class="${countItem(id)>=n?'':'miss'}"><img class="px" src="${iconURL(id)}" alt="">${n} ${nameOf(id)}</span>`).join('')}</div>${r.st!=='hand'?`<div class="need">Needs a ${r.st==='table'?'crafting table':'furnace'} nearby</div>`:''}</div><button type="button" class="btn sm" data-r="${ri}" ${can?'':'disabled'}>Craft</button></div>`});
+    if(!shown)b+='<div class="empty">No recipes match that search.</div>';
     bookEl.innerHTML=b;
     let h='<h4>Inventory</h4><div class="grid9">';for(let i=9;i<36;i++)h+=slotHTML(i,inv[i]);h+='</div><div class="gap"></div><div class="grid9">';for(let i=0;i<9;i++)h+=slotHTML(i,inv[i],i===sel?'sel':'');
     h+='</div><div class="tip">Tap a stack to pick it up, tap another slot to drop it there. Right-click takes half.</div><button type="button" class="btn sm" id="invClose">Done</button>';invPanel.innerHTML=h;
   }
   renderCursor();hotbarDirty=true;
 }
+let searchQ='';
+const matchQ=id=>!searchQ||nameOf(id).toLowerCase().includes(searchQ);
+const searchEl=$('#invSearch');
+searchEl.addEventListener('input',()=>{searchQ=searchEl.value.trim().toLowerCase();renderInv()});
 function renderCursor(){if(cursorItem){cursorEl.hidden=false;cursorEl.innerHTML=`<img class="px" src="${iconURL(cursorItem.id)}" alt="">${cursorItem.c>1?`<span class="cnt">${cursorItem.c}</span>`:''}`}else cursorEl.hidden=true}
 function clickSlot(i,right){
   const s=inv[i];
@@ -836,7 +849,7 @@ addEventListener('pointermove',e=>{if(state==='inv'){cursorEl.style.left=e.clien
 function craft(ri){const r=RECIPES[ri];if(!r.ing.every(([id,n])=>countItem(id)>=n))return;
   for(const[id,n]of r.ing)removeItem(id,n);const left=addItem(r.out,r.n);if(left)dropItem(r.out,left,true);
   popSnd();msg('Crafted '+nameOf(r.out)+(r.n>1?' ×'+r.n:''));renderInv()}
-function openInv(){if(state!=='play')return;state='inv';mouseL=mouseR=false;clearKeys();if(locked)document.exitPointerLock();renderInv();invEl.hidden=false}
+function openInv(){if(state!=='play')return;state='inv';mouseL=mouseR=false;tapL=null;clearKeys();if(locked)document.exitPointerLock();searchQ='';searchEl.value='';renderInv();invEl.hidden=false}
 function closeInv(){if(state!=='inv')return;if(cursorItem){const l=addItem(cursorItem.id,cursorItem.c);if(l)dropItem(cursorItem.id,l,true);cursorItem=null}
   invEl.hidden=true;cursorEl.hidden=true;state='play';hotbarDirty=true;if(!noLock)requestLock()}
 
@@ -857,7 +870,7 @@ function pressKey(code){
 function releaseKey(code){keys[code]=false;if(code==='KeyW')P.sprint=false}
 addEventListener('keydown',e=>{
   if(e.code==='F5'||e.code==='Space'||e.code.startsWith('Arrow'))e.preventDefault();
-  if(state==='inv'){if(e.code==='KeyE'||e.code==='Escape'){e.preventDefault();closeInv()}return}
+  if(state==='inv'){if(e.target===searchEl&&e.code!=='Escape')return;if(e.code==='KeyE'||e.code==='Escape'){e.preventDefault();closeInv()}return}
   if(state!=='play')return;
   if(e.repeat)return;
   pressKey(e.code);
@@ -870,21 +883,21 @@ addEventListener('keydown',e=>{
   if(e.code==='Escape'&&noLock)openPause();
 });
 addEventListener('keyup',e=>releaseKey(e.code));
-addEventListener('blur',()=>{clearKeys();mouseL=mouseR=false});
+addEventListener('blur',()=>{clearKeys();mouseL=mouseR=false;tapL=null});
 let mdrag=null;
 cv.addEventListener('mousedown',e=>{
   ensureAudio();if(isTouch||state!=='play')return;
   if(!noLock&&!locked){requestLock();return}
-  if(e.button===0){mouseL=true;leftEdge=true}
+  if(e.button===0){tapL={t:0}}
   if(e.button===2){mouseR=true;useCD=0}
   if(e.button===1){e.preventDefault();pickBlock()}
   if(noLock)mdrag={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,moved:false};
 });
-addEventListener('mouseup',e=>{if(e.button===0)mouseL=false;if(e.button===2)mouseR=false;mdrag=null});
+addEventListener('mouseup',e=>{if(e.button===0){if(tapL&&tapL.t<HOLD&&state==='play')pendingTap=true;tapL=null;mouseL=false}if(e.button===2)mouseR=false;mdrag=null});
 addEventListener('mousemove',e=>{
   if(state!=='play'||isTouch)return;
   if(locked){look(e.movementX,e.movementY,.0024);return}
-  if(noLock&&mdrag){if(!mdrag.moved&&Math.hypot(e.clientX-mdrag.x,e.clientY-mdrag.y)>6){mdrag.moved=true;mouseL=false;mouseR=false;mining=null}
+  if(noLock&&mdrag){if(!mdrag.moved&&Math.hypot(e.clientX-mdrag.x,e.clientY-mdrag.y)>6){mdrag.moved=true;mouseL=false;tapL=null;mouseR=false;mining=null}
     if(mdrag.moved)look(e.clientX-mdrag.lx,e.clientY-mdrag.ly,.005);mdrag.lx=e.clientX;mdrag.ly=e.clientY}
 });
 cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -1272,6 +1285,8 @@ function frame(now){
         }else{if(leftEdge&&swingT<=0)swingT=1;mining=null}
       }else mining=null;
       leftEdge=false;
+      if(tapL){tapL.t+=dt;if(tapL.t>=HOLD&&!mouseL){mouseL=true;leftEdge=true}}
+      if(pendingTap){pendingTap=false;if(hit&&hit.cat){attack(hit.cat);attackCD=.55}else{use(hit);swingT=1}}
       if(mouseR&&useCD<=0){use(hit);useCD=.26}
     }else{outline.visible=false;mining=null}
     if(mining&&mining.p>0){crack.visible=true;crack.position.set(mining.x+.5,mining.y+.5,mining.z+.5);crackMat.map=crackTex[clamp(Math.floor(mining.p*8),0,7)]}else crack.visible=false;
