@@ -1,0 +1,323 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Kraken Cove</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+/* Layout: one arcade screen, pixel canvas on top, chunky touch buttons below. Single dark sea look. */
+:root{
+  --deep:#0d1530; --panel:#16224a; --gold:#ffcf3a; --coral:#ff6b4a; --foam:#e8f4ff; --muted:#8fa3d9;
+  --pixel:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--deep);color:var(--foam);font-family:var(--pixel);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;
+  box-sizing:border-box;display:flex;justify-content:center}
+.wrap{width:100%;max-width:960px;display:flex;flex-direction:column;gap:12px}
+.screen{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border:4px solid var(--panel);background:#000}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  text-align:center;background:rgba(13,21,48,.72);padding:12px}
+.overlay h1{margin:0;font-size:clamp(18px,4.5vw,40px);color:var(--gold);text-shadow:4px 4px 0 var(--coral);line-height:1.3}
+.overlay p{margin:0;font-size:clamp(8px,1.5vw,12px);line-height:1.9;color:var(--foam);max-width:60ch}
+.overlay .sub{color:var(--muted)}
+button{font-family:var(--pixel);cursor:pointer;border:0;color:var(--deep);background:var(--gold);
+  box-shadow:0 4px 0 #b8860b;padding:12px 18px;font-size:clamp(10px,1.6vw,14px)}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #b8860b}
+button:focus-visible{outline:3px solid var(--foam);outline-offset:3px}
+.pad{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;align-items:center}
+.dirs{display:flex;gap:8px}
+.pad button{min-width:56px;min-height:52px;font-size:16px;touch-action:none;user-select:none;-webkit-user-select:none}
+.pad .fire{background:var(--coral);box-shadow:0 4px 0 #a33a22;color:var(--foam);min-width:110px}
+.pad .sound{background:var(--panel);color:var(--foam);box-shadow:0 4px 0 #0a1028;font-size:10px}
+.help{font-size:9px;color:var(--muted);line-height:1.9;margin:0}
+@media (prefers-reduced-motion:reduce){button:active{transform:none}}
+</style>
+
+<div class="wrap">
+  <div class="screen">
+    <canvas id="game" width="320" height="180" aria-label="Kraken Cove game screen"></canvas>
+    <div class="overlay" id="overlay">
+      <h1 id="ovTitle">KRAKEN COVE</h1>
+      <p id="ovText">Sail your pirate ship. Grab 15 gold coins.<br>Then the giant Kraken wakes up. Beat it!</p>
+      <p class="sub" id="ovBest"></p>
+      <button id="startBtn">SET SAIL!</button>
+      <p class="sub">by Naiak Games</p>
+    </div>
+  </div>
+  <div class="pad">
+    <div class="dirs">
+      <button data-k="up" aria-label="Up">▲</button>
+      <button data-k="down" aria-label="Down">▼</button>
+      <button data-k="left" aria-label="Left">◀</button>
+      <button data-k="right" aria-label="Right">▶</button>
+    </div>
+    <button class="sound" id="soundBtn">MUSIC ON</button>
+    <button class="fire" data-k="fire">FIRE!</button>
+  </div>
+  <p class="help">Keys: arrows or WASD to sail, SPACE to fire the cannon.</p>
+</div>
+
+<script>
+(function(){
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+const W=320,H=180,SEA=72;
+ctx.imageSmoothingEnabled=false;
+
+/* ---------- SOUND (all made with code, no files) ---------- */
+let ac=null,master=null,musicGain=null,musicOn=true,nextNote=0,step=0;
+function audio(){
+  if(ac) return;
+  try{
+    ac=new (window.AudioContext||window.webkitAudioContext)();
+    master=ac.createGain();master.gain.value=.5;master.connect(ac.destination);
+    musicGain=ac.createGain();musicGain.gain.value=.18;musicGain.connect(master);
+    nextNote=ac.currentTime+.1;
+  }catch(e){ac=null}
+}
+function tone(f,dur,type,vol,dest,t0,slideTo){
+  if(!ac)return;const t=t0||ac.currentTime;
+  const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
+  if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  o.connect(g);g.connect(dest||master);o.start(t);o.stop(t+dur+.02);
+}
+function noise(dur,vol,filt,freq){
+  if(!ac)return;const t=ac.currentTime,n=ac.sampleRate*dur,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+  const s=ac.createBufferSource();s.buffer=b;const f=ac.createBiquadFilter();f.type=filt;f.frequency.value=freq;
+  const g=ac.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  s.connect(f);f.connect(g);g.connect(master);s.start(t);
+}
+const sfx={
+  cannon(){noise(.35,.9,'lowpass',600);tone(140,.3,'sine',.7,null,null,40)},
+  coin(){if(!ac)return;tone(988,.08,'square',.25);tone(1319,.18,'square',.25,null,ac.currentTime+.07)},
+  splash(){noise(.5,.6,'highpass',900)},
+  hurt(){tone(220,.4,'sawtooth',.4,null,null,60)},
+  roar(){tone(90,1.2,'sawtooth',.5,null,null,35);noise(1,.4,'lowpass',300)},
+  bossHit(){tone(300,.12,'square',.3,null,null,120)},
+  win(){if(!ac)return;[523,659,784,1047].forEach((f,i)=>tone(f,.3,'square',.3,null,ac.currentTime+i*.15))}
+};
+const mf=m=>440*Math.pow(2,(m-69)/12);
+const melody=[69,0,72,76,74,72,69,0,67,0,71,74,72,71,67,0,65,0,69,72,71,69,65,64,64,0,68,71,76,74,71,68];
+const bass=[45,43,41,40];
+function musicTick(){
+  if(!ac||!musicOn||state==='title')return;
+  const spb=(boss?.11:.14);
+  while(nextNote<ac.currentTime+.15){
+    const m=melody[step%32];
+    if(m)tone(mf(m),spb*.9,'square',.5,musicGain,nextNote);
+    if(step%4===0)tone(mf(bass[Math.floor(step/8)%4]),spb*3,'triangle',.9,musicGain,nextNote);
+    nextNote+=spb;step++;
+  }
+}
+document.getElementById('soundBtn').onclick=e=>{musicOn=!musicOn;e.target.textContent=musicOn?'MUSIC ON':'MUSIC OFF';if(ac)nextNote=ac.currentTime+.05};
+
+/* ---------- PIXEL ART ---------- */
+const SHIP=[
+"........F.......",
+"......WWW.......",
+"......WWWW......",
+"......WWWWW.....",
+"......WWWWWW....",
+"......WWWWWWW...",
+"......M.........",
+".RRRRRRRRRRRRRR.",
+"..BBBBBBBBBBBBR.",
+"...BBBOBBBOBBB..",
+"....BBBBBBBBB...",
+];
+const PAL_ME={F:'#ff6b4a',W:'#f6ecd2',M:'#6b3e1f',R:'#c0392b',B:'#8a5a2b',O:'#2a1608'};
+const PAL_BAD={F:'#1a1a1a',W:'#3b3b4f',M:'#3a2a1a',R:'#6a6a7a',B:'#4a3a2e',O:'#111'};
+function spr(rows,pal,x,y,flip){
+  const w=rows[0].length;
+  for(let r=0;r<rows.length;r++)for(let c=0;c<w;c++){const ch=rows[r][c];if(ch==='.')continue;
+    ctx.fillStyle=pal[ch];ctx.fillRect(Math.round(x+(flip?w-1-c:c)),Math.round(y+r),1,1);}
+}
+function disc(cx,cy,r,col){ctx.fillStyle=col;cx=Math.round(cx);cy=Math.round(cy);
+  for(let y=-r;y<=r;y++){const hw=Math.floor(Math.sqrt(r*r-y*y));ctx.fillRect(cx-hw,cy+y,hw*2+1,1);}}
+
+/* ---------- GAME STATE ---------- */
+const keys={};let state='title',frame=0,boss=null;
+let P,rocks,enemies,coins,shots,enemyShots,parts,coinCount,score,scroll,shake,flash;
+let best=0;try{best=+localStorage.getItem('krakenBest')||0}catch(e){}
+function reset(){
+  P={x:40,y:110,lives:3,inv:0,cool:0};
+  rocks=[];enemies=[];coins=[];shots=[];enemyShots=[];parts=[];
+  coinCount=0;score=0;scroll=1.1;boss=null;shake=0;flash=0;frame=0;
+}
+reset();
+const GOAL=15;
+
+function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function pbox(){return{x:P.x+1,y:P.y+3,w:14,h:8}}
+function burst(x,y,col,n){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*2.4,vy:-Math.random()*2.2,life:30+Math.random()*20,col})}
+function hurtPlayer(){
+  if(P.inv>0)return;P.lives--;P.inv=90;shake=10;sfx.hurt();burst(P.x+8,P.y+8,'#e8f4ff',14);
+  if(P.lives<=0)endGame(false);
+}
+
+/* ---------- UPDATE ---------- */
+function update(){
+  frame++;
+  if(P.inv>0)P.inv--;if(P.cool>0)P.cool--;if(shake>0)shake--;if(flash>0)flash--;
+  const sp=1.7;
+  if(keys.up)P.y-=sp;if(keys.down)P.y+=sp;if(keys.left)P.x-=sp*.8;if(keys.right)P.x+=sp*.8;
+  P.y=Math.max(SEA-4,Math.min(H-14,P.y));P.x=Math.max(4,Math.min(150,P.x));
+  if(keys.fire&&P.cool===0){shots.push({x:P.x+15,y:P.y+8,w:3,h:3});P.cool=18;sfx.cannon();}
+
+  if(!boss){
+    scroll=1.1+coinCount*.06;
+    if(frame%Math.max(45,95-coinCount*3)===0)rocks.push({x:W+10,y:SEA+Math.random()*(H-SEA-16),w:14,h:11,r:5+Math.floor(Math.random()*3)});
+    if(frame%Math.max(70,150-coinCount*5)===40)enemies.push({x:W+10,y:SEA+Math.random()*(H-SEA-16),w:16,h:11,t:Math.random()*100,hp:1});
+    if(frame%55===20)coins.push({x:W+5,y:SEA+4+Math.random()*(H-SEA-20),w:6,h:6});
+    if(coinCount>=GOAL){startBoss();}
+  }
+  rocks.forEach(r=>r.x-=scroll);
+  coins.forEach(c=>c.x-=scroll);
+  enemies.forEach(e=>{e.x-=scroll+.5;e.t++;e.y+=Math.sin(e.t/20)*.4;
+    if(coinCount>=6&&e.t%110===0&&e.x<W-10)enemyShots.push({x:e.x,y:e.y+7,w:3,h:3,vx:-2.2,vy:0});});
+  shots.forEach(s=>s.x+=3.2);
+  enemyShots.forEach(s=>{s.x+=s.vx;s.y+=s.vy});
+
+  // collisions
+  const pb=pbox();
+  coins.forEach(c=>{if(hit(pb,c)){c.dead=1;coinCount++;score+=10;sfx.coin();burst(c.x+3,c.y+3,'#ffcf3a',6)}});
+  rocks.forEach(r=>{if(hit(pb,r))hurtPlayer();shots.forEach(s=>{if(!s.dead&&hit(s,r)){s.dead=1;sfx.splash();burst(s.x,s.y,'#9fd3ff',5)}})});
+  enemies.forEach(e=>{if(hit(pb,e)){e.dead=1;hurtPlayer();}
+    shots.forEach(s=>{if(!s.dead&&!e.dead&&hit(s,e)){s.dead=1;e.dead=1;score+=25;sfx.splash();burst(e.x+8,e.y+6,'#9fd3ff',16);
+      if(Math.random()<.6)coins.push({x:e.x+4,y:e.y+2,w:6,h:6});}})});
+  enemyShots.forEach(s=>{if(hit(pb,s)){s.dead=1;hurtPlayer()}});
+
+  if(boss)updateBoss(pb);
+
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life--});
+  const alive=a=>a.filter(o=>!o.dead&&o.x>-30&&o.x<W+60&&o.y>-30&&o.y<H+30);
+  rocks=alive(rocks);coins=alive(coins);enemies=alive(enemies);shots=alive(shots);enemyShots=alive(enemyShots);
+  parts=parts.filter(p=>p.life>0);
+}
+
+/* ---------- THE BOSS: THE KRAKEN ---------- */
+function startBoss(){
+  boss={x:W+40,y:110,hp:24,max:24,t:0,hurt:0,atk:0,count:0};
+  rocks=[];enemies=[];coins=[];sfx.roar();shake=30;flash=20;
+}
+function updateBoss(pb){
+  const B=boss;B.t++;if(B.hurt>0)B.hurt--;
+  if(B.x>255)B.x-=.8;
+  B.y=112+Math.sin(B.t/45)*28;
+  const box={x:B.x-18,y:B.y-34,w:36,h:54};
+  const angry=B.hp<=12;
+  B.atk++;
+  if(B.x<=256&&B.atk>(angry?50:75)){
+    B.atk=0;B.count++;
+    if(B.count%3===0){[-.7,0,.7].forEach(vy=>enemyShots.push({x:B.x-16,y:B.y-12,w:5,h:5,vx:-2,vy,ink:1}));}
+    else{const dx=P.x+8-(B.x-16),dy=P.y+8-(B.y-12),d=Math.hypot(dx,dy)||1,s=angry?2.6:2;
+      enemyShots.push({x:B.x-16,y:B.y-12,w:5,h:5,vx:dx/d*s,vy:dy/d*s,ink:1});}
+    sfx.splash();
+  }
+  shots.forEach(s=>{if(!s.dead&&hit(s,box)){s.dead=1;B.hp--;B.hurt=6;sfx.bossHit();burst(s.x,s.y,'#c06bff',6);
+    if(B.hp===12){sfx.roar();shake=15}
+    if(B.hp<=0){score+=500;burst(B.x,B.y-10,'#c06bff',60);burst(B.x,B.y,'#ffcf3a',30);sfx.win();endGame(true)}}});
+  if(hit(pb,box))hurtPlayer();
+}
+
+/* ---------- DRAW ---------- */
+const SKY=['#2b1d52','#4a2667','#7a2f6f','#b5476a','#e2705a','#f6a04d'];
+function drawWorld(){
+  const bandH=SEA/SKY.length;
+  SKY.forEach((c,i)=>{ctx.fillStyle=c;ctx.fillRect(0,Math.floor(i*bandH),W,Math.ceil(bandH)+1)});
+  disc(250,SEA-4,16,'#ffd56b');disc(250,SEA-4,12,'#ffe9a8');
+  // clouds
+  ctx.fillStyle='#f2b0a0';for(let i=0;i<4;i++){const cx=((i*97-frame*.15)%380+380)%380-30;ctx.fillRect(cx,14+i*9,26,3);ctx.fillRect(cx+6,11+i*9,14,3)}
+  // sea
+  ctx.fillStyle=boss?'#1d2f5c':'#1f4f8a';ctx.fillRect(0,SEA,W,H-SEA);
+  ctx.fillStyle=boss?'#16244a':'#1a4278';for(let y=SEA+14;y<H;y+=18)ctx.fillRect(0,y,W,6);
+  ctx.fillStyle='#ffd56b';for(let y=SEA+1;y<SEA+10;y+=3)ctx.fillRect(244+((y+frame/8|0)%5)-2,y,12-(y-SEA),1);
+  ctx.fillStyle='#bfe2ff';
+  for(let y=SEA+6;y<H;y+=12)for(let x=0;x<W+20;x+=26){const ox=((x-frame*scroll*.6+y*3)%(W+26)+W+26)%(W+26)-13;ctx.fillRect(ox,y,6,1);ctx.fillRect(ox+2,y-1,2,1)}
+}
+function drawRock(r){disc(r.x+7,r.y+7,r.r+1,'#2c2f3a');disc(r.x+7,r.y+6,r.r,'#5c6170');disc(r.x+5,r.y+4,2,'#8a90a0');
+  ctx.fillStyle='#bfe2ff';ctx.fillRect(r.x,r.y+11,15,1);}
+function drawCoin(c){const w=[6,4,2,4][(frame>>3)%4];ctx.fillStyle='#b8860b';ctx.fillRect(c.x+(6-w)/2,c.y,w,6);
+  ctx.fillStyle='#ffcf3a';ctx.fillRect(c.x+(6-w)/2+ (w>2?1:0),c.y+1,Math.max(1,w-2),4);ctx.fillStyle='#fff6c8';if(w>2)ctx.fillRect(c.x+(6-w)/2+1,c.y+1,1,1)}
+function drawKraken(B){
+  const body=B.hurt?'#ffffff':'#7b3fbf',dark=B.hurt?'#ffd0ff':'#4e2585',spot='#c06bff';
+  for(let i=0;i<6;i++){ // tentacles
+    for(let s=0;s<10;s++){const tx=B.x-16+i*6+Math.sin(B.t/12+i+s*.6)*(s*.7)-s*1.2,ty=B.y+4+s*3.2;disc(tx,ty,Math.max(1,4-s*.35|0),s%2?dark:body);}
+  }
+  disc(B.x,B.y-14,20,dark);disc(B.x,B.y-16,18,body);
+  disc(B.x-8,B.y-26,2,spot);disc(B.x+7,B.y-22,3,spot);disc(B.x+2,B.y-30,2,spot);
+  const angry=B.hp<=12;
+  disc(B.x-9,B.y-12,5,'#fff');disc(B.x+5,B.y-12,5,'#fff');
+  disc(B.x-11,B.y-12,2,angry?'#ff2a2a':'#111');disc(B.x+3,B.y-12,2,angry?'#ff2a2a':'#111');
+  if(angry){ctx.fillStyle='#1a0a2a';ctx.fillRect(B.x-14,B.y-19,9,2);ctx.fillRect(B.x+1,B.y-19,9,2)}
+}
+function drawHUD(){
+  for(let i=0;i<3;i++){const c=i<P.lives?'#ff4a6a':'#3a3050';const x=6+i*11,y=5;
+    ctx.fillStyle=c;ctx.fillRect(x,y+1,3,3);ctx.fillRect(x+4,y+1,3,3);ctx.fillRect(x,y+2,7,3);ctx.fillRect(x+1,y+5,5,1);ctx.fillRect(x+2,y+6,3,1);ctx.fillRect(x+3,y+7,1,1);}
+  ctx.font='8px "Press Start 2P", monospace';ctx.textBaseline='top';
+  ctx.fillStyle='#000';ctx.fillText('SCORE '+score,W-100,6);ctx.fillStyle='#fff';ctx.fillText('SCORE '+score,W-101,5);
+  if(!boss){
+    ctx.fillStyle='#000';ctx.fillText(Math.min(coinCount,GOAL)+'/'+GOAL,45,6);ctx.fillStyle='#ffcf3a';ctx.fillText(Math.min(coinCount,GOAL)+'/'+GOAL,44,5);
+    ctx.fillStyle='#1a1030';ctx.fillRect(90,6,80,6);ctx.fillStyle='#ffcf3a';ctx.fillRect(91,7,78*Math.min(1,coinCount/GOAL),4);
+  }else{
+    ctx.fillStyle='#000';ctx.fillText('KRAKEN',W/2-23,17);ctx.fillStyle='#c06bff';ctx.fillText('KRAKEN',W/2-24,16);
+    ctx.fillStyle='#1a1030';ctx.fillRect(W/2-60,27,120,7);ctx.fillStyle=boss.hp<=12?'#ff2a2a':'#c06bff';ctx.fillRect(W/2-59,28,118*Math.max(0,boss.hp)/boss.max,5);
+  }
+}
+function draw(){
+  ctx.save();
+  if(shake>0)ctx.translate((Math.random()-.5)*4|0,(Math.random()-.5)*4|0);
+  drawWorld();
+  coins.forEach(drawCoin);rocks.forEach(drawRock);
+  enemies.forEach(e=>spr(SHIP,PAL_BAD,e.x,e.y,true));
+  if(boss)drawKraken(boss);
+  shots.forEach(s=>{disc(s.x+1,s.y+1,2,'#1a1a1a');ctx.fillStyle='#888';ctx.fillRect(s.x,s.y,1,1)});
+  enemyShots.forEach(s=>{if(s.ink){disc(s.x+2,s.y+2,3,'#2a0a3a');disc(s.x+1,s.y+1,1,'#c06bff')}else disc(s.x+1,s.y+1,2,'#111')});
+  if(state!=='over'&&(P.inv===0||(P.inv>>2)%2===0)){spr(SHIP,PAL_ME,P.x,P.y+Math.sin(frame/10));ctx.fillStyle='#bfe2ff';ctx.fillRect(P.x-4-(frame>>2)%4,P.y+11,4,1);}
+  parts.forEach(p=>{ctx.fillStyle=p.col;ctx.fillRect(p.x|0,p.y|0,2,2)});
+  ctx.restore();
+  if(flash>0){ctx.fillStyle='rgba(192,107,255,'+(flash/40)+')';ctx.fillRect(0,0,W,H)}
+  if(state!=='title')drawHUD();
+}
+
+/* ---------- SCREENS ---------- */
+const ov=document.getElementById('overlay'),ovT=document.getElementById('ovTitle'),ovX=document.getElementById('ovText'),ovB=document.getElementById('ovBest'),btn=document.getElementById('startBtn');
+function showBest(){ovB.textContent=best?'BEST SCORE: '+best:''}
+showBest();
+function endGame(won){
+  state=won?'win':'over';
+  if(score>best){best=score;try{localStorage.setItem('krakenBest',best)}catch(e){}}
+  setTimeout(()=>{
+    ovT.textContent=won?'YOU WIN!':'SHIP SUNK!';
+    ovX.innerHTML=won?'The Kraken swims away crying.<br>The cove is yours, Captain!':'Coins: '+coinCount+'. Try again, Captain!';
+    ovB.textContent='SCORE: '+score+'   BEST: '+best;
+    btn.textContent='PLAY AGAIN';ov.hidden=false;btn.focus();
+  },won?1400:900);
+}
+btn.onclick=()=>{audio();if(ac&&ac.state==='suspended')ac.resume();reset();state='play';ov.hidden=true;if(ac)nextNote=ac.currentTime+.05;};
+
+/* ---------- CONTROLS ---------- */
+const map={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'fire'};
+addEventListener('keydown',e=>{if(map[e.code]){keys[map[e.code]]=true;if(state==='play'||state==='win'||state==='over')e.preventDefault()}});
+addEventListener('keyup',e=>{if(map[e.code])keys[map[e.code]]=false});
+document.querySelectorAll('[data-k]').forEach(b=>{
+  const k=b.dataset.k;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;try{b.setPointerCapture(e.pointerId)}catch(_){}});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
+});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
+
+/* ---------- LOOP ---------- */
+let last=0,acc=0;
+function loop(t){
+  acc+=Math.min(100,t-last);last=t;
+  while(acc>=16.67){if(state==='play')update();else{frame++;parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life--});parts=parts.filter(p=>p.life>0)}acc-=16.67;}
+  draw();musicTick();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>
