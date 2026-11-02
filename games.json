@@ -1,6 +1,14 @@
 {
   "games": [
     {
+      "name": "Blob Fight",
+      "slug": "blob-fight",
+      "artifact": "https://claude.ai/artifact/UYLYB3T21uVsiT7EsqSrpC",
+      "added": "2026-11-01",
+      "updated": "2026-11-01",
+      "blurb": "Watch Fluffy Blob battle Grumpy Rock, then scrub the action!"
+    },
+    {
       "name": "Sharks vs Wolves",
       "slug": "sharks-vs-wolves",
       "artifact": "https://claude.ai/artifact/8Rafo6AuBuzNzzMNZbZKjv",
