@@ -6,7 +6,8 @@
       "artifact": "https://claude.ai/artifact/UYLYB3T21uVsiT7EsqSrpC",
       "added": "2026-11-01",
       "updated": "2026-11-01",
-      "blurb": "Watch Fluffy Blob battle Grumpy Rock, then scrub the action!"
+      "blurb": "Watch Fluffy Blob battle Grumpy Rock, then scrub the action!",
+      "thumb": "games/blob-fight/thumb.jpg"
     },
     {
       "name": "Sharks vs Wolves",
@@ -50,7 +51,8 @@
       "artifact": "https://claude.ai/artifact/ULDJURwbpeRA8hHKXFDDQP",
       "added": "2026-10-19",
       "updated": "2026-10-27",
-      "blurb": "Be Polly the parrot: build, fly, and survive the night!"
+      "blurb": "Be Polly the parrot: build, fly, and survive the night!",
+      "thumb": "games/pollycraft/thumb.jpg"
     },
     {
       "name": "Meatball Roll",
