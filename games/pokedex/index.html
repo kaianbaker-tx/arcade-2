@@ -1,0 +1,534 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pokédex</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: a red handheld Pokédex. Shell on the outside, a pale screen inside holding a grid of profile pictures. Single deliberate look. */
+:root {
+  color-scheme: light;
+  --shell: #c21a2b;
+  --shell-dark: #8e0f1d;
+  --shell-light: #e2394a;
+  --screen: #eef3ef;
+  --screen-edge: #cfd9d2;
+  --ink: #1b2430;
+  --muted: #5c6875;
+  --lens: #2d8fe0;
+  --gold: #f2c230;
+  --good: #1f9d55;
+  --bad: #d64545;
+  --tile: #ffffff;
+  --font-display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--shell-dark);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+.device {
+  max-width: 1100px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--shell-light), var(--shell) 120px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+  box-shadow: 0 0 0 4px var(--shell-dark) inset;
+}
+header.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.lens {
+  width: 64px; height: 64px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 35% 30%, #bfe3ff 0 12%, var(--lens) 30%, #11508a 100%);
+  border: 5px solid #fff; box-shadow: 0 3px 0 var(--shell-dark);
+}
+.leds { display: flex; gap: 8px; align-self: flex-start; padding-top: 4px; }
+.leds i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--shell-dark); }
+.leds i:nth-child(1) { background: #ff5964; }
+.leds i:nth-child(2) { background: var(--gold); }
+.leds i:nth-child(3) { background: #4cd07d; }
+h1 {
+  font-family: var(--font-display); font-weight: 700; color: #fff;
+  font-size: clamp(26px, 5vw, 38px); margin: 0; letter-spacing: .02em;
+  text-shadow: 0 3px 0 var(--shell-dark);
+}
+h1 small { display: block; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; text-shadow: none; }
+
+.tabs { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.tab {
+  font: 700 15px var(--font-display); letter-spacing: .04em;
+  border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer;
+  background: var(--shell-dark); color: #fff;
+}
+.tab[aria-selected="true"] { background: #fff; color: var(--shell); }
+.tab:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.screen {
+  margin-top: 14px; background: var(--screen); border-radius: 18px;
+  border: 6px solid #fff; box-shadow: 0 0 0 3px var(--shell-dark), 0 6px 0 3px var(--shell-dark);
+  padding: 16px;
+}
+.controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.controls input, .controls select {
+  font: 700 16px var(--font-body); padding: 10px 14px; border-radius: 12px;
+  border: 2px solid var(--screen-edge); background: #fff; color: var(--ink);
+}
+.controls input { flex: 1 1 220px; min-width: 0; }
+.status { color: var(--muted); font-weight: 700; margin: 12px 2px 0; }
+
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 12px; margin-top: 12px;
+}
+.mon {
+  background: var(--tile); border: 2px solid var(--screen-edge); border-radius: 16px;
+  padding: 8px 6px 10px; cursor: pointer; text-align: center; color: var(--ink);
+  font-family: var(--font-body); transition: transform .12s, border-color .12s;
+}
+.mon:hover { transform: translateY(-3px); border-color: var(--shell); }
+.mon img { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; }
+.mon .num { font: 700 12px var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; }
+.mon .nm { font-weight: 800; font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; }
+
+footer { color: #ffe3e6; font-size: 13px; text-align: center; margin-top: 18px; line-height: 1.5; }
+
+/* Detail overlay */
+.overlay {
+  position: fixed; inset: 0; z-index: 20; background: rgba(40, 6, 12, .72);
+  overflow-y: auto; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.panel {
+  max-width: 760px; margin: 0 auto; background: var(--screen); border-radius: 22px;
+  border: 6px solid #fff; box-shadow: 0 0 0 4px var(--shell);
+  padding: 18px; position: relative;
+}
+.close {
+  position: absolute; top: 10px; right: 10px; width: 42px; height: 42px; border-radius: 50%;
+  border: 0; background: var(--shell); color: #fff; font: 700 20px var(--font-display); cursor: pointer;
+}
+.hero { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.hero .pic {
+  width: 190px; height: 190px; flex: none; border-radius: 50%;
+  background: radial-gradient(circle, #fff 55%, var(--screen-edge) 100%);
+  display: grid; place-items: center; border: 4px solid var(--shell);
+}
+.hero .pic img { width: 88%; height: 88%; object-fit: contain; }
+.hero .info { flex: 1 1 240px; min-width: 0; }
+.hero h2 { font: 700 30px var(--font-display); margin: 0; text-wrap: balance; }
+.hero .genus { color: var(--muted); font-weight: 700; }
+.types { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+.type { color: #fff; font: 700 12px var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+.facts { display: flex; gap: 16px; color: var(--muted); font-weight: 700; font-size: 14px; flex-wrap: wrap; }
+
+.box { background: #fff; border-radius: 16px; border: 2px solid var(--screen-edge); padding: 14px; margin-top: 14px; }
+.box h3 { font: 700 15px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--shell); margin: 0 0 8px; }
+.entry { font-size: 17px; line-height: 1.55; margin: 0; max-width: 62ch; }
+.entry-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; color: var(--muted); font-size: 13px; font-weight: 700; flex-wrap: wrap; }
+.btn {
+  font: 700 15px var(--font-display); letter-spacing: .03em; border: 0; border-radius: 12px;
+  padding: 10px 16px; background: var(--shell); color: #fff; cursor: pointer; box-shadow: 0 3px 0 var(--shell-dark);
+}
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn.ghost { background: var(--screen); color: var(--ink); box-shadow: 0 3px 0 var(--screen-edge); }
+
+.cardpair { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tcg { margin: 0; border-radius: 14px; padding: 12px; text-align: center; }
+.tcg.rare { background: linear-gradient(160deg, #fff7d1, #ffe27a); }
+.tcg.common { background: var(--screen); }
+.tcg .label { font: 700 14px var(--font-display); letter-spacing: .1em; text-transform: uppercase; }
+.tcg img { width: 100%; max-width: 220px; border-radius: 10px; margin: 8px auto; display: block; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+.tcg .cname { font-weight: 800; }
+.tcg .meta { color: var(--muted); font-size: 13px; font-weight: 700; }
+.chip { display: inline-block; margin-top: 4px; background: var(--ink); color: #fff; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+.note { color: var(--muted); font-size: 14px; font-weight: 700; margin: 10px 0 0; }
+
+.evo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.stage { display: flex; flex-direction: column; gap: 8px; }
+.evo-mon { background: var(--screen); border: 2px solid var(--screen-edge); border-radius: 14px; padding: 6px; width: 120px; cursor: pointer; text-align: center; font: 800 13px var(--font-body); color: var(--ink); }
+.evo-mon.here { border-color: var(--shell); }
+.evo-mon img { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; }
+.evo-mon .how { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
+.arrow { font: 700 24px var(--font-display); color: var(--shell); }
+
+[hidden] { display: none !important; }
+
+/* Who's That Pokémon */
+.quiz { text-align: center; }
+.quiz h2 { font: 700 26px var(--font-display); margin: 0; }
+.shadow-wrap { width: min(280px, 80vw); aspect-ratio: 1; margin: 12px auto; border-radius: 50%; background: radial-gradient(circle, #fff 40%, #bfe3ff 100%); display: grid; place-items: center; border: 5px solid var(--lens); }
+.shadow-wrap img { width: 86%; height: 86%; object-fit: contain; filter: brightness(0); transition: filter .6s; }
+.shadow-wrap.show img { filter: none; }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 480px; margin: 0 auto; }
+.choice { font: 800 16px var(--font-body); padding: 14px 8px; border-radius: 14px; border: 3px solid var(--screen-edge); background: #fff; cursor: pointer; color: var(--ink); overflow-wrap: anywhere; }
+.choice.right { background: var(--good); border-color: var(--good); color: #fff; }
+.choice.wrong { background: var(--bad); border-color: var(--bad); color: #fff; }
+.score { display: flex; gap: 16px; justify-content: center; font: 700 16px var(--font-display); margin: 12px 0 4px; font-variant-numeric: tabular-nums; }
+.result { font: 700 20px var(--font-display); min-height: 28px; margin: 10px 0; }
+.quiz-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="device">
+  <header class="top">
+    <div class="lens" aria-hidden="true"></div>
+    <div class="leds" aria-hidden="true"><i></i><i></i><i></i></div>
+    <h1><small>Naiak Games</small>Pokédex</h1>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-dex" role="tab" aria-selected="true">Pokédex</button>
+    <button class="tab" id="tab-quiz" role="tab" aria-selected="false">Who's That Pokémon?</button>
+  </div>
+
+  <main class="screen">
+    <section id="view-dex">
+      <div class="controls">
+        <input id="search" type="search" placeholder="Search a name or number…" autocomplete="off">
+        <select id="gen" aria-label="Region">
+          <option value="0">All regions</option>
+          <option value="1">Kanto (1)</option>
+          <option value="2">Johto (2)</option>
+          <option value="3">Hoenn (3)</option>
+          <option value="4">Sinnoh (4)</option>
+          <option value="5">Unova (5)</option>
+          <option value="6">Kalos (6)</option>
+          <option value="7">Alola (7)</option>
+          <option value="8">Galar (8)</option>
+          <option value="9">Paldea (9)</option>
+        </select>
+      </div>
+      <p class="status" id="status">Loading Pokémon…</p>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <section id="view-quiz" class="quiz" hidden>
+      <h2>Who's That Pokémon?</h2>
+      <div class="score"><span>Streak: <b id="streak">0</b></span><span>Best: <b id="best">0</b></span></div>
+      <div class="shadow-wrap" id="shadow"><img id="shadow-img" alt="Mystery Pokémon"></div>
+      <div class="choices" id="choices"></div>
+      <p class="result" id="result" aria-live="polite"></p>
+      <div class="quiz-actions">
+        <button class="btn" id="next" hidden>Next Pokémon ▸</button>
+        <button class="btn ghost" id="see" hidden>Open its Pokédex page</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>Fan-made by Naiak Games. Not an official Pokémon app.<br>Pokémon info from PokéAPI. Card info from the Pokémon TCG API.</footer>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="d-name"></div>
+</div>
+
+<script>
+const TOTAL = 1025;
+const GENS = [[1,1025],[1,151],[152,251],[252,386],[387,493],[494,649],[650,721],[722,809],[810,905],[906,1025]];
+const ART = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+const TYPE_COLORS = { normal:"#9a9a7a", fire:"#e8682a", water:"#4a86e8", electric:"#e6b800", grass:"#4caf50", ice:"#5cc6d0", fighting:"#c0392b", poison:"#9b4fb0", ground:"#c69a4c", flying:"#7f8fe0", psychic:"#e84f86", bug:"#8fa31f", rock:"#a8913a", ghost:"#6a5296", dragon:"#5a3fe0", dark:"#5a4a40", steel:"#8a9aae", fairy:"#e07bb8" };
+const SPECIAL = { "nidoran-f":"Nidoran♀", "nidoran-m":"Nidoran♂", "mr-mime":"Mr. Mime", "mime-jr":"Mime Jr.", "mr-rime":"Mr. Rime", "farfetchd":"Farfetch'd", "sirfetchd":"Sirfetch'd", "ho-oh":"Ho-Oh", "porygon-z":"Porygon-Z", "type-null":"Type: Null", "jangmo-o":"Jangmo-o", "hakamo-o":"Hakamo-o", "kommo-o":"Kommo-o", "flabebe":"Flabébé", "wo-chien":"Wo-Chien", "chien-pao":"Chien-Pao", "ting-lu":"Ting-Lu", "chi-yu":"Chi-Yu" };
+// Card rarity ladder: lower number = more common, higher = rarer.
+const RARITY = { "Common":1, "Uncommon":2, "Rare":3, "Promo":3, "Classic Collection":4, "Rare Holo":4, "Rare BREAK":5, "Rare Prime":5, "LEGEND":6, "Rare Holo LV.X":6, "Rare Holo EX":6, "Rare Holo GX":6, "Rare Holo V":6, "Double Rare":6, "Rare Holo Star":8, "Rare Prism Star":7, "Rare ACE":7, "ACE SPEC Rare":7, "Radiant Rare":7, "Amazing Rare":7, "Rare Holo VMAX":7, "Rare Holo VSTAR":7, "Rare Shining":8, "Rare Shiny":8, "Shiny Rare":8, "Illustration Rare":8, "Trainer Gallery Rare Holo":8, "Rare Ultra":9, "Ultra Rare":9, "Rare Shiny GX":9, "Shiny Ultra Rare":9, "Rare Rainbow":10, "Rare Secret":10, "Special Illustration Rare":11, "Hyper Rare":11 };
+
+const $ = id => document.getElementById(id);
+const pretty = s => SPECIAL[s] || s.split("-").map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+const idFromUrl = u => Number(u.split("/").filter(Boolean).pop());
+const pad = n => "#" + String(n).padStart(4, "0");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+const cache = new Map();
+function getJSON(url, ms = 20000) {
+  if (cache.has(url)) return cache.get(url);
+  const p = (async () => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const r = await fetch(url, { signal: ctrl.signal });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  })();
+  cache.set(url, p);
+  p.catch(() => cache.delete(url));
+  return p;
+}
+
+let ALL = [];
+
+/* ---------- Pokédex grid ---------- */
+async function loadList() {
+  try {
+    const data = await getJSON(`https://pokeapi.co/api/v2/pokemon-species?limit=${TOTAL}`);
+    ALL = data.results.map(r => ({ id: idFromUrl(r.url), slug: r.name, name: pretty(r.name) })).sort((a, b) => a.id - b.id);
+  } catch (e) {
+    $("status").innerHTML = "This Pokédex needs to reach the Pokémon websites. Open it on the arcade website to play! <button class='btn small' id='retry-list'>Try again</button>";
+    $("retry-list").onclick = () => { $("status").textContent = "Loading Pokémon…"; loadList(); };
+    return;
+  }
+  renderGrid();
+}
+
+function renderGrid() {
+  const q = $("search").value.trim().toLowerCase().replace(/^#0*/, "");
+  const [lo, hi] = GENS[Number($("gen").value)];
+  const list = ALL.filter(p => p.id >= lo && p.id <= hi && (!q || p.name.toLowerCase().includes(q) || String(p.id) === q));
+  $("status").textContent = list.length ? `${list.length} Pokémon. Tap a picture to open its page.` : "No Pokémon found. Try another name.";
+  $("grid").innerHTML = list.map(p => `
+    <button class="mon" data-id="${p.id}" aria-label="Open ${esc(p.name)}">
+      <img src="${ART(p.id)}" alt="" loading="lazy" width="200" height="200">
+      <div class="num">${pad(p.id)}</div>
+      <div class="nm">${esc(p.name)}</div>
+    </button>`).join("");
+}
+$("grid").addEventListener("click", e => { const b = e.target.closest(".mon"); if (b) openMon(Number(b.dataset.id)); });
+$("search").addEventListener("input", renderGrid);
+$("gen").addEventListener("change", renderGrid);
+
+/* ---------- Detail page ---------- */
+let current = null;
+async function openMon(id) {
+  current = id;
+  const panel = $("panel");
+  $("overlay").hidden = false;
+  document.body.style.overflow = "hidden";
+  const quick = ALL.find(p => p.id === id);
+  panel.innerHTML = `<button class="close" id="close" aria-label="Close">✕</button>
+    <div class="hero"><div class="pic"><img src="${ART(id)}" alt=""></div>
+    <div class="info"><div class="num">${pad(id)}</div><h2 id="d-name">${esc(quick ? quick.name : "")}</h2><p class="genus">Loading…</p></div></div>`;
+  $("overlay").scrollTop = 0;
+  $("close").focus();
+
+  let mon, species;
+  try {
+    [mon, species] = await Promise.all([
+      getJSON(`https://pokeapi.co/api/v2/pokemon/${id}`),
+      getJSON(`https://pokeapi.co/api/v2/pokemon-species/${id}`)
+    ]);
+  } catch (e) {
+    if (current !== id) return;
+    panel.querySelector(".genus").innerHTML = `Couldn't reach the Pokédex. Check the internet and <button class="btn small" id="retry">Try again</button>`;
+    $("retry").onclick = () => openMon(id);
+    return;
+  }
+  if (current !== id) return;
+
+  const en = arr => arr.filter(x => x.language.name === "en");
+  const name = (en(species.names)[0] || {}).name || pretty(species.name);
+  const genus = (en(species.genera)[0] || {}).genus || "";
+  const seen = new Set();
+  const entries = en(species.flavor_text_entries)
+    .map(f => ({ text: f.flavor_text.replace(/[\f\n\r­]+/g, " ").replace(/\s+/g, " ").trim(), game: pretty(f.version.name) }))
+    .filter(f => !seen.has(f.text) && seen.add(f.text))
+    .reverse();
+  let entryIdx = 0;
+
+  const types = mon.types.map(t => `<span class="type" style="background:${TYPE_COLORS[t.type.name] || "#777"}">${t.type.name}</span>`).join("");
+  panel.innerHTML = `<button class="close" id="close" aria-label="Close">✕</button>
+    <div class="hero">
+      <div class="pic"><img src="${ART(id)}" alt="${esc(name)}"></div>
+      <div class="info">
+        <div class="num">${pad(id)}</div>
+        <h2 id="d-name">${esc(name)}</h2>
+        <div class="genus">${esc(genus)}</div>
+        <div class="types">${types}</div>
+        <div class="facts"><span>Height ${(mon.height / 10).toFixed(1)} m</span><span>Weight ${(mon.weight / 10).toFixed(1)} kg</span></div>
+      </div>
+    </div>
+    <div class="box">
+      <h3>Pokédex Entry</h3>
+      <p class="entry" id="entry"></p>
+      <div class="entry-meta"><span id="entry-game"></span>${entries.length > 1 ? `<button class="btn small ghost" id="next-entry">Next entry ▸</button>` : ""}</div>
+    </div>
+    <div class="box">
+      <h3>Trading Cards</h3>
+      <div id="cards"><p class="note">Searching the card collection…</p></div>
+    </div>
+    <div class="box">
+      <h3>Evolutions</h3>
+      <div id="evo"><button class="btn" id="show-evo">Show evolutions</button></div>
+    </div>`;
+  $("close").focus();
+
+  const showEntry = () => {
+    const e = entries[entryIdx];
+    $("entry").textContent = e ? e.text : "No Pokédex entry yet.";
+    $("entry-game").textContent = e ? `From Pokémon ${e.game} (${entryIdx + 1} of ${entries.length})` : "";
+  };
+  showEntry();
+  if ($("next-entry")) $("next-entry").onclick = () => { entryIdx = (entryIdx + 1) % entries.length; showEntry(); };
+
+  $("show-evo").onclick = () => loadEvo(species.evolution_chain && species.evolution_chain.url, id);
+  loadCards(name, id);
+}
+
+function closeMon() {
+  current = null;
+  $("overlay").hidden = true;
+  document.body.style.overflow = "";
+}
+$("overlay").addEventListener("click", e => {
+  if (e.target.id === "overlay" || e.target.id === "close") closeMon();
+  const evo = e.target.closest(".evo-mon");
+  if (evo) openMon(Number(evo.dataset.id));
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("overlay").hidden) closeMon();
+});
+
+/* ---------- Trading cards ---------- */
+function bestPrice(card) {
+  const prices = (card.tcgplayer && card.tcgplayer.prices) || {};
+  let best = 0;
+  for (const k in prices) best = Math.max(best, prices[k].market || prices[k].mid || 0);
+  return best;
+}
+const rank = c => RARITY[c.rarity] ?? 5;
+
+async function loadCards(name, id) {
+  const box = $("cards");
+  const clean = name.replace(/’/g, "'");
+  const oneWord = !/[\s.:]/.test(clean);
+  const q = oneWord ? `name:${clean}*` : `name:"${clean}"`;
+  const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q + " supertype:Pokémon")}&pageSize=250&select=id,name,rarity,images,set,tcgplayer`;
+  let cards;
+  try {
+    const data = await getJSON(url, 30000);
+    const pattern = new RegExp("^" + clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[\\s-])", "i");
+    cards = (data.data || []).filter(c => c.rarity && c.images && pattern.test(c.name));
+  } catch (e) {
+    if (current !== id) return;
+    box.innerHTML = `<p class="note">The card shop is busy right now.</p><button class="btn small" id="retry-cards">Try again</button>`;
+    $("retry-cards").onclick = () => { box.innerHTML = `<p class="note">Searching the card collection…</p>`; loadCards(name, id); };
+    return;
+  }
+  if (current !== id) return;
+  if (!cards.length) { box.innerHTML = `<p class="note">No trading cards found for ${esc(name)} yet.</p>`; return; }
+
+  const date = c => (c.set && c.set.releaseDate) || "";
+  const rarest = [...cards].sort((a, b) => rank(b) - rank(a) || bestPrice(b) - bestPrice(a) || date(b).localeCompare(date(a)))[0];
+  const common = [...cards].sort((a, b) => rank(a) - rank(b) || bestPrice(a) - bestPrice(b) || date(a).localeCompare(date(b)))[0];
+
+  const show = (c, label, cls) => {
+    const p = bestPrice(c);
+    return `<figure class="tcg ${cls}">
+      <div class="label">${label}</div>
+      <img src="${c.images.small}" data-big="${c.images.large || c.images.small}" alt="${esc(c.name)} card" loading="lazy">
+      <div class="cname">${esc(c.name)}</div>
+      <div class="meta">${esc(c.set ? c.set.name : "")}${c.set && c.set.releaseDate ? " · " + c.set.releaseDate.slice(0, 4) : ""}</div>
+      <span class="chip">${esc(c.rarity)}</span>
+      ${p ? `<div class="meta">Worth about $${p.toFixed(2)}</div>` : ""}
+    </figure>`;
+  };
+  box.innerHTML = `<div class="cardpair">${show(rarest, "★ Rarest card", "rare")}${rarest.id === common.id ? "" : show(common, "Most common card", "common")}</div>
+    <p class="note">Found ${cards.length} ${esc(name)} card${cards.length === 1 ? "" : "s"}.</p>`;
+}
+
+/* ---------- Evolutions ---------- */
+function howText(d) {
+  if (!d) return "";
+  const t = d.trigger && d.trigger.name;
+  if (t === "level-up") {
+    if (d.min_level) return "Lv. " + d.min_level;
+    if (d.min_happiness) return "Friendship" + (d.time_of_day ? " (" + d.time_of_day + ")" : "");
+    if (d.known_move) return "Knows " + pretty(d.known_move.name);
+    if (d.location) return "Level up at a special place";
+    if (d.time_of_day) return "Level up (" + d.time_of_day + ")";
+    return "Level up";
+  }
+  if (t === "use-item" && d.item) return "Use " + pretty(d.item.name);
+  if (t === "trade") return d.held_item ? "Trade holding " + pretty(d.held_item.name) : "Trade";
+  return t ? pretty(t) : "";
+}
+
+async function loadEvo(url, id) {
+  const box = $("evo");
+  if (!url) { box.innerHTML = `<p class="note">No evolution info.</p>`; return; }
+  box.innerHTML = `<p class="note">Loading evolutions…</p>`;
+  let data;
+  try { data = await getJSON(url); }
+  catch (e) {
+    if (current !== id) return;
+    box.innerHTML = `<p class="note">Couldn't load evolutions.</p><button class="btn small" id="retry-evo">Try again</button>`;
+    $("retry-evo").onclick = () => loadEvo(url, id);
+    return;
+  }
+  if (current !== id) return;
+  const stages = [];
+  (function walk(node, s) {
+    (stages[s] = stages[s] || []).push({ id: idFromUrl(node.species.url), name: pretty(node.species.name), how: howText(node.evolution_details[0]) });
+    node.evolves_to.forEach(n => walk(n, s + 1));
+  })(data.chain, 0);
+  if (stages.length === 1) { box.innerHTML = `<p class="note">${esc(stages[0][0].name)} does not evolve.</p>`; return; }
+  box.innerHTML = `<div class="evo">${stages.map((st, i) => `${i ? `<span class="arrow" aria-hidden="true">▸</span>` : ""}
+    <div class="stage">${st.map(m => `<button class="evo-mon${m.id === id ? " here" : ""}" data-id="${m.id}">
+      <img src="${ART(m.id)}" alt="" loading="lazy">${esc(m.name)}${m.how ? `<span class="how">${esc(m.how)}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
+    <p class="note">Tap one to open its page.</p>`;
+}
+
+/* ---------- Who's That Pokémon? ---------- */
+let streak = 0, best = 0, answer = null, locked = false;
+try { best = Number(localStorage.getItem("wtp-best")) || 0; } catch (e) {}
+$("best").textContent = best;
+
+function randId() { return 1 + Math.floor(Math.random() * TOTAL); }
+function nameOf(id) { const p = ALL.find(x => x.id === id); return p ? p.name : "Pokémon " + id; }
+
+function newRound() {
+  locked = false;
+  answer = randId();
+  const opts = new Set([answer]);
+  while (opts.size < 4) opts.add(randId());
+  const list = [...opts].sort(() => Math.random() - 0.5);
+  $("shadow").classList.remove("show");
+  $("shadow-img").src = ART(answer);
+  $("result").textContent = "";
+  $("next").hidden = true;
+  $("see").hidden = true;
+  $("choices").innerHTML = list.map(id => `<button class="choice" data-id="${id}">${esc(nameOf(id))}</button>`).join("");
+}
+$("choices").addEventListener("click", e => {
+  const b = e.target.closest(".choice");
+  if (!b || locked) return;
+  locked = true;
+  const pick = Number(b.dataset.id);
+  $("shadow").classList.add("show");
+  document.querySelectorAll(".choice").forEach(c => { if (Number(c.dataset.id) === answer) c.classList.add("right"); });
+  if (pick === answer) {
+    streak++;
+    if (streak > best) { best = streak; try { localStorage.setItem("wtp-best", best); } catch (e) {} }
+    $("result").textContent = `Yes! It's ${nameOf(answer)}!`;
+  } else {
+    b.classList.add("wrong");
+    streak = 0;
+    $("result").textContent = `It's ${nameOf(answer)}!`;
+  }
+  $("streak").textContent = streak;
+  $("best").textContent = best;
+  $("next").hidden = false;
+  $("see").hidden = false;
+  $("next").focus();
+});
+$("next").onclick = newRound;
+$("see").onclick = () => openMon(answer);
+
+/* ---------- Tabs ---------- */
+function showTab(which) {
+  const quiz = which === "quiz";
+  $("view-dex").hidden = quiz;
+  $("view-quiz").hidden = !quiz;
+  $("tab-dex").setAttribute("aria-selected", String(!quiz));
+  $("tab-quiz").setAttribute("aria-selected", String(quiz));
+  if (quiz && answer === null && ALL.length) newRound();
+}
+$("tab-dex").onclick = () => showTab("dex");
+$("tab-quiz").onclick = () => showTab("quiz");
+
+loadList();
+</script>
+
+</body></html>

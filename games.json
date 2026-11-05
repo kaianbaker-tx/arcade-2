@@ -1,6 +1,22 @@
 {
   "games": [
     {
+      "name": "Baguette Bike",
+      "slug": "baguette-bike",
+      "artifact": "https://claude.ai/artifact/Buaqn4935wN8aWf23Pd8po",
+      "added": "2026-11-05",
+      "updated": "2026-11-05",
+      "blurb": "Bike through Paris grabbing baguettes and dodging animals!"
+    },
+    {
+      "name": "Pokédex",
+      "slug": "pokedex",
+      "artifact": "https://claude.ai/artifact/W6xnrwU5QrUbDm3LrAKC4P",
+      "added": "2026-11-05",
+      "updated": "2026-11-05",
+      "blurb": "Guess Who's That Pokémon and browse every Pokémon card!"
+    },
+    {
       "name": "Blob Fight",
       "slug": "blob-fight",
       "artifact": "https://claude.ai/artifact/UYLYB3T21uVsiT7EsqSrpC",
