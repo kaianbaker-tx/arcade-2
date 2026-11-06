@@ -53,6 +53,7 @@ h1{font-family:var(--display);font-weight:400;font-size:46px;line-height:1.15;ma
 #count{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:8;
   font-family:var(--display);font-size:96px;color:var(--bread);text-shadow:0 6px 0 var(--crust)}
 
+#rideName{position:fixed;left:0;right:0;top:24%;text-align:center;pointer-events:none;z-index:8;font:700 26px var(--body);color:var(--cream);text-shadow:0 3px 0 rgba(20,14,40,.6);padding-left:16px;padding-right:16px}
 .pad{position:fixed;left:0;right:0;bottom:0;display:none;justify-content:space-between;gap:12px;z-index:6;
   padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -77,6 +78,7 @@ h1{font-family:var(--display);font-weight:400;font-size:46px;line-height:1.15;ma
 </div>
 
 <div id="count" hidden></div>
+<div id="rideName" hidden></div>
 
 <div class="screen" id="titleScreen">
   <div class="card">
@@ -136,17 +138,25 @@ $("stage").appendChild(renderer.domElement);
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(60,1,0.1,500);
 
-// dusk sky
-(function(){
-  const c=document.createElement("canvas");c.width=16;c.height=256;const g=c.getContext("2d");
-  const gr=g.createLinearGradient(0,0,0,256);
-  gr.addColorStop(0,"#2f2563");gr.addColorStop(.45,"#8a5fa3");gr.addColorStop(.75,"#f2a3b5");gr.addColorStop(1,"#ffd3a6");
-  g.fillStyle=gr;g.fillRect(0,0,16,256);
-  scene.background=new THREE.CanvasTexture(c);
-})();
+// sky changes every ride
+const SKIES=[
+  {name:"Sunset ride",stops:["#2f2563","#8a5fa3","#f2a3b5","#ffd3a6"],fog:"#e9a7b9",hi:"#ffd8e4",lo:"#4a3c72",sun:"#ffc79a",s:0.75},
+  {name:"Morning ride",stops:["#6fa8e0","#a9d4f0","#e6f0f2","#fff3dc"],fog:"#d6e5ee",hi:"#ffffff",lo:"#7d86a8",sun:"#fff1d0",s:0.85},
+  {name:"Night ride",stops:["#0d0b2a","#1e1a52","#3b2f6e","#6a4f8e"],fog:"#2c2552",hi:"#9b92e0",lo:"#1b1636",sun:"#a0a8ff",s:0.45},
+  {name:"Golden ride",stops:["#e2705a","#f4a067","#ffd08a","#fff0c8"],fog:"#f3c596",hi:"#ffe6c4",lo:"#6b4a5c",sun:"#ffcf8a",s:0.8},
+  {name:"Pink sky ride",stops:["#5b3a8a","#c27ab8","#f7b6cf","#ffe1e8"],fog:"#f0b8cc",hi:"#ffe0ee",lo:"#5a3f78",sun:"#ffb8c8",s:0.75}
+];
+const skyCanvas=document.createElement("canvas");skyCanvas.width=16;skyCanvas.height=256;
+const skyTex=new THREE.CanvasTexture(skyCanvas);scene.background=skyTex;
 scene.fog=new THREE.Fog("#e9a7b9",45,160);
-scene.add(new THREE.HemisphereLight("#ffd8e4","#4a3c72",0.95));
+const hemi=new THREE.HemisphereLight("#ffd8e4","#4a3c72",0.95);scene.add(hemi);
 const sun=new THREE.DirectionalLight("#ffc79a",0.75);sun.position.set(-6,10,4);scene.add(sun);
+function setSky(k){
+  const g=skyCanvas.getContext("2d"),gr=g.createLinearGradient(0,0,0,256);
+  k.stops.forEach((c,i)=>gr.addColorStop([0,.45,.75,1][i],c));g.fillStyle=gr;g.fillRect(0,0,16,256);skyTex.needsUpdate=true;
+  scene.fog.color.set(k.fog);hemi.color.set(k.hi);hemi.groundColor.set(k.lo);sun.color.set(k.sun);sun.intensity=k.s;
+}
+setSky(SKIES[0]);
 
 const matCache={};
 function mat(color,opts){
@@ -194,13 +204,24 @@ function facadeTex(base,lit){
 }
 const facadeMats=["#efe2c8","#f3dcc6","#e8dccf","#f1e6d2","#e9d2c2"].map(b=>new THREE.MeshPhongMaterial({map:facadeTex(b,.45),flatShading:true,shininess:4}));
 const roofGeo=new THREE.CylinderGeometry(0.62,1,1,4);roofGeo.rotateY(Math.PI/4);
+const allBuildings=[],roofColors=["#717da6","#5f6a8f","#7b88b0","#6a5f8f","#4f8a86"];
+function shuffleBuildings(){
+  allBuildings.forEach(b=>{
+    const p=b.userData.parts,fm=facadeMats[Math.floor(Math.random()*facadeMats.length)];
+    p.body.material=[fm,fm,p.top,p.top,fm,fm];
+    const sy=rand(0.8,1.25);p.body.scale.y=sy;const h=p.h*sy;
+    p.roof.position.y=h+1.2;p.roof.material=mat(roofColors[Math.floor(Math.random()*roofColors.length)]);
+    p.chims.forEach(c=>{c.position.y=h+2.4;c.visible=Math.random()<0.7;});
+  });
+}
 function makeBuilding(sgn,w,d,h){
   const g=new THREE.Group();
   const fm=facadeMats[Math.floor(Math.random()*facadeMats.length)],top=mat("#6f7aa0");
   const body=new THREE.Mesh(new THREE.BoxGeometry(d,h,w),[fm,fm,top,top,fm,fm]);body.position.y=h/2;g.add(body);
   const roof=new THREE.Mesh(roofGeo,mat("#717da6"));roof.scale.set(d*0.72,2.4,w*0.72);roof.position.y=h+1.2;g.add(roof);
-  for(let i=0;i<2;i++)box(0.5,1.1,0.7,"#c7795b",rand(-1.5,1.5),h+2.4,rand(-w/3,w/3),g);
+  const chims=[];for(let i=0;i<2;i++)chims.push(box(0.5,1.1,0.7,"#c7795b",rand(-1.5,1.5),h+2.4,rand(-w/3,w/3),g));
   g.position.x=sgn*(6.6+d/2);
+  g.userData.parts={body,roof,chims,h,top};allBuildings.push(g);
   return g;
 }
 [-1,1].forEach(sgn=>{
@@ -500,8 +521,17 @@ renderer.domElement.addEventListener("pointerup",e=>{
   $(id).addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();fn();});
 });
 
+const STREETS=["Rue des Fleurs","Rue du Croissant","Avenue des Chats","Rue de la Lune","Boulevard du Fromage","Rue des Pigeons","Avenue des Étoiles","Rue du Petit Pont","Rue des Macarons","Quai de la Seine"];
+let lastSky=0,lastStreet=-1;
+function pickNew(n,lastI){let i;do{i=Math.floor(Math.random()*n);}while(n>1&&i===lastI);return i;}
+function newRide(){
+  lastSky=pickNew(SKIES.length,lastSky);lastStreet=pickNew(STREETS.length,lastStreet);
+  const sky=SKIES[lastSky];setSky(sky);shuffleBuildings();
+  const tw=window.__tower,side=Math.random()<.5?-1:1;tw.position.x=side*rand(28,40);tw.position.z=-rand(170,205);
+  $("rideName").innerHTML=sky.name+" on<br>"+STREETS[lastStreet];
+}
 function start(){
-  initAudio();reset();
+  initAudio();reset();newRide();$("rideName").hidden=false;
   ["titleScreen","winScreen","loseScreen"].forEach(id=>$(id).hidden=true);
   S.state="count";S.count=3;$("count").hidden=false;$("count").textContent="3";
 }
@@ -536,6 +566,7 @@ addEventListener("resize",resize);resize();
 
 let last=performance.now();
 reset();
+lastSky=Math.floor(Math.random()*SKIES.length);setSky(SKIES[lastSky]);shuffleBuildings();
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;S.t+=dt;
   window.__tower.userData.tip.visible=Math.sin(S.t*4)>-0.3;
@@ -543,7 +574,7 @@ function frame(now){
   if(S.state==="count"){
     const before=Math.ceil(S.count);S.count-=dt;const after=Math.ceil(S.count);
     if(after!==before)$("count").textContent=after>0?String(after):"Allez!";
-    if(S.count<=-0.6){$("count").hidden=true;S.state="play";}
+    if(S.count<=-0.6){$("count").hidden=true;$("rideName").hidden=true;S.state="play";}
   }
 
   let moveZ=0;
