@@ -1,0 +1,413 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Rocky Fight</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: one notebook page — the fight canvas front and center, chunky crayon buttons and a keyframe timeline under it */
+:root{
+  --paper:#f6f8fc; --line:#cddbef; --ink:#2b2a3a; --blob:#d6a874; --rock:#a89fae; --pow:#ff5a3c; --sun:#ffd23f; --white:#ffffff;
+  --display:"Gaegu","Comic Sans MS","Chalkboard SE",cursive;
+  --body:"Patrick Hand","Comic Sans MS","Chalkboard SE",cursive;
+  color-scheme:light;
+}
+html,body{background:var(--paper);color:var(--ink)}
+body{
+  font-family:var(--body);font-size:19px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:20px 36px;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--line) 31px 32px);
+}
+main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:2px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(44px,9vw,78px);margin:0;line-height:.95;transform:rotate(-2deg);transform-origin:left;text-wrap:balance}
+h1 span{color:var(--pow)}
+.sub{margin:0;font-size:20px}
+.stage{border:3px solid var(--ink);border-radius:14px 24px 16px 20px / 20px 14px 24px 16px;background:var(--paper);overflow:hidden;box-shadow:6px 7px 0 var(--ink)}
+canvas{display:block;width:100%;max-width:100%;aspect-ratio:16/9;cursor:pointer}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+button{font-family:var(--display);font-weight:700;font-size:23px;color:var(--ink);background:var(--white);border:3px solid var(--ink);border-radius:12px 18px 10px 16px;padding:5px 18px;box-shadow:3px 3px 0 var(--ink);cursor:pointer}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+button[aria-pressed="true"]{background:var(--sun)}
+button:focus-visible,input:focus-visible{outline:3px dashed var(--pow);outline-offset:3px}
+.timeline{display:flex;flex-direction:column;gap:2px}
+.timeline label{font-size:19px}
+input[type=range]{width:100%;margin:0;accent-color:var(--pow)}
+.keys{position:relative;height:20px;margin:0 8px}
+.keys span{position:absolute;top:3px;width:12px;height:12px;margin-left:-6px;background:var(--sun);border:2px solid var(--ink);transform:rotate(45deg)}
+.tip{margin:0;max-width:62ch}
+</style>
+
+<main>
+  <header>
+    <h1>Rocky <span>Fight!</span></h1>
+    <p class="sub">A hand-drawn cartoon by Naiak Games</p>
+  </header>
+
+  <div class="stage"><canvas id="c" aria-label="Rocky the little rock fights Big Grumpy Boulder"></canvas></div>
+
+  <div class="controls">
+    <button id="play" type="button">Pause</button>
+    <button id="replay" type="button">Replay</button>
+    <button id="slow" type="button" aria-pressed="false">Slow-mo</button>
+    <button id="sound" type="button" aria-pressed="false">Sound: off</button>
+  </div>
+
+  <div class="timeline">
+    <label for="scrub">Drag to scrub the fight</label>
+    <input id="scrub" type="range" min="0" max="12" step="0.01" value="0">
+    <div class="keys" id="keys"></div>
+  </div>
+  <p class="tip">The yellow diamonds are the big moments. Animators call them <b>keyframes</b>. The computer fills in all the frames in between.</p>
+</main>
+
+<script>
+const LOOP = 12, PI = Math.PI;
+const css = getComputedStyle(document.documentElement);
+const C = n => css.getPropertyValue(n).trim();
+const INK=C('--ink'), PAPER=C('--paper'), LINE=C('--line'), BLOB=C('--blob'), ROCK=C('--rock'), POW=C('--pow'), SUN=C('--sun'), WHITE=C('--white');
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let W = 800, H = 450, lw = 3;
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth || 800; H = W * 9 / 16;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  lw = Math.max(2, W / 280);
+}
+new ResizeObserver(resize).observe(cv); resize();
+
+/* ---------- keyframes: [time, value, ease] ---------- */
+const EASE = { lin:x=>x, in:x=>x*x, out:x=>1-(1-x)*(1-x), io:x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2 };
+function val(keys, t){
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++){
+    const b = keys[i];
+    if (t <= b[0]){ const a = keys[i-1], p = (t-a[0])/(b[0]-a[0]); return a[1] + (b[1]-a[1]) * EASE[b[2]||'io'](p); }
+  }
+  return keys[keys.length-1][1];
+}
+const T = {
+  bx:[[0,.26],[2.2,.26],[3.0,.56,'lin'],[3.7,.56],[4.2,.47,'in'],[6.0,.47],[7.5,.56],[8.2,.24,'in'],[8.7,.30,'out'],[9.4,.46],[12,.46]],
+  by:[[0,0],[2.2,0],[2.6,-.40,'out'],[3.0,0,'in'],[12,0]],
+  bsy:[[0,1],[2.05,1],[2.2,.72],[2.32,1.18],[2.6,1.05],[2.95,1.1],[3.05,.68],[3.3,1],[4.05,1],[4.15,.85],[4.3,1.08],[4.6,1],[5.3,1],[5.42,.5],[5.62,1.3],[5.85,.92],[6.0,1],[8.15,1],[8.25,.7],[8.5,1],[12,1]],
+  brot:[[0,0],[6.0,0],[7.5,PI*6,'in'],[8.2,PI*10,'lin'],[12,PI*10]],
+  punch:[[0,0],[4.1,0],[4.28,1,'out'],[4.6,1],[4.85,0]],
+  rx:[[0,1.15],[1.8,.74,'out'],[2.2,.74],[3.0,.30,'lin'],[3.4,.28,'out'],[4.28,.28],[4.6,.13,'out'],[5.0,.13],[5.36,.36,'in'],[5.9,.12,'out'],[7.7,.12],[8.1,.15],[8.2,.15],[9.0,.08,'out'],[12,.08]],
+  ry:[[0,0],[8.2,0],[8.6,-.42,'out'],[9.0,0,'in'],[12,0]],
+  rrot:[[0,0],[8.2,0],[9.0,-PI*3,'lin'],[12,-PI*3]]
+};
+const FX = [
+  {t:1.8, dust:'r', snd:'thud'},
+  {t:2.25, txt:'WHOOSH!', who:'b', snd:'whoosh', size:.8},
+  {t:3.0, dust:'b', snd:'thud'},
+  {t:3.35, dust:'r'},
+  {t:4.3, txt:'POW!', who:'r', snd:'pow', size:1},
+  {t:5.38, txt:'BOING!', who:'b', snd:'boing', size:1},
+  {t:6.4, txt:'SPIN!', who:'b', snd:'spin', size:.8},
+  {t:8.2, txt:'KA-POW!', who:'r', snd:'bigpow', size:1.3},
+  {t:9.0, dust:'r', snd:'thud'},
+  {t:9.3, txt:'ROCKY WINS!', big:true, snd:'win'}
+];
+
+/* ---------- hand-drawn helpers ---------- */
+function rnd(n){ const x = Math.sin(n*127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+function shapePath(cx, cy, rx, ry, bumps, amt, jit, seed){
+  const N = Math.max(36, bumps*6), pts = [];
+  for (let i = 0; i < N; i++){
+    const th = i/N*PI*2;
+    const r = 1 + amt*Math.abs(Math.sin(th*bumps/2)) + (rnd(seed+i)-.5)*jit;
+    pts.push([cx + Math.cos(th)*rx*r, cy + Math.sin(th)*ry*r]);
+  }
+  const m = (p,q) => [(p[0]+q[0])/2, (p[1]+q[1])/2];
+  ctx.beginPath();
+  const s = m(pts[N-1], pts[0]); ctx.moveTo(s[0], s[1]);
+  for (let i = 0; i < N; i++){ const p = pts[i], mm = m(p, pts[(i+1)%N]); ctx.quadraticCurveTo(p[0], p[1], mm[0], mm[1]); }
+  ctx.closePath();
+}
+function ink(w, color){ ctx.lineWidth = w; ctx.strokeStyle = color || INK; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(); }
+function wline(x1,y1,x2,y2,w,seed,color){
+  const j = w*1.2;
+  ctx.beginPath();
+  ctx.moveTo(x1+(rnd(seed)-.5)*j, y1+(rnd(seed+1)-.5)*j);
+  ctx.quadraticCurveTo((x1+x2)/2+(rnd(seed+2)-.5)*j*2, (y1+y2)/2+(rnd(seed+3)-.5)*j*2, x2+(rnd(seed+4)-.5)*j, y2+(rnd(seed+5)-.5)*j);
+  ink(w, color);
+}
+function blobShape(x,y,rx,ry,bumps,amt,jit,seed,fill,w){
+  shapePath(x,y,rx,ry,bumps,amt,jit,seed); ctx.fillStyle = fill; ctx.fill(); ink(w);
+}
+function eye(x,y,rx,ry,px,w){
+  ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,PI*2); ctx.fillStyle = WHITE; ctx.fill(); ink(w*.8);
+  ctx.beginPath(); ctx.arc(x+px, y+ry*.15, rx*.58, 0, PI*2); ctx.fillStyle = INK; ctx.fill();
+  ctx.beginPath(); ctx.arc(x+px-rx*.2, y-ry*.05, rx*.18, 0, PI*2); ctx.fillStyle = WHITE; ctx.fill();
+}
+
+/* ---------- scenery ---------- */
+function drawScene(S, gy){
+  ctx.fillStyle = PAPER; ctx.fillRect(0,0,W,H);
+  ctx.lineWidth = 1; ctx.strokeStyle = LINE;
+  for (let y = H*.1; y < H; y += H*.085){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(255,90,60,.35)'; ctx.beginPath(); ctx.moveTo(W*.05,0); ctx.lineTo(W*.05,H); ctx.stroke();
+  // sun
+  const sx = W*.88, sy = H*.17, sr = W*.042;
+  for (let i = 0; i < 10; i++){ const a = i/10*PI*2 + .2; wline(sx+Math.cos(a)*sr*1.35, sy+Math.sin(a)*sr*1.35, sx+Math.cos(a)*sr*1.85, sy+Math.sin(a)*sr*1.85, lw*.8, S+720+i*7); }
+  blobShape(sx,sy,sr,sr,1,0,.06,S+700,SUN,lw*.9);
+  // clouds
+  blobShape(W*.3,H*.15,W*.07,W*.035,10,.2,.05,S+800,WHITE,lw*.8);
+  blobShape(W*.6,H*.23,W*.05,W*.026,8,.2,.05,S+850,WHITE,lw*.8);
+  // ground
+  ctx.beginPath(); ctx.moveTo(-5, gy);
+  for (let i = 1; i <= 14; i++) ctx.lineTo(i*W/13, gy + (rnd(S+900+i)-.5)*lw*1.6);
+  ink(lw);
+  for (let i = 0; i < 9; i++){
+    const gx = W*(.08 + i*.11 + rnd(i)*.04);
+    for (let k = -1; k <= 1; k++) wline(gx, gy+H*.035, gx + k*W*.008, gy+H*.035 - H*.03, lw*.6, S+950+i*9+k, '#5aa55a');
+  }
+}
+
+/* ---------- characters ---------- */
+function drawShadow(x, gy, r, lift){
+  const s = 1 - Math.min(.6, lift);
+  ctx.fillStyle = 'rgba(43,42,58,.14)';
+  ctx.beginPath(); ctx.ellipse(x, gy+2, r*1.05*s, r*.17*s, 0, 0, PI*2); ctx.fill();
+}
+function fist(x, y, r, S, w){ blobShape(x, y, r, r*.9, 5, .14, .1, S, BLOB, w); wline(x-r*.3, y-r*.2, x+r*.1, y+r*.15, w*.5, S+5); }
+
+function drawBlob(x, gy, yOff, sy, rot, dir, mood, punch, armsUp, S){
+  const R = W*.075, sx = 1/Math.sqrt(sy), w = lw / ((sx+sy)/2);
+  drawShadow(x, gy, R*sx, -yOff/(H*.5));
+  ctx.save(); ctx.translate(x, gy+yOff); ctx.scale(sx, sy); ctx.translate(0, -R*.97); ctx.rotate(rot);
+  // back fist
+  fist(-dir*R*.95, armsUp ? -R*.85 : R*.25, R*.27, S+50, w);
+  // fluffy body
+  blobShape(0, 0, R, R*.92, 6, .13, .09, S, BLOB, w);
+  ctx.fillStyle = 'rgba(255,255,255,.4)'; shapePath(-R*.4, -R*.45, R*.22, R*.12, 3, .2, .15, S+9); ctx.fill();
+  wline(R*.55, -R*.6, R*.72, -R*.3, w*.7, S+20); wline(R*.72, -R*.3, R*.62, -R*.12, w*.7, S+24);
+  wline(-R*.75, R*.2, -R*.5, R*.45, w*.7, S+28);
+  ctx.fillStyle = 'rgba(43,42,58,.28)';
+  for (let k = 0; k < 6; k++){ ctx.beginPath(); ctx.arc((rnd(k+80)-.5)*R*1.3, (rnd(k+90)-.2)*R*1.1, R*.035, 0, PI*2); ctx.fill(); }
+  // face
+  const fx = dir*R*.22, ex1 = fx - R*.24, ex2 = fx + R*.24, ey = -R*.12;
+  ctx.fillStyle = 'rgba(255,110,150,.45)';
+  [ex1, ex2].forEach(ex => { ctx.beginPath(); ctx.ellipse(ex + (ex<fx?-1:1)*R*.08, R*.14, R*.11, R*.07, 0, 0, PI*2); ctx.fill(); });
+  if (mood === 'happy'){
+    [ex1, ex2].forEach((ex,i) => { ctx.beginPath(); ctx.arc(ex, ey+R*.05, R*.11, PI*1.1, PI*1.9); ink(w); });
+    ctx.beginPath(); ctx.arc(fx, R*.08, R*.22, .1, PI-.1); ctx.closePath(); ctx.fillStyle = INK; ctx.fill(); ink(w);
+    ctx.beginPath(); ctx.ellipse(fx, R*.24, R*.1, R*.05, 0, 0, PI*2); ctx.fillStyle = '#ff7f9a'; ctx.fill();
+  } else if (mood === 'ouch'){
+    [[ex1,1],[ex2,-1]].forEach(([ex,s]) => { ctx.beginPath(); ctx.moveTo(ex - s*R*.1, ey - R*.1); ctx.lineTo(ex + s*R*.08, ey); ctx.lineTo(ex - s*R*.1, ey + R*.1); ink(w); });
+    ctx.beginPath(); ctx.ellipse(fx, R*.2, R*.09, R*.12, 0, 0, PI*2); ctx.fillStyle = INK; ctx.fill();
+  } else {
+    eye(ex1, ey, R*.12, R*.16, dir*R*.04, w); eye(ex2, ey, R*.12, R*.16, dir*R*.04, w);
+    if (mood === 'fight'){
+      wline(ex1 - R*.14, ey - R*.3, ex1 + R*.12, ey - R*.2, w*1.2, S+60);
+      wline(ex2 + R*.14, ey - R*.3, ex2 - R*.12, ey - R*.2, w*1.2, S+66);
+      if (punch > .3){ ctx.beginPath(); ctx.ellipse(fx, R*.22, R*.14, R*.1, 0, 0, PI*2); ctx.fillStyle = INK; ctx.fill(); }
+      else wline(fx - R*.13, R*.22, fx + R*.13, R*.2, w, S+70);
+    } else {
+      ctx.beginPath(); ctx.arc(fx, R*.12, R*.13, .3, PI-.3); ink(w);
+    }
+  }
+  // front fist (punches!)
+  const fy = armsUp ? -R*.85 : R*.25 - R*.12*punch;
+  fist(dir*(R*.95 + R*1.0*punch), fy, R*.28, S+80, w);
+  ctx.restore();
+}
+
+function drawRock(x, gy, yOff, rot, dir, mood, S){
+  const R = W*.08;
+  drawShadow(x, gy, R*1.1, -yOff/(H*.5));
+  ctx.save(); ctx.translate(x, gy + yOff - R*.82); ctx.rotate(rot);
+  blobShape(0, 0, R*1.1, R*.85, 7, .1, .07, S+300, ROCK, lw);
+  wline(-R*.7, -R*.1, -R*.45, R*.25, lw*.7, S+320); wline(-R*.45, R*.25, -R*.5, R*.55, lw*.7, S+326);
+  wline(R*.5, -R*.55, R*.7, -R*.2, lw*.7, S+330);
+  ctx.fillStyle = 'rgba(43,42,58,.3)';
+  for (let i = 0; i < 7; i++){ ctx.beginPath(); ctx.arc((rnd(i+40)-.5)*R*1.5, (rnd(i+60)-.3)*R*1.1, R*.035, 0, PI*2); ctx.fill(); }
+  const fx = dir*R*.25, ex1 = fx - R*.24, ex2 = fx + R*.24, ey = -R*.18;
+  if (mood === 'dizzy'){
+    [ex1, ex2].forEach((ex,i) => { wline(ex-R*.1, ey-R*.1, ex+R*.1, ey+R*.1, lw, S+340+i); wline(ex+R*.1, ey-R*.1, ex-R*.1, ey+R*.1, lw, S+344+i); });
+    ctx.beginPath(); for (let k = 0; k <= 8; k++){ const px = fx - R*.25 + k*R*.0625, py = R*.25 + Math.sin(k*1.6)*R*.04; k ? ctx.lineTo(px,py) : ctx.moveTo(px,py); } ink(lw);
+    ctx.beginPath(); ctx.ellipse(fx + R*.1, R*.33, R*.06, R*.09, 0, 0, PI*2); ctx.fillStyle = '#ff7f9a'; ctx.fill(); ink(lw*.7);
+  } else if (mood === 'hit'){
+    [ex1, ex2].forEach((ex,i) => wline(ex-R*.11, ey, ex+R*.11, ey, lw*1.1, S+350+i));
+    ctx.beginPath(); ctx.ellipse(fx, R*.27, R*.13, R*.1, 0, 0, PI*2); ctx.fillStyle = INK; ctx.fill();
+  } else {
+    eye(ex1, ey, R*.1, R*.11, dir*R*.03, lw); eye(ex2, ey, R*.1, R*.11, dir*R*.03, lw);
+    wline(ex1 - R*.15, ey - R*.25, ex1 + R*.13, ey - R*.1, lw*1.8, S+360);
+    wline(ex2 + R*.15, ey - R*.25, ex2 - R*.13, ey - R*.1, lw*1.8, S+364);
+    ctx.beginPath(); ctx.moveTo(fx - R*.24, R*.3); ctx.quadraticCurveTo(fx, R*.12, fx + R*.24, R*.3); ctx.closePath();
+    ctx.fillStyle = WHITE; ctx.fill(); ink(lw*.9);
+    ctx.beginPath(); for (let k = 0; k <= 6; k++){ const px = fx - R*.2 + k*R*.067, py = R*.24 + (k%2 ? -R*.05 : 0); k ? ctx.lineTo(px,py) : ctx.moveTo(px,py); } ink(lw*.6);
+  }
+  ctx.restore();
+}
+
+/* ---------- effects ---------- */
+function burst(x, y, r, S){
+  ctx.beginPath();
+  const n = 12;
+  for (let i = 0; i < n*2; i++){
+    const a = i/(n*2)*PI*2, rr = (i%2 ? r*.6 : r) * (1 + (rnd(S+i)-.5)*.2);
+    i ? ctx.lineTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr) : ctx.moveTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr);
+  }
+  ctx.closePath(); ctx.fillStyle = SUN; ctx.fill(); ink(lw);
+}
+function word(txt, x, y, size, rot){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.font = `700 ${size}px Gaegu, "Comic Sans MS", cursive`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = lw*1.6; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.strokeText(txt, 0, 0);
+  ctx.fillStyle = POW; ctx.fillText(txt, 0, 0);
+  ctx.restore();
+}
+function star(x, y, r, a){
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++){ const ang = a + i/10*PI*2, rr = i%2 ? r*.45 : r; i ? ctx.lineTo(x+Math.cos(ang)*rr, y+Math.sin(ang)*rr) : ctx.moveTo(x+Math.cos(ang)*rr, y+Math.sin(ang)*rr); }
+  ctx.closePath(); ctx.fillStyle = SUN; ctx.fill(); ink(lw*.7);
+}
+
+/* ---------- one frame ---------- */
+function draw(t, real){
+  const S = (Math.floor(real*8) % 3) * 1000;   // the "boil": 3 wobbly versions of every line
+  const gy = H*.8;
+  ctx.save();
+  // camera shake on big hits
+  [[4.3,.25,1],[8.2,.35,1.8]].forEach(([at,d,k]) => { if (t>at && t<at+d){ const f = (1-(t-at)/d)*k*lw*2; ctx.translate(Math.sin(t*90)*f, Math.cos(t*70)*f); } });
+  drawScene(S, gy);
+
+  let bx = val(T.bx,t)*W, by = val(T.by,t)*H, bsy = val(T.bsy,t), brot = val(T.brot,t), punch = val(T.punch,t);
+  let rx = val(T.rx,t)*W, ry = val(T.ry,t)*H, rrot = val(T.rrot,t);
+  const bvx = (val(T.bx,t) - val(T.bx,t-.04)) / .04, rvx = (val(T.rx,t) - val(T.rx,t-.04)) / .04;
+
+  // little extra life
+  if (t < 2.05 || (t > 3.3 && t < 4.05) || (t > 4.85 && t < 5.3)) bsy *= 1 + Math.sin(t*7)*.04;
+  const win = t > 9.3;
+  if (win){ const p = (t-9.3)*2.2; by -= Math.abs(Math.sin(p*PI))*H*.13; if (Math.sin(p*PI) < .15 && Math.sin(p*PI) > -.15) bsy *= .85; }
+  if (t < 1.8 || (t > 7.7 && t < 8.1)) ry -= Math.abs(Math.sin(t*9))*H*.02;
+  if ((t > 4.28 && t < 4.6) || (t > 5.38 && t < 5.65)) rx += Math.sin(t*80)*lw*1.5;
+
+  const bdir = Math.abs(bvx) > .2 && t > 7.5 && t < 8.2 ? Math.sign(bvx) : (rx > bx ? 1 : -1);
+  const rdir = Math.abs(rvx) > .2 ? Math.sign(rvx) : (bx > rx ? 1 : -1);
+
+  let bm = t < 2.0 ? 'idle' : 'fight';
+  if (t > 5.36 && t < 5.75) bm = 'ouch';
+  if (t > 9.2) bm = 'happy';
+  let rm = 'angry';
+  if ((t > 4.28 && t < 4.9) || (t > 5.38 && t < 5.95) || (t > 8.2 && t < 9.0)) rm = 'hit';
+  if (t >= 9.0) rm = 'dizzy';
+
+  // speed lines
+  if (Math.abs(bvx) > .5){ const R = W*.075; for (let k = 0; k < 3; k++){ const yy = gy + by - R*(.5 + k*.5); wline(bx - Math.sign(bvx)*R*1.3, yy, bx - Math.sign(bvx)*R*(2.2+k*.3), yy, lw*.7, S+500+k*5); } }
+  if (Math.abs(rvx) > .5 && t < 8.2){ const R = W*.08; for (let k = 0; k < 3; k++){ const yy = gy - R*(.4 + k*.45); wline(rx - Math.sign(rvx)*R*1.4, yy, rx - Math.sign(rvx)*R*(2.3+k*.3), yy, lw*.7, S+520+k*5); } }
+  // spin swirls
+  if (t > 6.6 && t < 8.25){ const R = W*.075; ctx.save(); ctx.translate(bx, gy - R); for (let k = 0; k < 2; k++){ ctx.beginPath(); ctx.arc(0, 0, R*(1.35+k*.25), brot + k*PI, brot + k*PI + 1.6); ink(lw*.8, 'rgba(43,42,58,.6)'); } ctx.restore(); }
+
+  drawRock(rx, gy, ry, rrot, rdir, rm, S);
+  drawBlob(bx, gy, by, bsy, brot, bdir, bm, punch, win, S);
+
+  // dizzy stars
+  if (t > 9.0){ const R = W*.08; for (let k = 0; k < 3; k++){ const a = t*4 + k*PI*2/3; star(rx + Math.cos(a)*R*.9, gy - R*1.9 + Math.sin(a)*R*.25, R*.18, t*3); } }
+
+  // dust puffs + words
+  for (const f of FX){
+    const age = t - f.t;
+    if (f.dust && age > 0 && age < .5){
+      const x = (f.dust === 'b' ? bx : rx), k = age/.5;
+      ctx.globalAlpha = 1 - k;
+      for (let s = -1; s <= 1; s += 2) blobShape(x + s*W*(.05 + k*.06), gy - H*.02 - k*H*.02, W*.02*(1+k), W*.014*(1+k), 6, .15, .1, S+600+s, WHITE, lw*.6);
+      ctx.globalAlpha = 1;
+    }
+    if (f.txt && !f.big && age > 0 && age < .9){
+      const x = f.who === 'b' ? bx : rx, y = gy - H*.42;
+      const pop = age < .12 ? age/.12*1.25 : 1.25 - Math.min(.25, (age-.12)*1.5);
+      ctx.globalAlpha = age > .7 ? (.9-age)/.2 : 1;
+      if (f.t === 4.3 || f.t === 8.2) burst(x, y, W*.085*f.size*pop, S+400);
+      word(f.txt, x, y, W*.06*f.size*pop, -.12 + rnd(f.t)*.24);
+      ctx.globalAlpha = 1;
+    }
+  }
+  // big win
+  if (win){
+    const age = t - 9.3;
+    for (let i = 0; i < 28; i++){
+      const cx = W*rnd(i+3) + Math.sin(age*3+i)*W*.02, cy = -H*.05 + ((age*H*(.22+rnd(i+7)*.18) + rnd(i+11)*H*.4) % (H*.9));
+      wline(cx, cy, cx + W*.012, cy + W*.012*(rnd(i)>.5?1:-1), lw, S+i*3, [POW,SUN,BLOB,'#7ccf7c'][i%4]);
+    }
+    const pop = age < .2 ? age/.2*1.15 : 1.15 - Math.min(.15, (age-.2));
+    word('ROCKY WINS!', W*.5, H*.3, W*.1*pop, Math.sin(age*3)*.05);
+  }
+  // white flash
+  if (t > 8.2 && t < 8.32){ ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(-20,-20,W+40,H+40); }
+  ctx.restore();
+  // fade between loops
+  const fade = t > 11.5 ? (t-11.5)/.5 : t < .3 ? 1 - t/.3 : 0;
+  if (fade > 0){ ctx.globalAlpha = Math.min(1,fade); ctx.fillStyle = PAPER; ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1; }
+}
+
+/* ---------- sound (made with code, no files!) ---------- */
+let AC = null;
+function ac(){ if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); return AC; }
+function env(g, t0, a, d, peak){ g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0+a); g.gain.exponentialRampToValueAtTime(.0001, t0+a+d); }
+function tone(type, f0, f1, dur, vol){
+  const c = ac(), o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime;
+  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0+dur);
+  env(g, t0, .01, dur, vol); o.connect(g).connect(c.destination); o.start(t0); o.stop(t0+dur+.05);
+}
+function noise(dur, f0, f1, q, vol){
+  const c = ac(), n = Math.floor(c.sampleRate*dur), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random()*2 - 1;
+  const s = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain(), t0 = c.currentTime;
+  s.buffer = b; bp.type = 'bandpass'; bp.Q.value = q;
+  bp.frequency.setValueAtTime(f0, t0); bp.frequency.exponentialRampToValueAtTime(f1, t0+dur);
+  env(g, t0, dur*.3, dur*.7, vol); s.connect(bp).connect(g).connect(c.destination); s.start(t0);
+}
+const sfx = {
+  whoosh: () => noise(.4, 300, 2500, 1.2, .5),
+  thud: () => tone('sine', 110, 40, .18, .6),
+  pow: () => { noise(.18, 1500, 400, .8, .7); tone('square', 180, 50, .2, .2); },
+  boing: () => {
+    const c = ac(), o = c.createOscillator(), l = c.createOscillator(), lg = c.createGain(), g = c.createGain(), t0 = c.currentTime;
+    o.type = 'triangle'; o.frequency.setValueAtTime(120, t0); o.frequency.exponentialRampToValueAtTime(520, t0+.5);
+    l.frequency.value = 18; lg.gain.value = 40; l.connect(lg).connect(o.frequency);
+    env(g, t0, .01, .55, .45); o.connect(g).connect(c.destination); o.start(t0); l.start(t0); o.stop(t0+.6); l.stop(t0+.6);
+  },
+  spin: () => { for (let i = 0; i < 5; i++) setTimeout(() => tone('triangle', 300+i*120, 700+i*150, .2, .16), i*170); },
+  bigpow: () => { noise(.35, 2000, 200, .6, .9); tone('square', 150, 35, .35, .3); tone('sine', 80, 30, .4, .5); },
+  win: () => [523, 659, 784, 1047].forEach((f,i) => setTimeout(() => tone('triangle', f, f*1.01, .28, .25), i*120))
+};
+
+/* ---------- controls + loop ---------- */
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let t = reduce ? 4.35 : 0, playing = !reduce, speed = 1, soundOn = false, last = null;
+const playBtn = document.getElementById('play'), scrub = document.getElementById('scrub');
+const slowBtn = document.getElementById('slow'), soundBtn = document.getElementById('sound');
+function setPlaying(p){ playing = p; playBtn.textContent = p ? 'Pause' : 'Play'; }
+setPlaying(playing);
+playBtn.onclick = () => setPlaying(!playing);
+cv.onclick = () => setPlaying(!playing);
+document.getElementById('replay').onclick = () => { t = 0; setPlaying(true); };
+slowBtn.onclick = () => { speed = speed === 1 ? .35 : 1; slowBtn.setAttribute('aria-pressed', speed !== 1); };
+soundBtn.onclick = () => { soundOn = !soundOn; if (soundOn) ac(); soundBtn.textContent = 'Sound: ' + (soundOn ? 'on' : 'off'); soundBtn.setAttribute('aria-pressed', soundOn); };
+scrub.oninput = () => { t = +scrub.value; setPlaying(false); };
+
+const keys = document.getElementById('keys');
+FX.filter(f => f.txt).forEach(f => { const s = document.createElement('span'); s.style.left = (f.t/LOOP*100) + '%'; s.title = f.txt; keys.appendChild(s); });
+
+function fire(a, b){ if (!soundOn) return; for (const f of FX) if (f.snd && f.t > a && f.t <= b) sfx[f.snd](); }
+function frame(now){
+  if (last === null) last = now;
+  const dt = Math.min(.05, (now-last)/1000); last = now;
+  if (playing){
+    const prev = t; t += dt*speed;
+    if (t >= LOOP){ fire(prev, LOOP); t -= LOOP; fire(-1, t); } else fire(prev, t);
+    scrub.value = t;
+  }
+  draw(t, now/1000);
+  requestAnimationFrame(frame);
+}
+scrub.value = t;
+draw(t, 0);
+requestAnimationFrame(frame);
+</script>
+
+</body></html>

@@ -1,6 +1,222 @@
 {
   "games": [
     {
+      "name": "Rocky Fight",
+      "slug": "rocky-fight",
+      "artifact": "https://claude.ai/artifact/AomKrgBZ5iUU3Mzn54CKAd",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Watch Rocky battle Big Grumpy Boulder, then scrub the action!"
+    },
+    {
+      "name": "Blade of Embergrove",
+      "slug": "blade-of-embergrove",
+      "artifact": "https://claude.ai/artifact/75q5Zkqgu2nDcne77ipkWw",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Explore, bomb open the cave and beat Grumblerock the stone boss!"
+    },
+    {
+      "name": "Rocky's Pebble Quest",
+      "slug": "rocky-s-pebble-quest",
+      "artifact": "https://claude.ai/artifact/RZfUt13D9mVzkJ7SNnDQxb",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Roll, jump and SMASH through eight levels to the summit!"
+    },
+    {
+      "name": "Blobby Kraft",
+      "slug": "blobby-kraft",
+      "artifact": "https://claude.ai/artifact/GUVDuEBv4tubYqSywgwD3s",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Dig, build, craft and survive the night against the Grumbles!"
+    },
+    {
+      "name": "Gravel Dodge",
+      "slug": "gravel-dodge",
+      "artifact": "https://claude.ai/artifact/LKzSD53fCBStTxgdLyXBJq",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Dodge falling gravel and anvils while catching emeralds!"
+    },
+    {
+      "name": "Wool Echo",
+      "slug": "wool-echo",
+      "artifact": "https://claude.ai/artifact/XTK26mAFvzq1Z88gt6kFAN",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Watch the wool blocks light up, then copy the pattern!"
+    },
+    {
+      "name": "Boom Dig",
+      "slug": "boom-dig",
+      "artifact": "https://claude.ai/artifact/1cSug4P8sS8jyAdU2wwCvA",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Dig the grass field without uncovering a hidden boom block!"
+    },
+    {
+      "name": "Bullseye Bow",
+      "slug": "bullseye-bow",
+      "artifact": "https://claude.ai/artifact/NZKREaYFBtoKUDDBSk2gWJ",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Time your shots and hit the bullseye with ten arrows!"
+    },
+    {
+      "name": "Vine Snake",
+      "slug": "vine-snake",
+      "artifact": "https://claude.ai/artifact/AGnYoMHEsjGH5MsmSEBy8b",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Grow a leafy vine to the berries without bumping anything!"
+    },
+    {
+      "name": "Night Guard",
+      "slug": "night-guard",
+      "artifact": "https://claude.ai/artifact/Xbbg4ikr1dwcXrvu3s1MQN",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Bonk the Moaners before they reach your house!"
+    },
+    {
+      "name": "Fishing Hole",
+      "slug": "fishing-hole",
+      "artifact": "https://claude.ai/artifact/E1zWkSnKPFxZqq5DB7JspG",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Tap when the bobber dips to reel in fish and treasure!"
+    },
+    {
+      "name": "Rail Rush",
+      "slug": "rail-rush",
+      "artifact": "https://claude.ai/artifact/MQHKCNNRwRgPePZku27kN3",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Ride the minecart, switch lanes, dodge rocks and grab gold!"
+    },
+    {
+      "name": "Plank Bridge",
+      "slug": "plank-bridge",
+      "artifact": "https://claude.ai/artifact/8zcMKNhj5ad2zuEkCABjGU",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Grow a plank just right to cross the gap. Splash!"
+    },
+    {
+      "name": "Torch Maze",
+      "slug": "torch-maze",
+      "artifact": "https://claude.ai/artifact/HbjXuERxfe4mcH3mcH9JhR",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Race through dark mazes to find the glowing door!"
+    },
+    {
+      "name": "Leaf Leap",
+      "slug": "leaf-leap",
+      "artifact": "https://claude.ai/artifact/PzAj9Yi9o2UUr3uYVozryq",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Bounce Bobby up and up on leaves and super slime blocks!"
+    },
+    {
+      "name": "Ore Breaker",
+      "slug": "ore-breaker",
+      "artifact": "https://claude.ai/artifact/LXD8VvZEMDJBczjYuGQPH7",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Bounce a snowball off your plank to smash rows of ore!"
+    },
+    {
+      "name": "Ore Tapper",
+      "slug": "ore-tapper",
+      "artifact": "https://claude.ai/artifact/9xNxZhT3UZZvrbGgisjRG8",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Tap popping ores fast, but never tap a boom block!"
+    },
+    {
+      "name": "Sky Stacker",
+      "slug": "sky-stacker",
+      "artifact": "https://claude.ai/artifact/Jp3taQNS7uUdfRt3K2r9oL",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Drop sliding blocks to stack the tallest tower in the sky!"
+    },
+    {
+      "name": "Lava Leap",
+      "slug": "lava-leap",
+      "artifact": "https://claude.ai/artifact/SoqvfwGX64LjkKJJfsYMWn",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Jump Bobby over bubbling lava pits and grab gold nuggets!"
+    },
+    {
+      "name": "Pickaxe Power",
+      "slug": "pickaxe-power",
+      "artifact": "https://claude.ai/artifact/177JPKmJ7nVuMBB9DkCcGf",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Tap to mine tougher blocks and buy better pickaxes!"
+    },
+    {
+      "name": "Cave Flap",
+      "slug": "cave-flap",
+      "artifact": "https://claude.ai/artifact/Wah6QbPsEjJbx6YtEQen7d",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Flap a little bat through the gaps in the cave walls!"
+    },
+    {
+      "name": "Wool Catch",
+      "slug": "wool-catch",
+      "artifact": "https://claude.ai/artifact/DwrzzgYmNAnroDEMPE8ZUW",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Slide your minecart to catch falling wool and dodge boom blocks!"
+    },
+    {
+      "name": "Block Memory",
+      "slug": "block-memory",
+      "artifact": "https://claude.ai/artifact/Rr8YAzCYrKtzbhYsK7Yx4H",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Flip cards and find all eight matching block pairs, fast!"
+    },
+    {
+      "name": "Ore Crush",
+      "slug": "ore-crush",
+      "artifact": "https://claude.ai/artifact/2rZgfcd2kCMNkBK9oTRVoZ",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Swap shiny blocks to line up three before time runs out!"
+    },
+    {
+      "name": "Rocky's Banana Sky",
+      "slug": "rocky-s-banana-sky",
+      "artifact": "https://claude.ai/artifact/Nu189mZv7XViDD1syGq7mD",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Skydive with Rocky, dodge bananas and land on the glowing pad!"
+    },
+    {
+      "name": "Monster Trail",
+      "slug": "monster-trail",
+      "artifact": "https://claude.ai/artifact/WpcqGEJod9hkEUHx3hSCuw",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Pick a pal, battle in tall grass and collect all 8 monsters!"
+    },
+    {
+      "name": "Sphinx and the Hollow Deep",
+      "slug": "sphinx-and-the-hollow-deep",
+      "artifact": "https://claude.ai/artifact/KvB5GmUb85Krh9BwvCeCUw",
+      "added": "2026-11-07",
+      "updated": "2026-11-07",
+      "blurb": "Grab a sword, find the keys and smash Cragheart the stone giant!"
+    },
+    {
       "name": "Baguette Bike",
       "slug": "baguette-bike",
       "artifact": "https://claude.ai/artifact/Buaqn4935wN8aWf23Pd8po",
@@ -426,6 +642,16 @@
       "artifact": "https://claude.ai/artifact/Sa8CStfJqgo9WWkFd11SA8",
       "name": "Straw Hat Crew List",
       "why": "not a game (a One Piece crew list)"
+    },
+    {
+      "artifact": "https://claude.ai/artifact/Evnn6ZyDbjexaBKRDD66Ms",
+      "name": "Ash the Lookout",
+      "why": "not a game (a camera lookout helper)"
+    },
+    {
+      "artifact": "https://claude.ai/artifact/JUjWzHHciMmPwoqLgTLFNW",
+      "name": "Dungeon Crew Pixel Pack",
+      "why": "not a game (a sprite pack for his games)"
     }
   ]
 }

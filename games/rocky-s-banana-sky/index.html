@@ -1,0 +1,397 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Rocky's Banana Sky</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka:wght@500;700&display=swap">
+<style>
+/* Layout: one full-screen neon sky canvas, HUD across the top, big centered overlay cards */
+:root{
+  --night:#0b0820; --night2:#1a0f3d;
+  --pink:#ff3fb4; --cyan:#3ff6ff; --yellow:#ffe53f; --lime:#7dff6a;
+  --ink:#f4f0ff;
+  --display:'Bungee', 'Arial Black', Impact, sans-serif;
+  --body:'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--night);color:var(--ink);font-family:var(--body);}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+.hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:10px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  pointer-events:none;font-family:var(--display);font-size:clamp(14px,3.6vw,20px);}
+.hud .alt{color:var(--cyan);text-shadow:0 0 8px var(--cyan);}
+.hud .score{color:var(--yellow);text-shadow:0 0 8px var(--yellow);}
+.hud .hearts{color:var(--pink);text-shadow:0 0 8px var(--pink);letter-spacing:.1em;}
+#mute{pointer-events:auto;background:transparent;border:2px solid var(--cyan);color:var(--cyan);border-radius:10px;
+  font-family:var(--display);font-size:13px;padding:4px 8px;cursor:pointer;box-shadow:0 0 8px var(--cyan);}
+.overlay{position:fixed;inset:0;display:flex;overflow-y:auto;padding-block:12px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));}
+.card{max-width:440px;width:100%;text-align:center;background:rgba(11,8,32,.82);border:3px solid var(--pink);
+  border-radius:22px;box-shadow:0 0 24px var(--pink), inset 0 0 18px rgba(255,63,180,.25);padding:22px 20px;display:grid;gap:12px;margin:auto;}
+@media (max-height:560px){.card{padding:12px 16px;gap:6px}.card h1{font-size:28px}.card p{font-size:14px}.card button{font-size:18px;padding:8px 14px}}
+.card h1{font-family:var(--display);font-weight:400;margin:0;font-size:clamp(30px,8vw,46px);line-height:1;color:var(--yellow);
+  text-shadow:0 0 10px var(--yellow),0 0 26px var(--pink);text-wrap:balance;}
+.card p{margin:0;font-size:17px;line-height:1.4;}
+.card .small{font-size:14px;opacity:.85;}
+.card button{font-family:var(--display);font-size:22px;padding:12px 18px;border-radius:14px;border:3px solid var(--lime);
+  background:transparent;color:var(--lime);text-shadow:0 0 8px var(--lime);box-shadow:0 0 14px var(--lime);cursor:pointer;}
+.card button:hover,.card button:focus-visible{background:rgba(125,255,106,.15);outline:none;}
+.big{font-family:var(--display);font-size:30px;color:var(--cyan);text-shadow:0 0 10px var(--cyan);}
+.by{font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--cyan);opacity:.8;}
+</style>
+
+<canvas id="game"></canvas>
+<div class="hud">
+  <span class="alt" id="alt">3000 m</span>
+  <span class="score" id="score">0</span>
+  <span class="hearts" id="hearts">♥♥♥</span>
+  <button id="mute" aria-label="Sound on or off">🔊</button>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="card">
+    <h1>Rocky's Banana Sky</h1>
+    <p>Rocky jumped out of a plane! 🪂<br>Dodge the falling bananas 🍌</p>
+    <p>At the bottom, steer onto the <b style="color:var(--lime)">glowing landing pad</b> for a big bonus!</p>
+    <p class="small">⬅️ ➡️ arrow keys or A / D. On a phone, touch left or right.</p>
+    <button id="startBtn">JUMP!</button>
+    <p class="small">or press the SPACE bar</p>
+    <p class="small" id="best">Best: 0</p>
+    <span class="by">KAIAK GAMES</span>
+  </div>
+</div>
+
+<div class="overlay" id="endScreen" hidden>
+  <div class="card">
+    <h1 id="endTitle">Splat!</h1>
+    <p id="endMsg"></p>
+    <div class="big" id="endScore">0</div>
+    <p class="small" id="endBest"></p>
+    <button id="againBtn">JUMP AGAIN</button>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
+addEventListener('resize',resize);resize();
+
+/* ---------- saving the best score ---------- */
+function loadBest(){try{return +localStorage.getItem('rockyBananaBest')||0}catch(e){return 0}}
+function saveBest(v){try{localStorage.setItem('rockyBananaBest',v)}catch(e){}}
+let best=loadBest();
+document.getElementById('best').textContent='Best: '+best;
+
+/* ---------- sound (made with code, no files!) ---------- */
+let AC=null, muted=false, musicTimer=null, master=null;
+function audio(){ try{ if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=.5;master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }catch(e){AC=null;} }
+function tone(freq,start,dur,type='square',vol=.08){
+  const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=freq;
+  g.gain.setValueAtTime(vol,start);g.gain.exponentialRampToValueAtTime(.0001,start+dur);
+  o.connect(g);g.connect(master);o.start(start);o.stop(start+dur+.02);
+}
+function noise(dur,vol,filterFreq,sweepTo){
+  const len=AC.sampleRate*dur,buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  const s=AC.createBufferSource();s.buffer=buf;const f=AC.createBiquadFilter();f.type='bandpass';
+  const t=AC.currentTime;f.frequency.setValueAtTime(filterFreq,t);if(sweepTo)f.frequency.exponentialRampToValueAtTime(sweepTo,t+dur);
+  const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(master);s.start();
+}
+// Sound effect 1: WHOOSH when Rocky jumps
+function sfxWhoosh(){if(!AC)return;noise(1.2,.5,300,2400);}
+// Sound effect 2: SPLAT when a banana bonks Rocky
+function sfxSplat(){if(!AC)return;noise(.35,.7,600,120);const t=AC.currentTime;tone(160,t,.25,'sawtooth',.12);tone(90,t+.05,.3,'square',.1);}
+// Sound effect 3: POP when the parachute opens
+function sfxPop(){if(!AC)return;const t=AC.currentTime;tone(500,t,.08,'square',.15);tone(900,t+.06,.15,'triangle',.15);noise(.15,.4,1500);}
+function sfxWin(){if(!AC)return;const t=AC.currentTime;[523,659,784,1047].forEach((f,i)=>tone(f,t+i*.12,.25,'square',.09));}
+// Silly bouncy music loop
+const bass=[130.8,0,196,0,164.8,0,196,0, 146.8,0,220,0,174.6,0,220,0];
+const mel=[523,659,784,659, 880,784,659,0, 587,698,880,698, 784,659,587,0];
+let step=0,nextT=0;
+function musicTick(){
+  if(!AC)return;
+  while(nextT<AC.currentTime+.2){
+    const b=bass[step%16],m=mel[(step>>0)%16];
+    if(b)tone(b,nextT,.16,'triangle',.12);
+    if(step%2===0&&m)tone(m*(1+(Math.floor(step/32)%2)*0.122),nextT,.12,'square',.04);
+    if(step%4===2)noise(.04,.08,6000);
+    nextT+=.15;step++;
+  }
+}
+function startMusic(){if(!AC)return;stopMusic();nextT=AC.currentTime+.05;step=0;musicTimer=setInterval(musicTick,50);}
+function stopMusic(){if(musicTimer)clearInterval(musicTimer);musicTimer=null;}
+document.getElementById('mute').onclick=()=>{muted=!muted;document.getElementById('mute').textContent=muted?'🔇':'🔊';if(master)master.gain.value=muted?0:.5;};
+
+/* ---------- controls ---------- */
+const keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '&&(state==='menu'||(state==='over'&&!document.getElementById('endScreen').hidden)))start();if(['arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+let touchDir=0;
+cv.addEventListener('pointerdown',e=>{touchDir=e.clientX<W/2?-1:1;});
+cv.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')touchDir=e.clientX<W/2?-1:1;});
+addEventListener('pointerup',()=>touchDir=0);addEventListener('pointercancel',()=>touchDir=0);
+
+/* ---------- game stuff ---------- */
+const START_ALT=3000, FALL_SPEED=60; // meters per second
+let state='menu', rocky, bananas, clouds, stars, sparks, alt, score, lives, hurtT, spawnT, shake, landing, t0, last;
+function makeStars(){stars=[];for(let i=0;i<70;i++)stars.push({x:Math.random(),y:Math.random(),s:Math.random()*1.6+.4,tw:Math.random()*6});}
+function makeClouds(){clouds=[];for(let i=0;i<7;i++)clouds.push({x:Math.random()*W,y:Math.random()*H,w:80+Math.random()*120,sp:.6+Math.random()*.8,c:Math.random()<.5?'cyan':'pink'});}
+makeStars();makeClouds();
+
+/* ---------- the plane intro: Rocky jumps out! ---------- */
+let introT=0, plane=null;
+function updateIntro(dt){
+  introT+=dt;
+  clouds.forEach(c=>{c.y-=H*.25*c.sp*dt;if(c.y<-60){c.y=H+60;c.x=Math.random()*W;}});
+  if(introT<1.4){
+    plane.x+=(W*.5-plane.x)*Math.min(1,dt*2.5);
+    rocky.x=plane.x;rocky.y=plane.y;
+  }else{
+    if(!plane.jumped){plane.jumped=true;sfxWhoosh();}
+    plane.x+=W*.5*dt;
+    const k=Math.min(1,(introT-1.4)/1),e=1-(1-k)*(1-k);
+    rocky.y=plane.y+(H*.62-plane.y)*e;
+  }
+  if(introT>=2.4)state='fall';
+}
+function drawPlane(time){
+  const L=rocky.r*7,h=rocky.r*1.9;
+  ctx.save();ctx.translate(plane.x,plane.y);ctx.lineWidth=3;ctx.lineJoin='round';
+  glow('#ff3fb4',18);ctx.strokeStyle='#ff3fb4';ctx.fillStyle='#1a1240';
+  // tail fin
+  ctx.beginPath();ctx.moveTo(-L*.36,-h*.2);ctx.lineTo(-L*.5,-h*1.1);ctx.lineTo(-L*.26,-h*.35);ctx.closePath();ctx.fill();ctx.stroke();
+  // body
+  ctx.beginPath();ctx.ellipse(0,0,L/2,h/2,0,0,7);ctx.fill();ctx.stroke();
+  // wing
+  ctx.strokeStyle='#3ff6ff';glow('#3ff6ff',14);
+  ctx.beginPath();ctx.moveTo(L*.12,h*.15);ctx.lineTo(-L*.12,h*.95);ctx.lineTo(L*.02,h*.95);ctx.lineTo(L*.26,h*.15);ctx.closePath();ctx.fill();ctx.stroke();
+  // windows
+  ctx.fillStyle='#3ff6ff';[L*.16,L*.27].forEach(wx=>{ctx.beginPath();ctx.arc(wx,-h*.1,h*.1,0,7);ctx.fill();});
+  ctx.beginPath();ctx.arc(L*.4,-h*.12,h*.13,0,7);ctx.fill();
+  // door (open after the jump)
+  ctx.strokeStyle='#ffe53f';glow('#ffe53f',12);
+  ctx.fillStyle=plane.jumped?'#0b0820':'#2a2550';
+  ctx.beginPath();ctx.rect(-rocky.r*.9,-h*.38,rocky.r*1.8,h*.76);ctx.fill();ctx.stroke();
+  // spinning propeller
+  ctx.strokeStyle='#f4f0ff';glow('#f4f0ff',10);const p=Math.abs(Math.sin(time*.05))*h*.55;
+  ctx.beginPath();ctx.moveTo(L/2+4,-p);ctx.lineTo(L/2+4,p);ctx.stroke();
+  ctx.restore();
+  if(state==='intro'&&introT>1.3&&introT<2.3){
+    ctx.save();ctx.textAlign='center';ctx.fillStyle='#ffe53f';glow('#ffe53f',20);
+    ctx.font=`${Math.round(rocky.r*1.6)}px ${getComputedStyle(document.documentElement).getPropertyValue('--display')}`;
+    ctx.fillText('JUMP!',W/2,H*.45);ctx.restore();
+  }
+}
+
+function reset(){
+  rocky={x:W/2,y:H*.62,vx:0,r:Math.max(22,Math.min(W,H)*.045),blink:0};
+  bananas=[];sparks=[];alt=START_ALT;score=0;lives=3;hurtT=0;spawnT=0;shake=0;
+  landing=null;makeClouds();updateHud();
+}
+function updateHud(){
+  document.getElementById('alt').textContent=Math.max(0,Math.ceil(alt))+' m';
+  document.getElementById('score').textContent=score;
+  document.getElementById('hearts').textContent='♥'.repeat(lives)+'♡'.repeat(3-lives);
+}
+
+function start(){
+  document.getElementById('startScreen').hidden=true;document.getElementById('endScreen').hidden=true;
+  resize();audio();reset();state='intro';introT=0;plane={x:-W*.25,y:H*.17,jumped:false};rocky.x=plane.x;rocky.y=plane.y;startMusic();
+  document.getElementById('startScreen').hidden=true;document.getElementById('endScreen').hidden=true;
+  last=performance.now();
+}
+document.getElementById('startBtn').onclick=start;
+document.getElementById('againBtn').onclick=start;
+
+function spawnBanana(){
+  const size=rocky.r*(0.75+Math.random()*.4);
+  const progress=1-alt/START_ALT;
+  bananas.push({x:size+Math.random()*(W-size*2),y:-size*2,vy:(H*.38)+(H*.28)*Math.random()+progress*H*.2,
+    size,rot:Math.random()*6,spin:(Math.random()-.5)*6,wob:Math.random()*6,passed:false});
+}
+
+function burst(x,y,color,n=14){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=60+Math.random()*220;sparks.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.6+Math.random()*.4,color});}}
+
+function update(dt){
+  // steer Rocky
+  let dir=(keys['arrowleft']||keys['a']?-1:0)+(keys['arrowright']||keys['d']?1:0)+touchDir;
+  dir=Math.max(-1,Math.min(1,dir));
+  const accel=W*3.2, maxV=landing&&landing.chute?W*.45:W*.8;
+  rocky.vx+=dir*accel*dt; rocky.vx*=Math.pow(dir?0.9:0.82,dt*60);
+  rocky.vx=Math.max(-maxV,Math.min(maxV,rocky.vx));
+  rocky.x+=rocky.vx*dt; rocky.x=Math.max(rocky.r,Math.min(W-rocky.r,rocky.x));
+  rocky.blink-=dt; if(rocky.blink<-3)rocky.blink=.15;
+  if(hurtT>0)hurtT-=dt; if(shake>0)shake-=dt;
+
+  // clouds rush upward so it feels like falling
+  const cloudSpeed=landing&&landing.chute?H*.15:H*.9;
+  clouds.forEach(c=>{c.y-=cloudSpeed*c.sp*dt;if(c.y<-60){c.y=H+60;c.x=Math.random()*W;}});
+
+  if(state==='fall'){
+    alt-=FALL_SPEED*dt;
+    // MORE BANANAS as you get lower!
+    const progress=1-alt/START_ALT;
+    const perSec=1.2+progress*5.5;
+    spawnT-=dt; if(spawnT<=0){spawnBanana();spawnT=1/perSec*(0.6+Math.random()*.8);}
+    if(alt<=0){alt=0;beginLanding();}
+  }
+
+  // bananas
+  bananas.forEach(b=>{
+    b.y+=b.vy*dt;b.rot+=b.spin*dt;b.wob+=dt*3;b.x+=Math.sin(b.wob)*20*dt;
+    const dx=b.x-rocky.x,dy=b.y-rocky.y;
+    if(!b.hit&&hurtT<=0&&state!=='over'&&Math.hypot(dx,dy)<rocky.r*.8+b.size*.45){
+      b.hit=true;lives--;hurtT=1.2;shake=.3;sfxSplat();burst(b.x,b.y,'#ffe53f',18);
+      if(lives<=0)gameOver(false);
+    }
+    if(!b.passed&&!b.hit&&b.y>rocky.y+rocky.r){b.passed=true;score+=10;}
+  });
+  bananas=bananas.filter(b=>b.y<H+80&&!b.hit);
+
+  sparks.forEach(s=>{s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=300*dt;s.life-=dt;});
+  sparks=sparks.filter(s=>s.life>0);
+
+  if(landing)updateLanding(dt);
+  updateHud();
+}
+
+/* ---------- the new thing: a parachute landing! ---------- */
+function beginLanding(){
+  state='land';sfxPop();
+  landing={chute:true,t:0,groundY:H+120,padW:Math.max(90,W*.2),padX:0};
+  landing.padX=landing.padW/2+Math.random()*(W-landing.padW);
+}
+function updateLanding(dt){
+  landing.t+=dt;
+  const targetGround=H*.88;
+  landing.groundY+=(targetGround-landing.groundY)*Math.min(1,dt*.9);
+  rocky.y+=((landing.groundY-rocky.r*1.05)-rocky.y)*Math.min(1,dt*.55);
+  if(landing.t>4.5&&state==='land'){
+    const onPad=Math.abs(rocky.x-landing.padX)<landing.padW/2;
+    score+=lives*100;
+    if(onPad){score+=500;burst(rocky.x,rocky.y,'#7dff6a',40);sfxWin();}
+    else burst(rocky.x,rocky.y+rocky.r,'#3ff6ff',20);
+    gameOver(true,onPad);
+  }
+}
+
+function gameOver(landed,onPad){
+  state='over';stopMusic();
+  const isBest=score>best; if(isBest){best=score;saveBest(best);}
+  setTimeout(()=>{
+    document.getElementById('endTitle').textContent=!landed?'SPLAT! 🍌':onPad?'PERFECT LANDING!':'You landed!';
+    document.getElementById('endMsg').textContent=!landed?'Too many bananas bonked Rocky.':onPad?'Right on the pad! +500 bonus':'So close to the pad. Try to land on the green glow!';
+    document.getElementById('endScore').textContent=score+' pts';
+    document.getElementById('endBest').textContent=isBest?'⭐ NEW BEST! ⭐':'Best: '+best;
+    document.getElementById('best').textContent='Best: '+best;
+    document.getElementById('endScreen').hidden=false;
+    document.getElementById('againBtn').focus();
+  },landed?900:700);
+}
+
+/* ---------- drawing ---------- */
+function glow(color,blur){ctx.shadowColor=color;ctx.shadowBlur=blur;}
+function drawSky(time){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  const p=state==='menu'?0:1-alt/START_ALT;
+  g.addColorStop(0,'#0b0820');g.addColorStop(1,`rgb(${26+p*40},${15+p*10},${61+p*30})`);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  stars.forEach(s=>{ctx.globalAlpha=.4+.6*Math.abs(Math.sin(time*.002+s.tw));ctx.fillStyle='#f4f0ff';ctx.fillRect(s.x*W,s.y*H*.9,s.s,s.s);});
+  ctx.globalAlpha=1;
+  // neon speed lines
+  if(state==='fall'){ctx.strokeStyle='rgba(63,246,255,.25)';ctx.lineWidth=2;for(let i=0;i<8;i++){const x=(i*137+time*.05)%W;const y=(time*1.4+i*211)%H;ctx.beginPath();ctx.moveTo(x,H-y);ctx.lineTo(x,H-y-40);ctx.stroke();}}
+}
+function drawCloud(c){
+  ctx.save();const col=c.c==='cyan'?'#3ff6ff':'#ff3fb4';glow(col,14);ctx.strokeStyle=col;ctx.globalAlpha=.55;ctx.lineWidth=2.5;
+  const w=c.w;ctx.beginPath();
+  ctx.arc(c.x-w*.25,c.y,w*.18,Math.PI*.9,Math.PI*1.9);ctx.arc(c.x+w*.02,c.y-w*.08,w*.24,Math.PI*1.1,Math.PI*1.95);
+  ctx.arc(c.x+w*.3,c.y,w*.17,Math.PI*1.2,Math.PI*.1);ctx.lineTo(c.x-w*.4,c.y+w*.17);ctx.closePath();ctx.stroke();ctx.restore();
+}
+function drawBanana(b){
+  ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot);const s=b.size;
+  glow('#ffe53f',16);ctx.strokeStyle='#ffe53f';ctx.lineWidth=3.5;ctx.fillStyle='rgba(255,229,63,.25)';
+  ctx.beginPath();ctx.moveTo(-s*.55,-s*.25);ctx.quadraticCurveTo(0,s*.6,s*.55,-s*.25);ctx.quadraticCurveTo(0,s*.25,-s*.55,-s*.25);
+  ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.strokeStyle='#7dff6a';glow('#7dff6a',8);ctx.beginPath();ctx.moveTo(s*.55,-s*.25);ctx.lineTo(s*.65,-s*.4);ctx.stroke();
+  ctx.restore();
+}
+function drawRocky(time){
+  const r=rocky.r, x=rocky.x, y=rocky.y;
+  if(hurtT>0&&Math.floor(time/80)%2===0)return;
+  ctx.save();
+  // parachute
+  if(landing&&landing.chute){
+    const open=Math.min(1,landing.t*3);const cw=r*3*open,cy=y-r*3.2;
+    glow('#ff3fb4',18);ctx.strokeStyle='#ff3fb4';ctx.lineWidth=3;ctx.fillStyle='rgba(255,63,180,.2)';
+    ctx.beginPath();ctx.ellipse(x,cy,cw,r*1.3*open,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#3ff6ff';glow('#3ff6ff',8);ctx.lineWidth=1.5;
+    [-1,-.4,.4,1].forEach(k=>{ctx.beginPath();ctx.moveTo(x+cw*k,cy);ctx.lineTo(x+r*.5*k,y-r*.6);ctx.stroke();});
+  }
+  // arms and legs flapping in the wind
+  const flap=landing&&landing.chute?0.3:Math.sin(time*.02)*.5;
+  ctx.strokeStyle='#3ff6ff';glow('#3ff6ff',10);ctx.lineWidth=4;ctx.lineCap='round';
+  [[-1,-.3],[1,-.3]].forEach(([s,oy])=>{ctx.beginPath();ctx.moveTo(x+s*r*.8,y+oy*r);ctx.lineTo(x+s*r*1.6,y+oy*r-r*.6-flap*r*s*.3);ctx.stroke();});
+  [[-1],[1]].forEach(([s])=>{ctx.beginPath();ctx.moveTo(x+s*r*.4,y+r*.85);ctx.lineTo(x+s*r*.9,y+r*1.5+flap*r*.3*s);ctx.stroke();});
+  // rock body (lumpy blob)
+  const tilt=rocky.vx/(W*3);
+  ctx.translate(x,y);ctx.rotate(tilt);
+  glow('#3ff6ff',20);ctx.fillStyle='#2a2550';ctx.strokeStyle='#3ff6ff';ctx.lineWidth=3.5;
+  ctx.beginPath();
+  for(let i=0;i<=10;i++){const a=i/10*Math.PI*2;const rr=r*(1+[0,.06,-.04,.08,-.02,.05,-.06,.04,.07,-.03,0][i]);const px=Math.cos(a)*rr,py=Math.sin(a)*rr*.92;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.closePath();ctx.fill();ctx.stroke();
+  // rock spots
+  ctx.shadowBlur=0;ctx.fillStyle='rgba(63,246,255,.25)';
+  [[-.45,.35,.13],[.4,.45,.1],[.5,-.5,.08]].forEach(([a,b,c])=>{ctx.beginPath();ctx.arc(a*r,b*r,c*r,0,7);ctx.fill();});
+  // goggles + eyes
+  ctx.fillStyle='#f4f0ff';ctx.shadowBlur=0;
+  [-.35,.35].forEach(ex=>{ctx.beginPath();ctx.arc(ex*r,-r*.2,r*.22,0,7);ctx.fill();});
+  ctx.fillStyle='#0b0820';
+  const look=Math.max(-.08,Math.min(.08,rocky.vx/(W*5)));
+  if(rocky.blink>0){ctx.fillRect(-.5*r,-r*.22,r*.3,r*.05);ctx.fillRect(.2*r,-r*.22,r*.3,r*.05);}
+  else [-.35,.35].forEach(ex=>{ctx.beginPath();ctx.arc((ex+look)*r,-r*.18,r*.11,0,7);ctx.fill();});
+  // mouth: big O when falling, smile when chute is open, ouch when hurt
+  ctx.strokeStyle='#ffe53f';ctx.fillStyle='#0b0820';ctx.lineWidth=2.5;glow('#ffe53f',8);ctx.beginPath();
+  if(hurtT>0){ctx.moveTo(-r*.25,r*.45);ctx.lineTo(-r*.08,r*.35);ctx.lineTo(r*.08,r*.45);ctx.lineTo(r*.25,r*.35);ctx.stroke();}
+  else if(landing&&landing.chute){ctx.arc(0,r*.3,r*.25,.2,Math.PI-.2);ctx.stroke();}
+  else{ctx.ellipse(0,r*.42,r*.14,r*.18,0,0,7);ctx.fill();ctx.stroke();}
+  ctx.restore();
+}
+function drawGround(){
+  if(!landing)return;const gy=landing.groundY;
+  ctx.save();glow('#7dff6a',16);ctx.strokeStyle='#7dff6a';ctx.lineWidth=3;ctx.fillStyle='#0f2a1a';
+  ctx.beginPath();ctx.moveTo(0,gy);for(let x=0;x<=W;x+=40)ctx.lineTo(x,gy+Math.sin(x*.03)*6);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();ctx.stroke();
+  // landing pad
+  const pw=landing.padW,px=landing.padX;const pulse=.6+.4*Math.sin(performance.now()*.008);
+  ctx.globalAlpha=pulse;ctx.fillStyle='rgba(125,255,106,.35)';ctx.fillRect(px-pw/2,gy-6,pw,12);
+  ctx.globalAlpha=1;ctx.strokeRect(px-pw/2,gy-6,pw,12);
+  ctx.fillStyle='#7dff6a';ctx.font=`16px ${getComputedStyle(document.documentElement).getPropertyValue('--display')}`;ctx.textAlign='center';
+  ctx.fillText('LAND HERE',px,gy+34);
+  ctx.restore();
+}
+function drawSparks(){sparks.forEach(s=>{ctx.globalAlpha=Math.max(0,s.life);ctx.fillStyle=s.color;glow(s.color,10);ctx.fillRect(s.x-2,s.y-2,4,4);});ctx.globalAlpha=1;ctx.shadowBlur=0;}
+
+function frame(now){
+  if(innerWidth!==W||innerHeight!==H)resize();
+  try{
+  const dt=Math.min(.05,(now-(last||now))/1000);last=now;
+  if(state==='intro')updateIntro(dt);
+  else if(state==='fall'||state==='land')update(dt);
+  if(plane&&state!=='intro'&&state!=='menu')plane.x+=W*.5*dt;
+  if(state==='over'){sparks.forEach(s=>{s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=300*dt;s.life-=dt;});sparks=sparks.filter(s=>s.life>0);}
+  ctx.save();
+  if(shake>0)ctx.translate((Math.random()-.5)*12,(Math.random()-.5)*12);
+  drawSky(now);
+  if(state==='menu'){clouds.forEach(c=>{c.y-=H*.2*c.sp*dt;if(c.y<-60){c.y=H+60;c.x=Math.random()*W;}});}
+  clouds.forEach(drawCloud);ctx.shadowBlur=0;
+  drawGround();
+  if(state!=='menu'){if(plane&&plane.x<W+rocky.r*8)drawPlane(now);bananas.forEach(drawBanana);ctx.shadowBlur=0;drawRocky(now);}
+  drawSparks();
+  ctx.restore();
+  }catch(err){ctx.restore();console.error(err);}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+
+</body></html>
