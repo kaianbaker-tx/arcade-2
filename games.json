@@ -19,15 +19,6 @@
       "thumb": "games/blade-of-embergrove/thumb.jpg"
     },
     {
-      "name": "Rocky's Pebble Quest",
-      "slug": "rocky-s-pebble-quest",
-      "artifact": "https://claude.ai/artifact/RZfUt13D9mVzkJ7SNnDQxb",
-      "added": "2026-11-07",
-      "updated": "2026-11-07",
-      "blurb": "Roll, jump and SMASH through eight levels to the summit!",
-      "thumb": "games/rocky-s-pebble-quest/thumb.jpg"
-    },
-    {
       "name": "Blobby Kraft",
       "slug": "blobby-kraft",
       "artifact": "https://claude.ai/artifact/GUVDuEBv4tubYqSywgwD3s",
@@ -679,6 +670,11 @@
       "artifact": "https://claude.ai/artifact/JUjWzHHciMmPwoqLgTLFNW",
       "name": "Dungeon Crew Pixel Pack",
       "why": "not a game (a sprite pack for his games)"
+    },
+    {
+      "name": "Rocky's Pebble Quest",
+      "artifact": "https://claude.ai/artifact/RZfUt13D9mVzkJ7SNnDQxb",
+      "why": "Kaian wants it only on his Arcade by Kaiak Games"
     }
   ]
 }
