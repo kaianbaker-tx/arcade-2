@@ -6,7 +6,8 @@
       "artifact": "https://claude.ai/artifact/AomKrgBZ5iUU3Mzn54CKAd",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Watch Rocky battle Big Grumpy Boulder, then scrub the action!"
+      "blurb": "Watch Rocky battle Big Grumpy Boulder, then scrub the action!",
+      "thumb": "games/rocky-fight/thumb.jpg"
     },
     {
       "name": "Blade of Embergrove",
@@ -14,7 +15,8 @@
       "artifact": "https://claude.ai/artifact/75q5Zkqgu2nDcne77ipkWw",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Explore, bomb open the cave and beat Grumblerock the stone boss!"
+      "blurb": "Explore, bomb open the cave and beat Grumblerock the stone boss!",
+      "thumb": "games/blade-of-embergrove/thumb.jpg"
     },
     {
       "name": "Rocky's Pebble Quest",
@@ -22,7 +24,8 @@
       "artifact": "https://claude.ai/artifact/RZfUt13D9mVzkJ7SNnDQxb",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Roll, jump and SMASH through eight levels to the summit!"
+      "blurb": "Roll, jump and SMASH through eight levels to the summit!",
+      "thumb": "games/rocky-s-pebble-quest/thumb.jpg"
     },
     {
       "name": "Blobby Kraft",
@@ -30,7 +33,8 @@
       "artifact": "https://claude.ai/artifact/GUVDuEBv4tubYqSywgwD3s",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Dig, build, craft and survive the night against the Grumbles!"
+      "blurb": "Dig, build, craft and survive the night against the Grumbles!",
+      "thumb": "games/blobby-kraft/thumb.jpg"
     },
     {
       "name": "Gravel Dodge",
@@ -38,7 +42,8 @@
       "artifact": "https://claude.ai/artifact/LKzSD53fCBStTxgdLyXBJq",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Dodge falling gravel and anvils while catching emeralds!"
+      "blurb": "Dodge falling gravel and anvils while catching emeralds!",
+      "thumb": "games/gravel-dodge/thumb.jpg"
     },
     {
       "name": "Wool Echo",
@@ -46,7 +51,8 @@
       "artifact": "https://claude.ai/artifact/XTK26mAFvzq1Z88gt6kFAN",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Watch the wool blocks light up, then copy the pattern!"
+      "blurb": "Watch the wool blocks light up, then copy the pattern!",
+      "thumb": "games/wool-echo/thumb.jpg"
     },
     {
       "name": "Boom Dig",
@@ -54,7 +60,8 @@
       "artifact": "https://claude.ai/artifact/1cSug4P8sS8jyAdU2wwCvA",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Dig the grass field without uncovering a hidden boom block!"
+      "blurb": "Dig the grass field without uncovering a hidden boom block!",
+      "thumb": "games/boom-dig/thumb.jpg"
     },
     {
       "name": "Bullseye Bow",
@@ -62,7 +69,8 @@
       "artifact": "https://claude.ai/artifact/NZKREaYFBtoKUDDBSk2gWJ",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Time your shots and hit the bullseye with ten arrows!"
+      "blurb": "Time your shots and hit the bullseye with ten arrows!",
+      "thumb": "games/bullseye-bow/thumb.jpg"
     },
     {
       "name": "Vine Snake",
@@ -70,7 +78,8 @@
       "artifact": "https://claude.ai/artifact/AGnYoMHEsjGH5MsmSEBy8b",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Grow a leafy vine to the berries without bumping anything!"
+      "blurb": "Grow a leafy vine to the berries without bumping anything!",
+      "thumb": "games/vine-snake/thumb.jpg"
     },
     {
       "name": "Night Guard",
@@ -78,7 +87,8 @@
       "artifact": "https://claude.ai/artifact/Xbbg4ikr1dwcXrvu3s1MQN",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Bonk the Moaners before they reach your house!"
+      "blurb": "Bonk the Moaners before they reach your house!",
+      "thumb": "games/night-guard/thumb.jpg"
     },
     {
       "name": "Fishing Hole",
@@ -86,7 +96,8 @@
       "artifact": "https://claude.ai/artifact/E1zWkSnKPFxZqq5DB7JspG",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Tap when the bobber dips to reel in fish and treasure!"
+      "blurb": "Tap when the bobber dips to reel in fish and treasure!",
+      "thumb": "games/fishing-hole/thumb.jpg"
     },
     {
       "name": "Rail Rush",
@@ -94,7 +105,8 @@
       "artifact": "https://claude.ai/artifact/MQHKCNNRwRgPePZku27kN3",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Ride the minecart, switch lanes, dodge rocks and grab gold!"
+      "blurb": "Ride the minecart, switch lanes, dodge rocks and grab gold!",
+      "thumb": "games/rail-rush/thumb.jpg"
     },
     {
       "name": "Plank Bridge",
@@ -102,7 +114,8 @@
       "artifact": "https://claude.ai/artifact/8zcMKNhj5ad2zuEkCABjGU",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Grow a plank just right to cross the gap. Splash!"
+      "blurb": "Grow a plank just right to cross the gap. Splash!",
+      "thumb": "games/plank-bridge/thumb.jpg"
     },
     {
       "name": "Torch Maze",
@@ -110,7 +123,8 @@
       "artifact": "https://claude.ai/artifact/HbjXuERxfe4mcH3mcH9JhR",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Race through dark mazes to find the glowing door!"
+      "blurb": "Race through dark mazes to find the glowing door!",
+      "thumb": "games/torch-maze/thumb.jpg"
     },
     {
       "name": "Leaf Leap",
@@ -118,7 +132,8 @@
       "artifact": "https://claude.ai/artifact/PzAj9Yi9o2UUr3uYVozryq",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Bounce Bobby up and up on leaves and super slime blocks!"
+      "blurb": "Bounce Bobby up and up on leaves and super slime blocks!",
+      "thumb": "games/leaf-leap/thumb.jpg"
     },
     {
       "name": "Ore Breaker",
@@ -126,7 +141,8 @@
       "artifact": "https://claude.ai/artifact/LXD8VvZEMDJBczjYuGQPH7",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Bounce a snowball off your plank to smash rows of ore!"
+      "blurb": "Bounce a snowball off your plank to smash rows of ore!",
+      "thumb": "games/ore-breaker/thumb.jpg"
     },
     {
       "name": "Ore Tapper",
@@ -134,7 +150,8 @@
       "artifact": "https://claude.ai/artifact/9xNxZhT3UZZvrbGgisjRG8",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Tap popping ores fast, but never tap a boom block!"
+      "blurb": "Tap popping ores fast, but never tap a boom block!",
+      "thumb": "games/ore-tapper/thumb.jpg"
     },
     {
       "name": "Sky Stacker",
@@ -142,7 +159,8 @@
       "artifact": "https://claude.ai/artifact/Jp3taQNS7uUdfRt3K2r9oL",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Drop sliding blocks to stack the tallest tower in the sky!"
+      "blurb": "Drop sliding blocks to stack the tallest tower in the sky!",
+      "thumb": "games/sky-stacker/thumb.jpg"
     },
     {
       "name": "Lava Leap",
@@ -150,7 +168,8 @@
       "artifact": "https://claude.ai/artifact/SoqvfwGX64LjkKJJfsYMWn",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Jump Bobby over bubbling lava pits and grab gold nuggets!"
+      "blurb": "Jump Bobby over bubbling lava pits and grab gold nuggets!",
+      "thumb": "games/lava-leap/thumb.jpg"
     },
     {
       "name": "Pickaxe Power",
@@ -158,7 +177,8 @@
       "artifact": "https://claude.ai/artifact/177JPKmJ7nVuMBB9DkCcGf",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Tap to mine tougher blocks and buy better pickaxes!"
+      "blurb": "Tap to mine tougher blocks and buy better pickaxes!",
+      "thumb": "games/pickaxe-power/thumb.jpg"
     },
     {
       "name": "Cave Flap",
@@ -166,7 +186,8 @@
       "artifact": "https://claude.ai/artifact/Wah6QbPsEjJbx6YtEQen7d",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Flap a little bat through the gaps in the cave walls!"
+      "blurb": "Flap a little bat through the gaps in the cave walls!",
+      "thumb": "games/cave-flap/thumb.jpg"
     },
     {
       "name": "Wool Catch",
@@ -174,7 +195,8 @@
       "artifact": "https://claude.ai/artifact/DwrzzgYmNAnroDEMPE8ZUW",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Slide your minecart to catch falling wool and dodge boom blocks!"
+      "blurb": "Slide your minecart to catch falling wool and dodge boom blocks!",
+      "thumb": "games/wool-catch/thumb.jpg"
     },
     {
       "name": "Block Memory",
@@ -182,7 +204,8 @@
       "artifact": "https://claude.ai/artifact/Rr8YAzCYrKtzbhYsK7Yx4H",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Flip cards and find all eight matching block pairs, fast!"
+      "blurb": "Flip cards and find all eight matching block pairs, fast!",
+      "thumb": "games/block-memory/thumb.jpg"
     },
     {
       "name": "Ore Crush",
@@ -190,7 +213,8 @@
       "artifact": "https://claude.ai/artifact/2rZgfcd2kCMNkBK9oTRVoZ",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Swap shiny blocks to line up three before time runs out!"
+      "blurb": "Swap shiny blocks to line up three before time runs out!",
+      "thumb": "games/ore-crush/thumb.jpg"
     },
     {
       "name": "Rocky's Banana Sky",
@@ -198,7 +222,8 @@
       "artifact": "https://claude.ai/artifact/Nu189mZv7XViDD1syGq7mD",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Skydive with Rocky, dodge bananas and land on the glowing pad!"
+      "blurb": "Skydive with Rocky, dodge bananas and land on the glowing pad!",
+      "thumb": "games/rocky-s-banana-sky/thumb.jpg"
     },
     {
       "name": "Monster Trail",
@@ -206,7 +231,8 @@
       "artifact": "https://claude.ai/artifact/WpcqGEJod9hkEUHx3hSCuw",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Pick a pal, battle in tall grass and collect all 8 monsters!"
+      "blurb": "Pick a pal, battle in tall grass and collect all 8 monsters!",
+      "thumb": "games/monster-trail/thumb.jpg"
     },
     {
       "name": "Sphinx and the Hollow Deep",
@@ -214,7 +240,8 @@
       "artifact": "https://claude.ai/artifact/KvB5GmUb85Krh9BwvCeCUw",
       "added": "2026-11-07",
       "updated": "2026-11-07",
-      "blurb": "Grab a sword, find the keys and smash Cragheart the stone giant!"
+      "blurb": "Grab a sword, find the keys and smash Cragheart the stone giant!",
+      "thumb": "games/sphinx-and-the-hollow-deep/thumb.jpg"
     },
     {
       "name": "Baguette Bike",
