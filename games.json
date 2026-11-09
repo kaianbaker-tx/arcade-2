@@ -1,6 +1,22 @@
 {
   "games": [
     {
+      "name": "Dungeon Party",
+      "slug": "dungeon-party",
+      "artifact": "https://claude.ai/artifact/DZY4FHUvpauZrBz6DYT3UJ",
+      "added": "2026-11-08",
+      "updated": "2026-11-08",
+      "blurb": "Battle through 69 candy dungeons and beat every boss!"
+    },
+    {
+      "name": "Blockbox 50",
+      "slug": "blockbox-50",
+      "artifact": "https://claude.ai/artifact/5SGkFMwSpSvjrSVJSxM2n7",
+      "added": "2026-11-08",
+      "updated": "2026-11-08",
+      "blurb": "Fifty block games in one box. Set a best on all!"
+    },
+    {
       "name": "Rocky Fight",
       "slug": "rocky-fight",
       "artifact": "https://claude.ai/artifact/AomKrgBZ5iUU3Mzn54CKAd",
@@ -675,6 +691,11 @@
       "name": "Rocky's Pebble Quest",
       "artifact": "https://claude.ai/artifact/RZfUt13D9mVzkJ7SNnDQxb",
       "why": "Kaian wants it only on his Arcade by Kaiak Games"
+    },
+    {
+      "artifact": "https://claude.ai/artifact/PT685HVcg1hvhUCTXLUeD5",
+      "name": "Café Crew Names",
+      "why": "not a game (a Cinnamoroll name-sayer page)"
     }
   ]
 }
