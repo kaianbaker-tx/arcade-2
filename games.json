@@ -1,6 +1,14 @@
 {
   "games": [
     {
+      "name": "Bit's AI Safety School",
+      "slug": "bit-s-ai-safety-school",
+      "artifact": "https://claude.ai/artifact/PZuwfzP4z6p6FG8wkw4bjZ",
+      "added": "2026-11-19",
+      "updated": "2026-11-19",
+      "blurb": "Help Bit the robot learn six rules for using AI safely!"
+    },
+    {
       "name": "Dungeon Party",
       "slug": "dungeon-party",
       "artifact": "https://claude.ai/artifact/DZY4FHUvpauZrBz6DYT3UJ",

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bit's AI Safety School</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: cheerful retro handheld game, short friendly lines for kids
+   IDEA: a pixel "school map" where a little robot teacher, Bit, unlocks levels
+   PICTURE: Bit, a big pixel robot drawn on canvas, talking in a speech box
+   COLOUR and TYPE: sunny yellow ground, ink outlines, pink buttons; Press Start 2P + Pixelify Sans
+   LAYOUT: title, Bit + bubble, then the level path; lessons reuse Bit + bubble + choices */
+:root{color-scheme:light dark;--bg:light-dark(#ffd23f,#1d1b3a);--ink:light-dark(#1d1b3a,#fff6d6);--card:light-dark(#fff8e1,#2c2a55);--screen:#bfe6ff;--pink:#ff5470;--blue:#3aa6ff;--green:#2bc48a;--muted:light-dark(#6b6488,#a9a4cf)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.5 "Pixelify Sans",ui-monospace,monospace;overflow-x:clip}
+.wrap{max-width:900px;margin:0 auto;padding:clamp(18px,4vw,44px) max(4vw,14px) 40px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1,h2,.px{font-family:"Press Start 2P",ui-monospace,monospace;font-weight:400;line-height:1.35}
+h1{font-size:clamp(18px,4.4vw,32px);margin:0;text-wrap:balance}
+h2{font-size:clamp(14px,3vw,20px);margin:0 0 6px}
+.sub{margin:6px 0 0;color:var(--muted)}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+.box{background:var(--card);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+.stage{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:center;margin:26px 0}
+.botbox{background:var(--screen);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:10px}
+.botbox{cursor:pointer}.hop{animation:hop .3s}@keyframes hop{50%{transform:translateY(-10px)}}
+.bot{width:clamp(120px,22vw,192px);height:clamp(120px,22vw,192px)}
+.bubble{padding:18px 20px;min-height:120px;font-size:20px;cursor:pointer;position:relative}
+.bubble small{display:block;color:var(--muted);font-size:14px;margin-top:8px}
+.btn{font-family:"Press Start 2P",monospace;font-size:12px;line-height:1.4;padding:14px 18px;min-height:48px;background:var(--pink);color:#fff;border:4px solid var(--ink);box-shadow:4px 4px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.alt{background:var(--card);color:var(--ink)}
+.btn:focus-visible,.opt:focus-visible,.tile:focus-visible{outline:4px dashed var(--blue);outline-offset:3px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.opts{display:grid;gap:12px}
+.opt{font:inherit;font-size:19px;text-align:left;color:var(--ink);background:var(--card);border:4px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:12px 16px;min-height:52px;cursor:pointer}
+.opt:hover{background:light-dark(#fff,#3a3770)}
+.opt.right{background:var(--green);color:#fff}
+.opt.nope{opacity:.45;text-decoration:line-through;cursor:default}
+.shake{animation:sh .3s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.path{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tile{font:inherit;color:var(--ink);background:var(--card);border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:14px 10px;display:grid;justify-items:center;gap:8px;cursor:pointer;text-align:center}
+.tile[disabled]{cursor:not-allowed;opacity:.55;box-shadow:none}
+.tile .lv{font-family:"Press Start 2P",monospace;font-size:10px;color:var(--muted)}
+.tile b{font-size:18px}
+.badge{width:64px;height:64px}
+.meter{height:22px;border:4px solid var(--ink);background:var(--card);margin:10px 0 22px}
+.meter i{display:block;height:100%;background:var(--green)}
+.pill{font-family:"Press Start 2P",monospace;font-size:11px}
+.big{width:128px;height:128px;margin:10px auto}
+.center{text-align:center}
+.shelf{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:16px 0}
+.namebox{padding:14px 16px;margin-bottom:16px;display:grid;gap:10px}
+.namebox input{font:inherit;font-size:18px;padding:8px 10px;border:4px solid var(--ink);background:var(--bg);color:var(--ink);min-height:48px;width:12em}
+.daily{padding:16px 18px;margin-bottom:22px}.daily p{margin:8px 0}
+.dshelf{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:8px}
+.dcell{display:grid;justify-items:center;text-align:center;gap:2px;font-size:15px;line-height:1.2}
+.dcell small{color:var(--muted);font-size:13px}.dcell.off{opacity:.6}
+.dbadge{width:48px;height:48px}.dbadge.big{width:128px;height:128px;margin:8px auto}
+@media(max-width:600px){.dshelf{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.foot{margin-top:34px;font-size:15px;color:var(--muted);text-align:center}
+@media(max-width:600px){.stage{grid-template-columns:minmax(0,1fr);justify-items:center}.bubble{width:100%}.path{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.shake,.hop{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Bit's AI Safety School</h1><p class="sub">Learn to use AI the smart, safe and kind way.</p></div>
+    <div class="row"><button class="btn" id="savebtn">Save</button><span id="saved" class="pill" aria-live="polite"></span><button class="btn alt" id="snd" aria-pressed="true">Sound: on</button></div>
+  </div>
+  <main id="app"></main>
+  <p class="foot">by Naiak Games</p>
+</div>
+<script>
+{
+const ROBOT=[
+"......rr........",
+".......k........",
+"...kkkkkkkkkk...",
+"..kllllllllllk..",
+"..klgggggggggk..",
+"..kgkkkkkkkkgk..",
+"..kgkbbkkbbkgk..",
+"..kgkbbkkbbkgk..",
+"..kgkkkkkkkkgk..",
+"..kggggggggggk..",
+"..kgggmmmmgggk..",
+"..kggggggggggk..",
+"...kkkkkkkkkk...",
+".....kggggk.....",
+"...kkgbggbgkk...",
+"..kggggggggggk.."];
+const PAL={k:'#1d1b3a',g:'#b8c4d6',l:'#e8eef7',b:'#3aa6ff',r:'#ff5470',m:'#1d1b3a'};
+const ICONS={
+ look:[".####...","#....#..","#....#..","#....#..",".####...",".....##.","......##",".......#"],
+ lock:["..####..",".#....#.",".#....#.","########","###..###","###..###","########","########"],
+ star:["...##...","...##...","########",".######.","..####..",".######.",".##..##.","##....##"],
+ heart:[".##..##.","########","########","########",".######.","..####..","...##...","........"],
+ home:["...##...","..####..",".######.","########",".##..##.",".##..##.",".######.",".######."],
+ crown:["#..##..#","##.##.##","########","########","########","........","########","########"]};
+const DICONS={
+ sun:["#..##..#","..####..",".######.","########","########",".######.","..####..","#..##..#"],
+ flame:["...#....","...##...","..###...","..####..",".######.",".##.###.",".#...##.","..###..."],
+ hand:[".#.#.#..",".#.#.#..",".#.#.#.#",".######.","#######.",".######.","..####..","..####.."],
+ wand:["......#.",".....###","......#.",".....#..","....#...","...#....","..#.....",".#......"],
+ bolt:["....###.","...###..","..###...",".######.","...###..","..###...",".##.....","#......."],
+ trophy:["########","#.####.#","#.####.#",".######.","..####..","...##...","..####..",".######."]};
+const DB=[{n:1,t:"First Day",i:"sun",c:"#ffb800"},{n:3,t:"Three Days",i:"flame",c:"#ff6a3d"},{n:5,t:"High Five",i:"hand",c:"#2bc48a"},{n:7,t:"Week Wizard",i:"wand",c:"#9b6bff"},{n:14,t:"Super Streak",i:"bolt",c:"#3aa6ff"},{n:30,t:"AI Legend",i:"trophy",c:"#ff5470"}];
+const DQ=[
+ {q:"AI writes your whole book report. Can you hand it in as yours?",o:["Yes, nobody will know.","No. Use AI for ideas, then write it yourself."],a:1,why:"Yes! Your work should come from your brain."},
+ {q:"A website you don't know asks for your mom's phone number.",o:["Type it in.","Don't. Ask a grown-up first."],a:1,why:"Right! Family info is private too."},
+ {q:"AI makes a picture of a dog with six legs. What happened?",o:["Six-legged dogs are real.","AI made a mistake."],a:1,why:"Yes! AI pictures can have silly mistakes."},
+ {q:"AI gives you the answer to a math problem. What's smart?",o:["Check the answer yourself.","Copy it without looking."],a:0,why:"Right! AI can get math wrong too."},
+ {q:"Someone online says: \"Tell me your password so I can help you.\"",o:["Share it. They're helping.","Never share it. Tell a grown-up."],a:1,why:"Yes! Real helpers never need your password."},
+ {q:"You used AI to put your friend in a funny picture. What first?",o:["Ask your friend if it's OK to share.","Post it right away."],a:0,why:"Right! Always ask before sharing pictures of people."},
+ {q:"A chat says it's a real kid your age.",o:["Believe it for sure.","It might not be true. Tell a grown-up."],a:1,why:"Yes! Online, people and bots can pretend."},
+ {q:"AI tells you a fact for your school project.",o:["Check it in another trusted place.","Use it. AI is never wrong."],a:0,why:"Right! Two good sources beat one."},
+ {q:"Which is a good thing to ask AI?",o:["Ideas for a science fair project.","Help me trick my little brother.","Find my teacher's home address."],a:0,why:"Yes! Use AI to learn and make cool stuff."},
+ {q:"You feel really sad. Who is best to talk to?",o:["Only a chatbot.","A grown-up or friend you trust."],a:1,why:"Right! People who care about you are the best helpers."},
+ {q:"AI says: \"Click this link to win a prize!\"",o:["Click it fast!","Don't click. Ask a grown-up."],a:1,why:"Yes! Prize links can be tricks."},
+ {q:"Is it OK to use AI to fake your teacher's voice?",o:["Yes, it's just a joke.","No. Faking real people's voices can hurt and trick others."],a:1,why:"Right! Real people's voices belong to them."},
+ {q:"AI helped you fix a bug in your game. What do you say?",o:["I did it all alone!","AI helped me fix it."],a:1,why:"Yes! Honest makers say who helped."},
+ {q:"Which should you NOT type into AI?",o:["Your favorite animal.","Your home address.","A knock-knock joke."],a:1,why:"Right! Your address stays secret."},
+ {q:"AI says something rude to you.",o:["It's your fault.","It's not your fault. Close it and tell a grown-up."],a:1,why:"Yes! You did nothing wrong."},
+ {q:"You've used AI all afternoon. Good idea?",o:["Take a break and play outside.","Skip dinner to keep going."],a:0,why:"Right! Your body and brain need breaks."},
+ {q:"AI made a picture of a castle on the moon. Is it a real photo?",o:["Yes, it's real.","No. AI made it up."],a:1,why:"Yes! AI pictures can look real but be made up."},
+ {q:"Why does AI make mistakes sometimes?",o:["It learned from lots of info, and some was wrong.","It never makes mistakes."],a:0,why:"Right! AI makes its best guess, and guesses can be wrong."},
+ {q:"Your friend believes everything AI says. What can you do?",o:["Teach them to check facts.","Tell them AI is magic."],a:0,why:"Yes! Now you're the teacher!"},
+ {q:"You want help learning spelling words.",o:["Ask AI to quiz you.","Ask AI to do your spelling test."],a:0,why:"Right! A quiz helps your brain grow."}];
+const dk=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>dk(new Date());
+const dayNum=()=>{const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)};
+const days=()=>save.days||[];
+function streak(){const s=new Set(days());let n=0,d=new Date();if(!s.has(dk(d)))d.setDate(d.getDate()-1);while(s.has(dk(d))){n++;d.setDate(d.getDate()-1)}return n}
+const L=[
+ {t:"Check It!",c:"#3aa6ff",i:"look",talk:["AI is really smart. But it can still be wrong!","The tricky part: AI sounds sure, even when it is wrong.","So check big facts in a book, a trusted website, or with a grown-up."],
+  qs:[{q:"AI says: \"Sharks are mammals.\" What do you do?",o:["Believe it. AI knows everything.","Check it in a book or trusted website.","Tell the whole class right away."],a:1,why:"Yes! Sharks are fish. Checking caught the mistake."},
+      {q:"Is AI always right?",o:["Yes, always.","No. It can make mistakes.","Only on Tuesdays."],a:1,why:"Right! Even smart AI makes mistakes sometimes."}]},
+ {t:"Keep It Secret",c:"#ff5470",i:"lock",talk:["Some things are just for you and your family.","Don't tell AI or apps your full name, address, school, phone number or passwords.","If something asks for them, stop and ask a grown-up."],
+  qs:[{q:"An AI app asks: \"What's your home address?\"",o:["Type it in.","Don't share it. Ask a grown-up.","Send a photo of your house instead."],a:1,why:"Yes! Your address stays private."},
+      {q:"Which one is OK to share with AI?",o:["Your password.","Your favorite color.","Your phone number."],a:1,why:"Right! A favorite color is safe. Passwords and phone numbers are secret."}]},
+ {t:"Be Honest",c:"#f5a623",i:"star",talk:["AI can help you learn. That's awesome!","But if your teacher asks for YOUR work, it should come from your brain.","And if AI helped you, just say so. Honesty is a superpower."],
+  qs:[{q:"Homework: write a story. What's the honest way?",o:["AI writes it. Say you wrote it.","Ask AI for ideas, then write it yourself.","Copy a friend's story."],a:1,why:"Yes! Ideas from AI are fine. The writing is yours."},
+      {q:"AI helped you make a picture for a contest.",o:["Hide that AI helped.","Say that AI helped.","Say a robot stole your idea."],a:1,why:"Right! Telling the truth keeps it fair for everyone."}]},
+ {t:"Be Kind",c:"#2bc48a",i:"heart",talk:["AI can make pictures, voices and videos.","Never use it to make mean jokes or fake pictures of real people.","Fakes can really hurt someone's feelings."],
+  qs:[{q:"A friend wants AI to make a silly fake picture of a classmate.",o:["Do it. It's funny.","Say no. It could hurt them.","Make it even sillier."],a:1,why:"Yes! Real kids have real feelings."},
+      {q:"You see a video of a famous person saying something crazy.",o:["It might be an AI fake. Check first.","Share it with everyone right now."],a:0,why:"Right! Some videos are made by AI. Check before you share."}]},
+ {t:"Ask a Grown-Up",c:"#9b6bff",i:"home",talk:["Sometimes a chat or AI says something weird or scary.","Or it might say: \"Keep this a secret from your parents.\"","That's your signal: stop, and tell a grown-up you trust."],
+  qs:[{q:"A chat says: \"Don't tell your parents about me.\"",o:["Keep the secret.","Stop and tell a grown-up you trust."],a:1,why:"Yes! Good friends never ask you to hide things from your family."},
+      {q:"AI says something that makes you feel scared.",o:["Keep reading alone.","Close it and talk to a grown-up."],a:1,why:"Right! You never have to handle scary stuff alone."}]},
+ {t:"You're the Boss",c:"#ff8a3d",i:"crown",talk:["AI is a tool, like a calculator or a pencil.","Your brain is the boss. Think for yourself!","And take breaks. Go play outside too."],
+  qs:[{q:"AI says the best snack is candy for every meal.",o:["Do it! AI said so.","Think for yourself. That's not healthy."],a:1,why:"Yes! You decide. AI just gives ideas."},
+      {q:"You've been using AI for 3 hours.",o:["Take a break and go play.","Keep going until midnight."],a:0,why:"Right! Breaks keep your brain happy."}]}];
+
+let save={done:[]};
+try{const s=JSON.parse(localStorage.getItem('bitAISchool'));if(s&&Array.isArray(s.done))save=s}catch(e){}
+const store=()=>{try{localStorage.setItem('bitAISchool',JSON.stringify(save))}catch(e){}};
+let nm='';try{nm=localStorage.getItem('bitAIName')||''}catch(e){}
+const esc=s=>s.replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+let fresh=true,cur=null;
+
+const set={speed:28,vol:100,col:0};
+const COLS=[["Silver","#b8c4d6","#e8eef7"],["Red","#ff6b6b","#ffc2c2"],["Gold","#f5b83d","#ffe7a8"],["Green","#4fd18b","#c4f5d9"],["Blue","#5aa9ff","#cfe6ff"],["Purple","#a98bff","#e2d8ff"]];
+let soundOn=true,ac=null;
+function tone(f,d,type,when,vol){if(!soundOn||!set.vol)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state=='suspended')ac.resume();const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(Math.max(.0002,vol*set.vol/100),t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
+const ding=()=>{tone(988,.18,'sine',0,.18);tone(1319,.4,'sine',.1,.18)};
+const fanfare=()=>[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,i==5?.6:.15,'square',i*.14,.06));
+const beep=()=>tone(320+Math.random()*520,.05,'square',0,.025);
+
+const snd=document.getElementById('snd');
+snd.onclick=()=>{soundOn=!soundOn;snd.textContent='Sound: '+(soundOn?'on':'off');snd.setAttribute('aria-pressed',soundOn)};
+
+function paint(cv,map,colorOf){const n=map.length,s=cv.width/n,x=cv.getContext('2d');x.clearRect(0,0,cv.width,cv.height);map.forEach((row,y)=>[...row].forEach((ch,i)=>{const c=colorOf(ch);if(c){x.fillStyle=c;x.fillRect(i*s,y*s,s,s)}}))}
+let talking=false,frame=0;
+function drawBots(){frame++;const blink=frame%28<2;document.querySelectorAll('canvas.bot').forEach(cv=>paint(cv,ROBOT,ch=>{if(ch=='.')return null;if(ch=='m'&&talking&&frame%2)return'#ff5470';if(ch=='b'&&blink)return PAL.k;if(ch=='g')return COLS[set.col][1];if(ch=='l')return COLS[set.col][2];return PAL[ch]}))}
+const botTimer=setInterval(drawBots,110);
+function paintDaily(){document.querySelectorAll('canvas.dbadge').forEach(cv=>{const b=DB[+cv.dataset.d],got=days().length>=b.n;paint(cv,DICONS[b.i],ch=>ch=='#'?(got?b.c:'#8f8aa8'):null)})}
+function paintBadges(){paintDaily();document.querySelectorAll('canvas.badge').forEach(cv=>{const l=L[+cv.dataset.i],got=save.done.includes(+cv.dataset.i);paint(cv,ICONS[l.i],ch=>ch=='#'?(got?l.c:'#8f8aa8'):null)})}
+
+let typing=null,last='';
+function say(text,after,again){if(!again)last=text;const el=document.getElementById('say');clearInterval(typing);talking=true;let i=0;el.textContent='';
+ const finish=()=>{clearInterval(typing);typing=null;talking=false;el.textContent=text;after&&after()};
+ typing=setInterval(()=>{el.textContent=text.slice(0,++i);if(i%3==0)beep();if(i>=text.length)finish()},set.speed);
+ el.parentElement.onclick=()=>{if(typing)finish()}}
+
+const app=document.getElementById('app');
+let svT;document.getElementById('savebtn').onclick=()=>{
+ if(cur)save.at={li:cur.li,step:cur.step};store();
+ try{if(nm)localStorage.setItem('bitAIName',nm)}catch(e){}
+ fanfare();const s=document.getElementById('saved');s.textContent='Saved!';clearTimeout(svT);svT=setTimeout(()=>s.textContent='',2500);
+ if(!typing)say(cur?"Saved! Next time, tap Continue on the map to come back right here.":"Saved! Your badges are safe.",null,true)};
+app.addEventListener('click',e=>{const b=e.target.closest('.botbox');if(!b||typing||!last)return;b.classList.remove('hop');void b.offsetWidth;b.classList.add('hop');say(last,null,true)});
+const stage=t=>`<div class="stage"><div class="botbox"><canvas class="bot" width="192" height="192" aria-label="Bit the robot"></canvas></div><div class="box bubble"><span id="say">${t||''}</span><small>Tap here to skip. Tap Bit to hear it again!</small></div></div>`;
+const unlocked=i=>i==0||save.done.includes(i-1);
+
+function home(){
+ const n=save.done.length,all=n==L.length;
+ app.innerHTML=stage()+(nm?`<div class="row" style="margin-bottom:14px"><span>Player: <b>${esc(nm)}</b></span><button class="btn alt" id="chg">Change name</button></div>`:`<form class="box namebox" id="nf"><label for="nmi"><b>What's your name?</b> First name or a nickname.</label><div class="row"><input id="nmi" maxlength="12" autocomplete="off" placeholder="Your name"><button class="btn">Save</button></div></form>`)+`<div class="row" style="justify-content:space-between"><span class="pill">Badges: ${n} / ${L.length}</span>${n?'<button class="btn alt" id="reset">Start over</button>':''}</div>
+ <div class="meter"><i style="width:${n/L.length*100}%"></i></div>
+ <div class="box daily"><div class="row" style="justify-content:space-between"><h2>Daily Challenge</h2><span class="pill">Days: ${days().length} &middot; Streak: ${streak()}</span></div>
+ ${days().includes(today())?'<p>Done for today! Come back tomorrow for a new question.</p>':'<p><button class="btn" id="dgo">Today\'s question ▶</button></p>'}
+ <div class="dshelf">${DB.map((b,i)=>`<div class="dcell${days().length>=b.n?'':' off'}"><canvas class="dbadge" width="48" height="48" data-d="${i}"></canvas><span>${b.t}</span><small>${b.n} day${b.n>1?'s':''}</small></div>`).join('')}</div></div>
+ <div class="path">${L.map((l,i)=>`<button class="tile" data-go="${i}" ${unlocked(i)?'':'disabled'}><canvas class="badge" width="64" height="64" data-i="${i}"></canvas><span class="lv">Level ${i+1}${save.done.includes(i)?' - done':unlocked(i)?'':' - locked'}</span><b>${l.t}</b></button>`).join('')}</div>
+ ${save.at&&!save.done.includes(save.at.li)?`<p class="center" style="margin-top:22px"><button class="btn" id="cont">Continue Level ${save.at.li+1} ▶</button></p>`:''}
+ ${all?'<p class="center" style="margin-top:22px"><button class="btn" id="hero">See my AI Hero badge</button></p>':''}`;
+ paintBadges();drawBots();
+ app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>lesson(+b.dataset.go));
+ const r=document.getElementById('reset');if(r)r.onclick=()=>{save={done:[]};store();home()};
+ const ct=document.getElementById('cont');if(ct)ct.onclick=()=>lesson(save.at.li,save.at.step);
+ const dg=document.getElementById('dgo');if(dg)dg.onclick=daily;
+ const h=document.getElementById('hero');if(h)h.onclick=hero;
+ const nf=document.getElementById('nf');
+ if(nf)nf.onsubmit=e=>{e.preventDefault();const v=document.getElementById('nmi').value.trim().slice(0,12);if(!v)return;nm=v;try{localStorage.setItem('bitAIName',nm)}catch(err){}ding();fresh=false;home();say("Nice to meet you, "+nm+"! Let's go!")};
+ const chg=document.getElementById('chg');if(chg)chg.onclick=()=>{nm='';try{localStorage.removeItem('bitAIName')}catch(err){}home()};
+ const hi=nm?(fresh?"Welcome back, "+nm+"! ":"Hi "+nm+"! "):"";
+ const msg=!nm?"Hi! I'm Bit. What's your name? Type it in the box!":all?hi+"You did every level! You're an AI Hero!":n?hi+"Pick the next level.":hi+"Let's learn to use AI the smart, safe and kind way!";
+ fresh=false;say(msg)}
+
+function lesson(li,start){
+ const l=L[li];let step=start||0;
+ app.innerHTML=`<div class="row" style="margin-top:22px"><button class="btn alt" id="back">◀ Map</button><h2>Level ${li+1}: ${l.t}</h2></div>`+stage()+`<div id="act"></div>`;
+ drawBots();document.getElementById('back').onclick=()=>{cur=null;clearInterval(typing);talking=false;home()};
+ const act=document.getElementById('act');
+ const next=fn=>{act.innerHTML='<button class="btn" id="nx">Next ▶</button>';const b=document.getElementById('nx');b.onclick=fn;b.focus()};
+ function run(){
+  act.innerHTML='';cur={li,step};
+  if(step<l.talk.length){say(l.talk[step],()=>next(()=>{step++;run()}));return}
+  const qi=step-l.talk.length;
+  if(qi>=l.qs.length){win(li);return}
+  const q=l.qs[qi];
+  say(q.q,()=>{
+   act.innerHTML=`<div class="opts">${q.o.map((o,k)=>`<button class="opt" data-k="${k}">${o}</button>`).join('')}</div>`;
+   act.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    if(b.classList.contains('nope'))return;
+    if(+b.dataset.k==q.a){ding();b.classList.add('right');act.querySelectorAll('.opt').forEach(x=>x.disabled=true);
+     say(q.why,()=>{const d=document.createElement('p');act.appendChild(d);d.innerHTML='<button class="btn" id="nx">Next ▶</button>';const nb=document.getElementById('nx');nb.onclick=()=>{step++;run()};nb.focus()})}
+    else{b.classList.add('nope','shake');say("Hmm, not quite. Try another one!")}
+   })})}
+ run()}
+
+function daily(){
+ const q=DQ[dayNum()%DQ.length];cur=null;
+ app.innerHTML=`<div class="row" style="margin-top:22px"><button class="btn alt" id="back">◀ Map</button><h2>Daily Challenge</h2></div>`+stage()+`<div id="act"></div>`;
+ drawBots();document.getElementById('back').onclick=()=>{clearInterval(typing);talking=false;home()};
+ const act=document.getElementById('act');
+ say(q.q,()=>{
+  act.innerHTML=`<div class="opts">${q.o.map((o,k)=>`<button class="opt" data-k="${k}">${o}</button>`).join('')}</div>`;
+  act.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+   if(b.classList.contains('nope'))return;
+   if(+b.dataset.k==q.a){b.classList.add('right');act.querySelectorAll('.opt').forEach(x=>x.disabled=true);
+    const before=days().length;if(!days().includes(today())){save.days=[...days(),today()];store()}
+    const nb=DB.find(x=>x.n>before&&x.n<=days().length);
+    if(nb){fanfare();act.insertAdjacentHTML('beforeend',`<div class="box center" style="padding:18px;margin-top:16px"><h2>New daily badge!</h2><canvas class="dbadge big" width="128" height="128" data-d="${DB.indexOf(nb)}"></canvas><p><b>${nb.t}</b></p></div>`);paintDaily()}else ding();
+    say(q.why+(nb?" You earned the "+nb.t+" badge!":" See you tomorrow!"),()=>{act.insertAdjacentHTML('beforeend','<p><button class="btn" id="nx">Back to map</button></p>');const x=document.getElementById('nx');x.onclick=home;x.focus()})}
+   else{b.classList.add('nope','shake');say("Hmm, not quite. Try another one!")}
+  })})}
+
+function win(li){
+ cur=null;if(save.at&&save.at.li==li)delete save.at;
+ if(!save.done.includes(li))save.done.push(li);store();
+ const l=L[li];fanfare();
+ app.innerHTML=stage()+`<div class="box center" style="padding:22px"><h2>New badge!</h2><canvas class="badge big" width="128" height="128" data-i="${li}"></canvas><p style="font-size:22px;margin:4px 0 16px"><b>${l.t}</b></p><div class="row" style="justify-content:center"><button class="btn" id="map">Back to map</button>${li+1<L.length?'<button class="btn alt" id="nxl">Next level ▶</button>':''}</div></div>`;
+ paintBadges();drawBots();
+ document.getElementById('map').onclick=home;
+ const n=document.getElementById('nxl');if(n)n.onclick=()=>lesson(li+1);
+ if(save.done.length==L.length)setTimeout(hero,1800);
+ say((nm?"Great job, "+nm+"! ":"")+"You earned the "+l.t+" badge!")}
+
+function hero(){
+ fanfare();
+ app.innerHTML=stage()+`<div class="box center" style="padding:22px"><h2>${nm?esc(nm)+' is an':''} AI Hero!</h2><p>You learned all 6 rules for using AI the right way.</p>
+ <div class="shelf">${L.map((l,i)=>`<canvas class="badge" width="64" height="64" data-i="${i}" title="${l.t}"></canvas>`).join('')}</div>
+ <p><b>Your hero mission:</b> teach one rule to a friend or family member today.</p>
+ <button class="btn" id="map">Back to map</button></div>`;
+ paintBadges();drawBots();document.getElementById('map').onclick=home;
+ say("Check it. Keep it secret. Be honest. Be kind. Ask a grown-up. You're the boss!")}
+
+home();
+}
+</script>
+</body>
+</html>
